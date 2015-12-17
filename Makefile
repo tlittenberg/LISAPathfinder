@@ -1,25 +1,30 @@
 
-INCDIR = #/opt/local/include
-LIBDIR = #/opt/local/lib
+INCDIR = /opt/local/include
+LIBDIR = /opt/local/lib
 
 LIBS  = gsl gslcblas m
 CCFLAGS = -g -Wall -O3 -std=gnu99
 
 CC = gcc
 
-OBJS = Subroutines.o TimePhaseMaximization.o
+OBJS = Subroutines.o TimePhaseMaximization.o LISAPathfinder.o
 
-all: $(OBJS) mcmc
+all: $(OBJS) mcmc test
 
+LISAPathfinder.o: LISAPathfinder.c LISAPathfinder.h
+	$(CC) $(CCFLAGS) -c LISAPathfinder.c $(INCDIR:%=-I%) $(LIBDIR:%=-L%)
 
 TimePhaseMaximization.o: TimePhaseMaximization.c TimePhaseMaximization.h
-	$(CC) $(CCFLAGS) -c TimePhaseMaximization.c
+	$(CC) $(CCFLAGS) -c TimePhaseMaximization.c $(INCDIR:%=-I%) $(LIBDIR:%=-L%)
 
-Subroutines.o: Subroutines.c Subroutines.h
-	$(CC) $(CCFLAGS) -c Subroutines.c 
+Subroutines.o: Subroutines.c Subroutines.h 
+	$(CC) $(CCFLAGS) -c Subroutines.c $(INCDIR:%=-I%) $(LIBDIR:%=-L%)
 
-mcmc: mcmc.c 
-	$(CC) $(CCFLAGS) -o mcmc mcmc.c $(OBJS) $(LIBS:%=-l%)
+mcmc: mcmc.c $(OBJS)
+	$(CC) $(CCFLAGS) -o mcmc mcmc.c $(OBJS) $(INCDIR:%=-I%) $(LIBDIR:%=-L%) $(LIBS:%=-l%)
+
+test: test.c $(OBJS)
+	$(CC) $(CCFLAGS) -o test test.c $(OBJS) $(INCDIR:%=-I%) $(LIBDIR:%=-L%) $(LIBS:%=-l%)
 
 clean:
-	rm *.o mcmc
+	rm *.o mcmc test

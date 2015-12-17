@@ -8,4 +8,4 @@
 double swap, tempr;
 #define SWAP(a,b) {swap=(a);(a)=(b);(b)=swap;}
 
-void Sum_Extreme(double *a, double *b, double *Sn, int n, double *delt, double *pshift, double Tobs, int imin, int imax, double t0);
+void Sum_Extreme(double *a, double *b, double *Sn, int n, double *delt, double *pshift, double Tobs, double t0);

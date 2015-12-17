@@ -145,7 +145,7 @@ static void phase_blind_time_shift(double *corr, double *corrf, double *data1, d
 
 }
 
-void Sum_Extreme(double *a, double *b, double *Sn, int n, double *delt, double *pshift, double Tobs, int imin, int imax, double t0)
+void Sum_Extreme(double *a, double *b, double *Sn, int n, double *delt, double *pshift, double Tobs, double t0)
 {
   double max=0.0;
   int i;
@@ -186,23 +186,23 @@ void Sum_Extreme(double *a, double *b, double *Sn, int n, double *delt, double *
 
 
   *delt=0.0;
- newtime = t0+*delt;
+  newtime = -1.0;//t0+*delt;
 
-  max_array_element(&max, &index, corr, n);
+  while(newtime<0.0 || newtime>Tobs)
+  {
+    max_array_element(&max, &index, corr, n);
 
     if(index < (n/2))
       *delt = ( (double)index/(double)n )*Tobs;
     else if(index >= n/2)
       *delt = ( (double)(index - n)/(double)n )*Tobs;
 
-    printf("   trial index=%i\n",index);
-    printf("   trial dt=%g\n",*delt);
-    printf("   trial newt=%g\n",*delt+t0);
+    max = 2.0*(max);
+    *pshift = atan2(corrsin[index],corrcos[index]);
 
-
-  max = 2.0*(max);
-  *pshift = atan2(corrsin[index],corrcos[index]);
-
+    newtime = *delt + t0;
+    corr[index]=-1.0;
+  }
 
   free(AC);
   free(AF);
