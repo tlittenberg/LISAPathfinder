@@ -32,6 +32,7 @@ int main()
   const gsl_rng_type *T = gsl_rng_default;
   gsl_rng *r = gsl_rng_alloc (T);
   gsl_rng_env_setup();
+  gsl_rng_set (r, 4381);
 
   /* Initialize data structure */
   struct Data  *data = malloc(sizeof(struct Data));
@@ -70,14 +71,17 @@ int main()
   {
     injection->Ais[i] = 2.0e-9; // m*Hz^-1/2
     injection->Ath[i] = 1.0e-8; // N*Hz^-1/2
+    injection->Ars[i] = 2.0e-7; // rad*Hz^-1/2
   }
 
   /* Simulate source data */
+    injection->N = 1;
   for(n=0; n<injection->N; n++)
   {
     source = injection->source[n];
     source->face = -1;
     while(source->face ==-1) draw_impact_point(data, source, r);
+      source->P = 20;
     printf("hit on face %i\n",source->face);
   }
 
@@ -88,9 +92,10 @@ int main()
 
   printf("Injected parameters:   \n");
   FILE *injfile = fopen("injection.dat","w");
-  for(n=0; n<injection->N; n++)printf("     {%lg,%lg,%lg,%lg}\n",injection->source[n]->t0, injection->source[n]->P, injection->source[n]->costheta, injection->source[n]->phi);
-  for(n=0; n<injection->N; n++)fprintf(injfile,"%lg %lg %lg %lg\n",injection->source[n]->t0, injection->source[n]->P, injection->source[n]->costheta, injection->source[n]->phi);
-  fclose(injfile);
+  for(n=0; n<injection->N; n++)printf("     {%lg,%lg,%lg,%lg,%lg,%lg}\n",injection->source[n]->t0, injection->source[n]->P, injection->source[n]->costheta, injection->source[n]->phi, injection->source[n]->map[0], injection->source[n]->map[1]);
+  for(n=0; n<injection->N; n++)fprintf(injfile,"%lg %lg %lg %lg %lg %lg %lg %lg %lg\n",injection->source[n]->t0, injection->source[n]->P, injection->source[n]->costheta, injection->source[n]->phi, injection->source[n]->map[0], injection->source[n]->map[1], injection->source[n]->r[0], injection->source[n]->r[1], injection->source[n]->r[2]);
+
+fclose(injfile);
   printf("SNR of injection = %g\n",snr(data,injection));
 
   /* Initialize parallel chains */
@@ -119,6 +124,9 @@ int main()
     model[ic] = malloc(sizeof(struct Model));
     initialize_model(model[ic],data->N,10);
 
+    copy_model(injection, model[ic], data->N);
+
+
     detector_proposal(data,injection,model[ic],r);
 
     for(n=0; n<model[ic]->N; n++)
@@ -144,7 +152,7 @@ int main()
   char filename[128];
 
   FILE *noisechain;
-  sprintf(filename,"noise.dat");
+  sprintf(filename,"noisechain.dat");
   noisechain = fopen(filename,"w");
   //fprintf(noisechain,"#dlogL mass dAi[x] dAth[x] dAi[y] dAth[y] dAi[z] dAth[z]\n");
 
@@ -216,7 +224,7 @@ int main()
     fprintf(noisechain,"%lg ",model[ic]->mass);
     for(i=0; i<3; i++)
     {
-      fprintf(noisechain,"%lg %lg ",(injection->Ais[i]-model[ic]->Ais[0])/injection->Ais[0],(injection->Ath[0]-model[ic]->Ath[i])/injection->Ath[0]);
+      fprintf(noisechain,"%lg %lg %lg ",(injection->Ais[i]-model[ic]->Ais[i])/injection->Ais[i],(injection->Ath[i]-model[ic]->Ath[i])/injection->Ath[i],(injection->Ars[i]-model[ic]->Ars[i])/injection->Ars[i]);
     }
     fprintf(noisechain,"\n");
 
@@ -225,7 +233,7 @@ int main()
       source = model[ic]->source[n];
       fprintf(impactchain,"%lg ",model[ic]->logL-injection->logL);
       fprintf(impactchain,"%i ",model[ic]->N);
-      fprintf(impactchain,"%lg %lg %lg %lg %lg %lg %i\n", source->t0,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face);
+      fprintf(impactchain,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", source->t0,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
     }
 
 

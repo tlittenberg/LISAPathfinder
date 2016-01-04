@@ -57,6 +57,7 @@ struct Model
   double mass; //mass
   double *Ais; //inertial sensing noise
   double *Ath; //thruster noise
+  double *Ars; //rotational sensing noise
   double logL; //likelihod
   double logP; //prior
 

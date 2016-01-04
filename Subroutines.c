@@ -126,7 +126,7 @@ void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed)
 
 
   //momentum and impact time
-  source->P  = gsl_ran_exponential(seed,10);
+  source->P  = gsl_ran_exponential(seed,20);
   source->t0 = gsl_rng_uniform(seed)*data->T;
   
 }
@@ -157,6 +157,7 @@ void detector_proposal(struct Data *data, struct Model *model, struct Model *tri
   {
     trial->Ais[i]  = model->Ais[i]  + gsl_ran_ugaussian(r)*2.0e-11; // m*Hz^-1/2
     trial->Ath[i]  = model->Ath[i]  + gsl_ran_ugaussian(r)*1.0e-10; // N*Hz^-1/2
+      trial->Ars[i]  = model->Ars[i]  + gsl_ran_ugaussian(r)*1.0e-9; // rad*Hz^-1/2
   }
 }
 
@@ -268,9 +269,9 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Source *source)
 
   P = malloc(DOF*sizeof(double));
 
-  P[0] = source->P*sintheta*cosphi;
-  P[1] = source->P*sintheta*sinphi;
-  P[2] = source->P*costheta;
+  P[0] = -source->P*sintheta*cosphi;
+  P[1] = -source->P*sintheta*sinphi;
+  P[2] = -source->P*costheta;
 
   if(DOF>3)
   {
@@ -285,7 +286,7 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Source *source)
 
   for(i=0; i<DOF; i++)
   {
-    SineGaussianFourier(h[i], source->t0, P[i], data->N, 0, data->T);
+    //SineGaussianFourier(h[i], source->t0, P[i], data->N, 0, data->T);
     for(n=0; n<data->N*2; n++)
     {
       h[i][n] = P[i]*h_norm[n];
@@ -545,8 +546,16 @@ double loglikelihood(struct Data *data, struct Model *model)
 
   for(k=0; k<DOF; k++)
   {
+    re = data->N;
+    im = re+1;
+
+    //printf("signal[%i]=%g\n",k,data->s[k][re]*data->s[k][re]+data->s[k][im]*data->s[k][im]);
+    //printf("data[%i]=%g\n",k,data->d[k][re]*data->d[k][re]+data->d[k][im]*data->d[k][im]);
+    //printf("residual[%i]=%g\n",k,r[k][re]*r[k][re]+r[k][im]*r[k][im]);
+    //printf("psd[%i]=%g\n",k,Snf[k][data->N/2]);
+
     logL += -0.5*fourier_nwip(data->imin, data->imax, r[k], r[k], Snf[k]) + loglike_normalization(data->imin, data->imax, Snf[k]);
-//    printf("DOF[%i] = %g\n",k,logL);
+    //printf("DOF[%i] = %g\n",k,logL);
   }
 
   for(k=0; k<DOF; k++)
@@ -571,7 +580,7 @@ double loglike_normalization(int imin, int imax, double *Sn)
 
   for(i=imin; i<imax; i++)
   {
-    norm -= log(Sn[i])/2.0;
+    norm -= log(Sn[i])*0.5;
   }
 
   return(norm);
@@ -621,7 +630,7 @@ void Sn(struct Data *data, struct Model *model, double **Snf)
       if(i<3)Snf[i][n] = InertialSensorNoise(data->f[n], model->Ais[i],model->mass) + ThrusterNoise(data->f[n],model->Ath[i]);
 
       //angular d.o.f.
-      else   Snf[i][n] = AngularSensingNoise(data->f[n], model->Ais[i-3],model->I) + ThrusterNoise(data->f[n],model->Ath[i-3]*0.5);
+      else   Snf[i][n] = AngularSensingNoise(data->f[n], model->Ars[i-3],model->I) + ThrusterNoise(data->f[n],model->Ath[i-3]*0.5);
     }
   }
 }
@@ -823,7 +832,7 @@ void simulate_noise(struct Data *data, struct Model *injection, gsl_rng *r)
   int i,k;
   int re,im;
 
-  FILE *dataFile = fopen("noise.dat","w");
+  FILE *dataFile = fopen("psd.dat","w");
 
   double **Snf = malloc(DOF*sizeof(double *));
   for(i=0; i<DOF; i++) Snf[i] = malloc(data->N*sizeof(double));
@@ -900,7 +909,9 @@ void copy_model(struct Model *model, struct Model *copy, int N)
   {
     copy->Ais[k]  = model->Ais[k];
     copy->Ath[k]  = model->Ath[k];
+    copy->Ars[k]  = model->Ars[k];
   }
+
 
   for(k=0; k<DOF; k++)
   {
@@ -928,6 +939,7 @@ void initialize_model(struct Model *model, int N, int D)
 
   model->Ais  = malloc(3*sizeof(double));
   model->Ath  = malloc(3*sizeof(double));
+  model->Ars  = malloc(3*sizeof(double));
 
   model->N = D;
   model->source = malloc(model->N*sizeof(struct Source*));
