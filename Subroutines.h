@@ -14,7 +14,7 @@
 /* ********************************************************************************** */
 
 #define PC 3.6e-8
-#define DOF 3
+//#define DOF 3
 
 struct Source
 {
@@ -74,8 +74,10 @@ struct Model
 struct Data
 {
   int N;
+   int DOF;
   int imin;
   int imax;
+   long seed;
   double T;
   double dt;
   double df;
@@ -98,6 +100,11 @@ struct PSDposterior
   double dx;
   double dy;
   double **histogram;
+};
+
+struct Flags
+{
+   int verbose;
 };
 
 
@@ -195,12 +202,12 @@ void simulate_noise(struct Data *data, struct Model *injection, gsl_rng *r);
 /*                                                                                    */
 /* ********************************************************************************** */
 
-void copy_source(struct Source *source, struct Source *copy);
+void copy_source(struct Source *source, struct Source *copy, int DOF);
 
-void copy_model(struct Model *model, struct Model *copy, int N);
+void copy_model(struct Model *model, struct Model *copy, int N, int DOF);
 
 void initialize_source(struct Source *source);
 
-void initialize_model(struct Model *model, int N, int D);
+void initialize_model(struct Model *model, int N, int D, int DOF);
 
 void free_source(struct Source *source);

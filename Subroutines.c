@@ -96,7 +96,7 @@ void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, 
   
 }
 
-void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed)
+void draw_impact_point_cube(struct Data *data, struct Source *source, gsl_rng *seed)
 {
   //pick where on the surface
   draw_face(source->map, seed);
@@ -129,6 +129,45 @@ void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed)
   source->P  = gsl_ran_exponential(seed,20);
   source->t0 = gsl_rng_uniform(seed)*data->T;
   
+}
+
+void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed)
+{
+   double a = 1.0;
+   double A = 2.*(1.0 + sqrt(2.))*a*a;
+
+   //pick a side, any side
+   source->face = (int)floor(10*gsl_rng_uniform(seed));
+   if(source->face == 9)
+   {
+      draw_octagon(source->r, seed);
+      source->r[2] = -fabs(source->r[2]);
+   }
+   else if(source->face == 8)
+   {
+      draw_octagon(source->r, seed);
+      source->r[2] = fabs(source->r[2]);
+   }
+   else if(gsl_rng_uniform(seed) < a*a/A)
+   {
+      draw_side(source->r, source->face, seed);
+   }
+   else source->face=-1;
+
+
+   //pick sky location
+   source->costheta = -1.0 + 2.0*gsl_rng_uniform(seed);
+   source->phi      = gsl_rng_uniform(seed)*2.0*M_PI;
+
+
+   //flag if face is not exposed to sky location
+   if(check_impact(source->costheta, source->phi, source->face)) source->face = -1;
+
+
+   //momentum and impact time
+   source->P  = gsl_ran_exponential(seed,20);
+   source->t0 = gsl_rng_uniform(seed)*data->T;
+   
 }
 
 void proposal(struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r, int *reject)
@@ -173,20 +212,22 @@ void impact_proposal(struct Data *data, struct Source *model, struct Source *tri
   //gaussian
   else
   {
+     draw_impact_point(data,trial,r);
+
     trial->P  = model->P  + gsl_ran_ugaussian(r)*1.0;
     trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.25;
 
     trial->phi      = model->phi + gsl_ran_ugaussian(r)*0.1;
     trial->costheta = model->costheta + gsl_ran_ugaussian(r)*0.1;
 
-    trial->map[0]   = model->map[0] + gsl_ran_ugaussian(r)*0.1;
-    trial->map[1]   = model->map[1] + gsl_ran_ugaussian(r)*0.1;
-
-    trial->face = which_face(trial->map[0],trial->map[1]);
+//    trial->map[0]   = model->map[0] + gsl_ran_ugaussian(r)*0.1;
+//    trial->map[1]   = model->map[1] + gsl_ran_ugaussian(r)*0.1;
+//
+//    trial->face = which_face(trial->map[0],trial->map[1]);
     if(check_impact(trial->costheta, trial->phi, trial->face)) trial->face = -1;
 
     //get 3D position
-    rotate_face_to_3D(trial->map, trial->r);
+//    rotate_face_to_3D(trial->map, trial->r);
 
     while(trial->phi > 2.0*M_PI) trial->phi -= 2.0*M_PI;
     while(trial->phi < 0)        trial->phi += 2.0*M_PI;
@@ -219,7 +260,7 @@ void dimension_proposal(struct Data *data, struct Model *model, struct Model *tr
     {
       //choose which to kill
       kill = (int)floor(gsl_rng_uniform(r)*(double)model->N);
-      for(n=kill; n<model->N-1; n++) copy_source(model->source[n+1], trial->source[n]);
+      for(n=kill; n<model->N-1; n++) copy_source(model->source[n+1], trial->source[n], data->DOF);
       trial->N = model->N-1;
     }
   }
@@ -267,13 +308,13 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Source *source)
   SineGaussianFourier(h_norm, source->t0, 1.0, data->N, 0, data->T);
 
 
-  P = malloc(DOF*sizeof(double));
+  P = malloc(data->DOF*sizeof(double));
 
   P[0] = -source->P*sintheta*cosphi;
   P[1] = -source->P*sintheta*sinphi;
   P[2] = -source->P*costheta;
 
-  if(DOF>3)
+  if(data->DOF>3)
   {
     double *L = malloc(3*sizeof(double));
     crossproduct(r,P,L);
@@ -284,7 +325,7 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Source *source)
     free(L);
   }
 
-  for(i=0; i<DOF; i++)
+  for(i=0; i<data->DOF; i++)
   {
     //SineGaussianFourier(h[i], source->t0, P[i], data->N, 0, data->T);
     for(n=0; n<data->N*2; n++)
@@ -470,14 +511,14 @@ void max_loglikelihood(struct Data *data, struct Model *model)
     // form up residual for next parameter set
     for(i=0; i<2*data->N; i++)
     {
-      for(k=0; k<DOF; k++) r[k][i] -= model->s[k][i];
+      for(k=0; k<data->DOF; k++) r[k][i] -= model->s[k][i];
     }
 
   }
 
-  for(i=0; i<DOF; i++)free(Snf[i]);
+  for(i=0; i<data->DOF; i++)free(Snf[i]);
   free(Snf);
-  for(k=0; k<DOF; k++)free(r[k]);
+  for(k=0; k<data->DOF; k++)free(r[k]);
   free(r);
 }
 
@@ -487,13 +528,13 @@ double loglikelihood(struct Data *data, struct Model *model)
   double logL = 0.0;
 
   // calculate noise model
-  double **Snf = malloc(DOF*sizeof(double *));
-  for(i=0; i<DOF; i++) Snf[i] = malloc(data->N*sizeof(double));
+  double **Snf = malloc(data->DOF*sizeof(double *));
+  for(i=0; i<data->DOF; i++) Snf[i] = malloc(data->N*sizeof(double));
   for(i=0; i<data->N; i++)data->f[i] = (double)i*data->df;
   Sn(data, model, Snf);
 
-  double **r = malloc(DOF*sizeof(double *));
-  for(k=0; k<DOF; k++) r[k] = malloc(data->N*2*sizeof(double));
+  double **r = malloc(data->DOF*sizeof(double *));
+  for(k=0; k<data->DOF; k++) r[k] = malloc(data->N*2*sizeof(double));
 
 
   model->logL = 0.0;
@@ -501,7 +542,7 @@ double loglikelihood(struct Data *data, struct Model *model)
   // initialize residual
   for(i=0; i<2*data->N; i++)
   {
-    for(k=0; k<DOF; k++)
+    for(k=0; k<data->DOF; k++)
     {
       r[k][i] = data->d[k][i];
     }
@@ -516,7 +557,7 @@ double loglikelihood(struct Data *data, struct Model *model)
     //bail if we are not on the surface of LPF
     if(model->source[n]->face==-1)
     {
-      for(k=0; k<DOF; k++)
+      for(k=0; k<data->DOF; k++)
       {
         free(r[k]);
         free(Snf[k]);
@@ -535,7 +576,7 @@ double loglikelihood(struct Data *data, struct Model *model)
       re = 2*i;
       im = re+1;
 
-      for(k=0; k<DOF; k++)
+      for(k=0; k<data->DOF; k++)
       {
         r[k][re] -= data->s[k][re];
         r[k][im] -= data->s[k][im];
@@ -544,7 +585,7 @@ double loglikelihood(struct Data *data, struct Model *model)
 
   }
 
-  for(k=0; k<DOF; k++)
+  for(k=0; k<data->DOF; k++)
   {
     re = data->N;
     im = re+1;
@@ -555,10 +596,10 @@ double loglikelihood(struct Data *data, struct Model *model)
     //printf("psd[%i]=%g\n",k,Snf[k][data->N/2]);
 
     logL += -0.5*fourier_nwip(data->imin, data->imax, r[k], r[k], Snf[k]) + loglike_normalization(data->imin, data->imax, Snf[k]);
-    //printf("DOF[%i] = %g\n",k,logL);
+    //printf("data->DOF[%i] = %g\n",k,logL);
   }
 
-  for(k=0; k<DOF; k++)
+  for(k=0; k<data->DOF; k++)
   {
     free(r[k]);
     free(Snf[k]);
@@ -622,7 +663,7 @@ double AngularSensingNoise(double f, double A, double I)
 void Sn(struct Data *data, struct Model *model, double **Snf)
 {
   int i,n;
-  for(i=0; i<DOF; i++)
+  for(i=0; i<data->DOF; i++)
   {
     for(n=0; n<data->N; n++)
     {
@@ -706,8 +747,8 @@ double snr(struct Data *data, struct Model *model)
 {
   int i,n,k;
 
-  double **Snf = malloc(DOF*sizeof(double *));
-  for(i=0; i<DOF; i++) Snf[i] = malloc(data->N*sizeof(double));
+  double **Snf = malloc(data->DOF*sizeof(double *));
+  for(i=0; i<data->DOF; i++) Snf[i] = malloc(data->N*sizeof(double));
 
   // calculate noise model
   Sn(data, model, Snf);
@@ -721,10 +762,10 @@ double snr(struct Data *data, struct Model *model)
     //SineGaussianFourier(model->s, model->source[n]->t0, model->source[n]->P, data->N, 0, data->T);
     LPFImpulseResponse(model->s, data, model->source[n]);
 
-    for(k=0; k<DOF; k++) SNR += fourier_nwip(data->imin, data->imax, model->s[k], model->s[k], Snf[k]);
+    for(k=0; k<data->DOF; k++) SNR += fourier_nwip(data->imin, data->imax, model->s[k], model->s[k], Snf[k]);
   }
 
-  for(i=0; i<DOF; i++)free(Snf[i]);
+  for(i=0; i<data->DOF; i++)free(Snf[i]);
   free(Snf);
 
   return sqrt(SNR);
@@ -780,7 +821,7 @@ void simulate_injection(struct Data *data, struct Model *injection)
       re = 2*i;
       im = re+1;
 
-      for(k=0; k<DOF; k++)
+      for(k=0; k<data->DOF; k++)
       {
         data->d[k][re] += data->s[k][re];
         data->d[k][im] += data->s[k][im];
@@ -799,7 +840,7 @@ void simulate_injection(struct Data *data, struct Model *injection)
     data->f[i] = (double)i*data->df;
 
     fprintf(dataFile,"%lg ",data->f[i]);
-    for(k=0; k<DOF; k++)fprintf(dataFile,"%lg ",data->d[k][re]*data->d[k][re] + data->d[k][im]*data->d[k][im]);
+    for(k=0; k<data->DOF; k++)fprintf(dataFile,"%lg ",data->d[k][re]*data->d[k][re] + data->d[k][im]*data->d[k][im]);
     fprintf(dataFile,"\n");
   }
 
@@ -818,7 +859,7 @@ void simulate_data(struct Data *data)
 
     data->f[i] = (double)i*data->df;
 
-    for(k=0; k<DOF; k++)
+    for(k=0; k<data->DOF; k++)
     {
       data->d[k][re] = data->n[k][re];
       data->d[k][im] = data->n[k][im];
@@ -834,8 +875,8 @@ void simulate_noise(struct Data *data, struct Model *injection, gsl_rng *r)
 
   FILE *dataFile = fopen("psd.dat","w");
 
-  double **Snf = malloc(DOF*sizeof(double *));
-  for(i=0; i<DOF; i++) Snf[i] = malloc(data->N*sizeof(double));
+  double **Snf = malloc(data->DOF*sizeof(double *));
+  for(i=0; i<data->DOF; i++) Snf[i] = malloc(data->N*sizeof(double));
 
   // calculate noise model
   for(i=0; i<data->N; i++)data->f[i] = (double)i*data->df;
@@ -849,7 +890,7 @@ void simulate_noise(struct Data *data, struct Model *injection, gsl_rng *r)
 
     fprintf(dataFile,"%lg  ",data->f[i]);
 
-    for(k=0; k<DOF; k++)
+    for(k=0; k<data->DOF; k++)
     {
       data->n[k][re] = 0.5*gsl_ran_ugaussian(r)*sqrt(Snf[k][i]);
       data->n[k][im] = 0.5*gsl_ran_ugaussian(r)*sqrt(Snf[k][i]);
@@ -861,7 +902,7 @@ void simulate_noise(struct Data *data, struct Model *injection, gsl_rng *r)
   
   fclose(dataFile);
 
-  for(i=0; i<DOF; i++)free(Snf[i]);
+  for(i=0; i<data->DOF; i++)free(Snf[i]);
   free(Snf);
 
 }
@@ -872,7 +913,7 @@ void simulate_noise(struct Data *data, struct Model *injection, gsl_rng *r)
 /*                                                                                    */
 /* ********************************************************************************** */
 
-void copy_source(struct Source *source, struct Source *copy)
+void copy_source(struct Source *source, struct Source *copy, int DOF)
 {
   copy->P        = source->P;
   copy->t0       = source->t0;
@@ -892,7 +933,7 @@ void copy_source(struct Source *source, struct Source *copy)
   }
 }
 
-void copy_model(struct Model *model, struct Model *copy, int N)
+void copy_model(struct Model *model, struct Model *copy, int N, int DOF)
 {
   copy->I    = model->I;
   copy->mass = model->mass;
@@ -902,7 +943,7 @@ void copy_model(struct Model *model, struct Model *copy, int N)
   copy->N = model->N;
 
   int n;
-  for(n=0; n<model->N; n++) copy_source(model->source[n],copy->source[n]);
+  for(n=0; n<model->N; n++) copy_source(model->source[n],copy->source[n], DOF);
 
   int i,k;
   for(k=0; k<3; k++)
@@ -931,7 +972,7 @@ void initialize_source(struct Source *source)
   source->omega = malloc(3*sizeof(double));
 }
 
-void initialize_model(struct Model *model, int N, int D)
+void initialize_model(struct Model *model, int N, int D, int DOF)
 {
   int i;
   model->s    = malloc(DOF*sizeof(double *));
@@ -960,7 +1001,7 @@ void free_source(struct Source *source)
   free(source);
 }
 
-void free_model(struct Model *model, int N, int D)
+void free_model(struct Model *model, int N, int D, int DOF)
 {
   int i;
 
