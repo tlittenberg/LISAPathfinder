@@ -293,19 +293,18 @@ fclose(injfile);
 
 
 
-
-
-
-
 static void print_usage() {
    printf("\n");
-   printf("Usage: Fuck you\n");
+   printf("Usage: \n");
    printf("REQUIRED:\n");
+   printf("  -d | --dof     : degrees of freedom (3 or 6) \n");
+   printf("  -s | --seed    : seed for all RNGs \n");
    printf("OPTIONAL:\n");
    printf("  -d | --dof     : degrees of freedom (6)   \n");
    printf("  -h | --help    : usage information        \n");
-   printf("  -s | --seed    : seed for all RNGs (1234) \n");
    printf("  -v | --verbose : enable verbose output    \n");
+   printf("EXAMPLE:\n");
+    printf("./mcmc --dof 6 --seed 1234 \n");
    printf("\n");
    exit(EXIT_FAILURE);
 }
