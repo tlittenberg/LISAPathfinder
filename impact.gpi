@@ -21,11 +21,13 @@ set cblabel 'logL'
 #11 spacecraft:  y
 #12 spacecraft:  z
 
-r = 5 # set radius of celestial sphere
+r = 3 # set radius of celestial sphere
 
 splot \
-	FILE every 10::500000 u 10:11:12:1 w d palette,\
-	FILE every 10::500000 u (r*sin(acos($7))*cos($8)):(r*sin(acos($7))*sin($8)):(r*$7) w p ls 7 ps 0.5 lc rgb "grey"
+	FILE every 10::500 u 10:11:12:1 w d palette,\
+	FILE every 10::500 u (r*sin(acos($7))*cos($8)):(r*sin(acos($7))*sin($8)):(r*$7) w p ls 7 ps 0.5 lc rgb "grey",\
+	'top.dat' w l lc rgb "black",\
+	'sides.dat' w l lc rgb "black"
 
 
 

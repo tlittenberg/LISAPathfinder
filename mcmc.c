@@ -20,13 +20,6 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags);
 int main(int argc, char **argv)
 {
 
-
-
-
-
-
-
-
   /* declare variables */
   int i,ic,n,mc;
   int accept;

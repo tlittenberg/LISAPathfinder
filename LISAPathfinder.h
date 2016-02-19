@@ -38,3 +38,12 @@ void draw_side(double *r, int face, gsl_rng *seed);
 int which_side(double *r);
 
 void write_octagon();
+
+
+void get_normal(double *n, int face);
+void get_edge(double *x0, double *xf, int face);
+
+void face2map(double *r, double *x);
+void map2face(double *r, double *x);
+
+

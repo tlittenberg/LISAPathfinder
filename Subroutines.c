@@ -153,6 +153,9 @@ void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed)
       draw_side(source->r, source->face, seed);
    }
    else source->face=-1;
+    
+    //map side to x-y plane
+    face2map(source->r, source->map);
 
 
    //pick sky location
@@ -595,7 +598,7 @@ double loglikelihood(struct Data *data, struct Model *model)
     //printf("residual[%i]=%g\n",k,r[k][re]*r[k][re]+r[k][im]*r[k][im]);
     //printf("psd[%i]=%g\n",k,Snf[k][data->N/2]);
 
-    logL += -0.5*fourier_nwip(data->imin, data->imax, r[k], r[k], Snf[k]) + loglike_normalization(data->imin, data->imax, Snf[k]);
+      logL += -0.5*fourier_nwip(data->imin, data->imax, r[k], r[k], Snf[k]) + loglike_normalization(data->imin, data->imax, Snf[k]);
     //printf("data->DOF[%i] = %g\n",k,logL);
   }
 
