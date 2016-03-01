@@ -193,7 +193,7 @@ fclose(injfile);
         copy_model(model[index[ic]], trial, data->N, data->DOF);
 
         //choose new parameters for y
-        proposal(data, model[index[ic]], trial, r, &reject);
+        proposal(flags, data, model[index[ic]], trial, r, &reject);
 
         //compute maximized likelihood
         //if(mc<BURNIN) max_loglikelihood(data, trial);
@@ -296,7 +296,7 @@ static void print_usage() {
    printf("  -d | --dof     : degrees of freedom (3 or 6) \n");
    printf("  -s | --seed    : seed for all RNGs \n");
    printf("OPTIONAL:\n");
-   printf("  -d | --dof     : degrees of freedom (6)   \n");
+   printf("  -f | --fixd    : fixed dimension (no RJ)  \n");
    printf("  -h | --help    : usage information        \n");
    printf("  -p | --prior   : sample prior             \n");
    printf("  -v | --verbose : enable verbose output    \n");
@@ -314,12 +314,14 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
    data->seed = 1234;
    flags->verbose = 0;
     flags->prior = 0;
+  flags->rj = 1;
 
    if(argc==1) print_usage();
 
    //Specifying the expected options
    static struct option long_options[] = {
       {"dof",     required_argument, 0,  'd' },
+      {"fixd",    no_argument,       0,  'f' },
       {"help",    no_argument,       0,  'h' },
       {"seed",    required_argument, 0,  's' },
       {"verbose", no_argument,       0,  'v' },
@@ -336,6 +338,8 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
       switch (opt) {
          case 'd' : data->DOF = atoi(optarg);
             break;
+        case 'f' : flags->rj = 0;
+          break;
          case 'h' :
             print_usage();
             exit(EXIT_FAILURE);

@@ -175,16 +175,15 @@ void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed)
   
 }
 
-void proposal(struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r, int *reject)
+void proposal(struct Flags *flags, struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r, int *reject)
 {
   int n;
   
-  
-  // Always update spacecraft parameters
+  //Always update spacecraft parameters
   detector_proposal(data, model, trial, r);
   
   //MCMC proposal
-  if(gsl_rng_uniform(r)<1.9)
+  if(gsl_rng_uniform(r)<0.99 || !flags->rj)
   {
     for(n=0; n<model->N; n++) impact_proposal(data, model->source[n], trial->source[n], r);
   }

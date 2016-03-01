@@ -106,6 +106,7 @@ struct Flags
 {
    int verbose;
     int prior;
+  int rj;
 };
 
 
@@ -117,7 +118,7 @@ struct Flags
 
 void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, int mc);
 
-void proposal(struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r, int *reject);
+void proposal(struct Flags *flags, struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r, int *reject);
 
 void dimension_proposal(struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r, int Nmax, int *test);
 
