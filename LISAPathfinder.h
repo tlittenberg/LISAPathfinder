@@ -35,6 +35,7 @@ int check_impact(double costheta, double phi, int face);
 
 void draw_octagon(double *r, gsl_rng *seed);
 void draw_side(double *r, int face, gsl_rng *seed);
+int check_side(double *r);
 int which_side(double *r);
 
 void write_octagon();

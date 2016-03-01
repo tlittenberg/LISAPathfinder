@@ -99,7 +99,7 @@ int main(int argc, char **argv)
   simulate_noise(data, injection, r);
   simulate_data(data);
   simulate_injection(data,injection);
-  injection->logL = loglikelihood(data, injection);
+  injection->logL = loglikelihood(data, injection, flags);
 
   printf("Injected parameters:   \n");
   FILE *injfile = fopen("injection.dat","w");
@@ -148,7 +148,7 @@ fclose(injfile);
     }
 
     logprior(data, model[ic], injection);
-    model[ic]->logL = loglikelihood(data, model[ic]);
+    model[ic]->logL = loglikelihood(data, model[ic], flags);
   }
 
   /* set up distribution */
@@ -197,12 +197,11 @@ fclose(injfile);
 
         //compute maximized likelihood
         //if(mc<BURNIN) max_loglikelihood(data, trial);
-
         if(reject) continue;
         else
         {
           //compute new likelihood
-          trial->logL = loglikelihood(data, trial);
+          trial->logL = loglikelihood(data, trial, flags);
 
           //compute new prior
           logprior(data, trial, injection);
@@ -210,7 +209,9 @@ fclose(injfile);
           //compute Hastings ratio
           H     = (trial->logL - model[index[ic]]->logL)/temp[index[ic]] + trial->logP - model[index[ic]]->logP;
           alpha = log(gsl_rng_uniform(r));
-
+          
+          //printf("H=%g, logLy=%g, logLx=%g\n",H,trial->logL,model[index[ic]]->logL);
+          
           //adopt new position w/ probability H
           if(H>alpha)
           {
@@ -238,25 +239,27 @@ fclose(injfile);
       fprintf(noisechain,"%lg %lg %lg ",(injection->Ais[i]-model[ic]->Ais[i])/injection->Ais[i],(injection->Ath[i]-model[ic]->Ath[i])/injection->Ath[i],(injection->Ars[i]-model[ic]->Ars[i])/injection->Ars[i]);
     }
     fprintf(noisechain,"\n");
-
+    
     for(n=0; n<model[ic]->N; n++)
     {
       source = model[ic]->source[n];
+      face2map(source->r,source->map);
+      which_face_r(source->r);
       fprintf(impactchain,"%lg ",model[ic]->logL-injection->logL);
       fprintf(impactchain,"%i ",model[ic]->N);
       fprintf(impactchain,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", source->t0,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
+    }fflush(impactchain);
+    
+    if(flags->verbose)
+    {
+      for(n=0; n<model[ic]->N; n++)
+      {
+        source = model[ic]->source[n];
+        fprintf(stdout,"%lg ",model[ic]->logL-injection->logL);
+        fprintf(stdout,"%i ",model[ic]->N);
+        fprintf(stdout,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", source->t0,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
+      }
     }
-
-     if(flags->verbose)
-     {
-        for(n=0; n<model[ic]->N; n++)
-        {
-           source = model[ic]->source[n];
-           fprintf(stdout,"%lg ",model[ic]->logL-injection->logL);
-           fprintf(stdout,"%i ",model[ic]->N);
-           fprintf(stdout,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", source->t0,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
-        }
-     }
 
     //parallel tempering
     for(ic=0; ic<NC; ic++) fprintf(logLchain,"%lg ",model[index[ic]]->logL-injection->logL);
@@ -295,9 +298,10 @@ static void print_usage() {
    printf("OPTIONAL:\n");
    printf("  -d | --dof     : degrees of freedom (6)   \n");
    printf("  -h | --help    : usage information        \n");
+   printf("  -p | --prior   : sample prior             \n");
    printf("  -v | --verbose : enable verbose output    \n");
    printf("EXAMPLE:\n");
-    printf("./mcmc --dof 6 --seed 1234 \n");
+   printf("./mcmc --dof 6 --seed 1234 \n");
    printf("\n");
    exit(EXIT_FAILURE);
 }
@@ -309,6 +313,7 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
    data->DOF = 6;
    data->seed = 1234;
    flags->verbose = 0;
+    flags->prior = 0;
 
    if(argc==1) print_usage();
 
@@ -318,6 +323,7 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
       {"help",    no_argument,       0,  'h' },
       {"seed",    required_argument, 0,  's' },
       {"verbose", no_argument,       0,  'v' },
+      {"prior",   no_argument,       0,  'p' },
       {0,         0,                 0,   0  }
    };
 
@@ -334,6 +340,8 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
             print_usage();
             exit(EXIT_FAILURE);
             break;
+         case 'p' : flags->prior = 1;
+              break;
          case 's' : data->seed = atoi(optarg);
             break;
          case 'v' : flags->verbose = 1;

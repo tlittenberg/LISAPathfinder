@@ -105,6 +105,7 @@ struct PSDposterior
 struct Flags
 {
    int verbose;
+    int prior;
 };
 
 
@@ -150,7 +151,7 @@ void recursive_phase_evolution(double dre, double dim, double *cosPhase, double 
 
 void max_loglikelihood(struct Data *data, struct Model *model);
 
-double loglikelihood(struct Data *data, struct Model *model);
+double loglikelihood(struct Data *data, struct Model *model, struct Flags *flags);
 
 double loglike_normalization(int imin, int imax, double *Sn);
 
