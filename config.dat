@@ -1,0 +1,51 @@
+% Configuration file for MCMC LPF Micrometeorite code
+% Date written 2016-03-02 06:21:40
+% Spacecraft Geometry
+SC_H, 8.315000e-01, m, Height of spacecraft
+SC_BOT_CORNER_1_X, -9.260000e-01, m, x coordinate of spacecraft bottom deck corner 1
+SC_BOT_CORNER_1_Y, -2.168000e-01, m, y coordinate of spacecraft bottom deck corner 1
+SC_BOT_CORNER_2_X, -9.260000e-01, m, x coordinate of spacecraft bottom deck corner 2
+SC_BOT_CORNER_2_Y, 2.048000e-01, m, y coordinate of spacecraft bottom deck corner 2
+SC_BOT_CORNER_3_X, -5.263000e-01, m, x coordinate of spacecraft bottom deck corner 3
+SC_BOT_CORNER_3_Y, 8.970000e-01, m, y coordinate of spacecraft bottom deck corner 3
+SC_BOT_CORNER_4_X, 5.163000e-01, m, x coordinate of spacecraft bottom deck corner 4
+SC_BOT_CORNER_4_Y, 8.970000e-01, m, y coordinate of spacecraft bottom deck corner 4
+SC_BOT_CORNER_5_X, 9.160000e-01, m, x coordinate of spacecraft bottom deck corner 5
+SC_BOT_CORNER_5_Y, 2.048000e-01, m, y coordinate of spacecraft bottom deck corner 5
+SC_BOT_CORNER_6_X, 9.160000e-01, m, x coordinate of spacecraft bottom deck corner 6
+SC_BOT_CORNER_6_Y, -2.168000e-01, m, y coordinate of spacecraft bottom deck corner 6
+SC_BOT_CORNER_7_X, 5.163000e-01, m, x coordinate of spacecraft bottom deck corner 7
+SC_BOT_CORNER_7_Y, -9.090000e-01, m, y coordinate of spacecraft bottom deck corner 7
+SC_BOT_CORNER_8_X, -5.263000e-01, m, x coordinate of spacecraft bottom deck corner 8
+SC_BOT_CORNER_8_Y, -9.090000e-01, m, y coordinate of spacecraft bottom deck corner 8
+EOM_RB_X, 5.000000e-03, m, X of S/C CoM in M Frame => this defines the B frame
+EOM_RB_Y, 6.000000e-03, m, Y of S/C CoM in M Frame => this defines the B frame
+EOM_RB_Z, 4.700000e-01, m, Z of S/C CoM in M Frame => this defines the B frame
+% Housing 1 Geometry
+EOM_H1SC_X, 1.880000e-01, m, X of housing 1
+EOM_H1SC_Y, 0.000000e+00, m, Y of housing 1
+EOM_H1SC_Z, 6.093000e-01, m, Z of housing 1
+% Housing 2 Geometry
+EOM_H2SC_X, -1.880000e-01, m, X of housing 2
+EOM_H2SC_Y, 0.000000e+00, m, Y of housing 2
+EOM_H2SC_Z, 6.093000e-01, m, Z of housing 2
+% Spacecraft Mass Properties
+EOM_SC_M, 4.227000e+02, kg, SC mass
+EOM_SC_IH1_XX, 1.173278e+02, kg m^(2), XX component of spacecraft moment of inertia tensor about H1
+EOM_SC_IH1_XY, 4.768056e-01, kg m^(2), XY component of spacecraft moment of inertia tensor about H1
+EOM_SC_IH1_XZ, -9.782081e+00, kg m^(2), XZ component of spacecraft moment of inertia tensor about H1
+EOM_SC_IH1_YX, 4.768056e-01, kg m^(2), YX component of spacecraft moment of inertia tensor about H1
+EOM_SC_IH1_YY, 1.386731e+02, kg m^(2), YY component of spacecraft moment of inertia tensor about H1
+EOM_SC_IH1_YZ, 1.545307e+00, kg m^(2), YZ component of spacecraft moment of inertia tensor about H1
+EOM_SC_IH1_ZX, -9.782081e+00, kg m^(2), ZX component of spacecraft moment of inertia tensor about H1
+EOM_SC_IH1_ZY, 1.545307e+00, kg m^(2), ZY component of spacecraft moment of inertia tensor about H1
+EOM_SC_IH1_ZZ, 2.058452e+02, kg m^(2), ZZ component of spacecraft moment of inertia tensor about H1
+EOM_SC_IH2_XX, 1.173278e+02, kg m^(2), XX component of spacecraft moment of inertia tensor about H2
+EOM_SC_IH2_XY, -4.768056e-01, kg m^(2), XY component of spacecraft moment of inertia tensor about H2
+EOM_SC_IH2_XZ, 1.235759e+01, kg m^(2), XZ component of spacecraft moment of inertia tensor about H2
+EOM_SC_IH2_YX, -4.768056e-01, kg m^(2), YX component of spacecraft moment of inertia tensor about H2
+EOM_SC_IH2_YY, 1.402624e+02, kg m^(2), YY component of spacecraft moment of inertia tensor about H2
+EOM_SC_IH2_YZ, 1.545307e+00, kg m^(2), YZ component of spacecraft moment of inertia tensor about H2
+EOM_SC_IH2_ZX, 1.235759e+01, kg m^(2), ZX component of spacecraft moment of inertia tensor about H2
+EOM_SC_IH2_ZY, 1.545307e+00, kg m^(2), ZY component of spacecraft moment of inertia tensor about H2
+EOM_SC_IH2_ZZ, 2.074346e+02, kg m^(2), ZZ component of spacecraft moment of inertia tensor about H2
