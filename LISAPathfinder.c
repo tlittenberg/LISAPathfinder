@@ -719,14 +719,14 @@ void draw_octagon(double *r, gsl_rng *seed)
   {
     x = gsl_rng_uniform(seed)*D/2.0;
     y = gsl_rng_uniform(seed)*D/2.0;
-    z = a/2.0;
+    z = a;
     
     if(y<-x+0.5*(a+D)) pass = 1;
   }
   
   
   int i;
-  for(i=0; i<3; i++)
+  for(i=0; i<2; i++)
   {
     q[i] = 1.0;
     if(gsl_rng_uniform(seed)<0.5)q[i] *= -1.0;
@@ -735,19 +735,12 @@ void draw_octagon(double *r, gsl_rng *seed)
   r[0]=q[0]*x;
   r[1]=q[1]*y;
   r[2]=q[2]*z;
-  
-  
+
+
 }
 
 void draw_side(double *r, int face, gsl_rng *seed)
 {
-  
-  double a = 1.0;
-  double D = a*(1.0 + sqrt(2.0));
-  
-  //everything is 1/2
-  a = a/2.0;
-  D = D/2.0;
   
   double *x0,*xf;
   x0 = malloc(3*sizeof(double));
@@ -786,8 +779,8 @@ int which_face_r(double *r)
   double nk_max = -1.0;
   double a = 1.0;
   
-  if(r[2]>=a/2)        face = 9;
-  else if (r[2]<=-a/2) face = 8;
+  if(r[2]>=a)       face = 9;
+  else if (r[2]<=0) face = 8;
   else
   {
     
@@ -820,71 +813,71 @@ void write_octagon()
   D/=2.0;
   FILE *out;
   //draw bottom
-  out = fopen("bottom.dat","w");
-  fprintf(out,"%lg %lg %lg\n",D,a,-a);
-  fprintf(out,"%lg %lg %lg\n",a,D,-a);
-  fprintf(out,"%lg %lg %lg\n",-a,D,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",D,a,-a);
+  out = fopen("bottom_temp.dat","w");
+  fprintf(out,"%lg %lg %lg\n",D,a,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,D,0.0);
+  fprintf(out,"%lg %lg %lg\n",-a,D,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",D,a,0.0);
   fclose(out);
   
   //draw top
-  out = fopen("top.dat","w");
-  fprintf(out,"%lg %lg %lg\n",D,a,a);
-  fprintf(out,"%lg %lg %lg\n",a,D,a);
-  fprintf(out,"%lg %lg %lg\n",-a,D,a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",D,a,a);
+  out = fopen("top_temp.dat","w");
+  fprintf(out,"%lg %lg %lg\n",D,a,2*a);
+  fprintf(out,"%lg %lg %lg\n",a,D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,a,2*a);
   fclose(out);
   
   //draw sides
-  out = fopen("sides.dat","w");
+  out = fopen("sides_temp.dat","w");
   //all the way around the bottom
-  fprintf(out,"%lg %lg %lg\n",D,a,-a);
-  fprintf(out,"%lg %lg %lg\n",a,D,-a);
-  fprintf(out,"%lg %lg %lg\n",-a,D,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",D,a,-a);
+  fprintf(out,"%lg %lg %lg\n",D,a,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,D,0.0);
+  fprintf(out,"%lg %lg %lg\n",-a,D,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",D,a,0.0);
   //step up
-  fprintf(out,"%lg %lg %lg\n",D,a,a);
+  fprintf(out,"%lg %lg %lg\n",D,a,2*a);
   //all the way around the top
-  fprintf(out,"%lg %lg %lg\n",a,D,a);
-  fprintf(out,"%lg %lg %lg\n",-a,D,a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",D,a,a);
-  fprintf(out,"%lg %lg %lg\n",a,D,a);
+  fprintf(out,"%lg %lg %lg\n",a,D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,a,2*a);
+  fprintf(out,"%lg %lg %lg\n",a,D,2*a);
   //step down
-  fprintf(out,"%lg %lg %lg\n",a,D,-a);
+  fprintf(out,"%lg %lg %lg\n",a,D,0.0);
   //work your way around the sides
-  fprintf(out,"%lg %lg %lg\n",-a,D,-a);
-  fprintf(out,"%lg %lg %lg\n",-a,D,a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",D,a,-a);
+  fprintf(out,"%lg %lg %lg\n",-a,D,0.0);
+  fprintf(out,"%lg %lg %lg\n",-a,D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",D,a,0.0);
   
 }
 
@@ -899,6 +892,8 @@ void get_normal(double *n, int face)
   /************************************************/
   
   double sq2 = 1.0/sqrt(2.0);
+  double e1 = 0.865769;
+  double e2 = 0.500444
   
   switch(face)
   {
@@ -912,8 +907,8 @@ void get_normal(double *n, int face)
       
     case 1:
       
-      n[0] =  sq2;
-      n[1] =  sq2;
+      n[0] =  e1;
+      n[1] =  e2;
       n[2] =  0.;
       
       break;
@@ -928,8 +923,8 @@ void get_normal(double *n, int face)
       
     case 3:
       
-      n[0] = -sq2;
-      n[1] = sq2;
+      n[0] = -e1;
+      n[1] = e2;
       n[2] =  0.;
       
       break;
@@ -945,8 +940,8 @@ void get_normal(double *n, int face)
       
     case 5:
       
-      n[0] = -sq2;
-      n[1] = -sq2;
+      n[0] = -e1;
+      n[1] = -e2;
       n[2] =  0.;
       break;
       
@@ -959,8 +954,8 @@ void get_normal(double *n, int face)
       
     case 7:
       
-      n[0] =  sq2;
-      n[1] =  -sq2;
+      n[0] =  e1;
+      n[1] =  -e2;
       n[2] =  0.;
       break;
       
@@ -997,80 +992,84 @@ void get_edge(double *x0, double *xf, int face)
   
   a = a/2.0;
   D = D/2.0;
-  
+
+  double d = 0.831;
+  double w = 1.842;
+  double h = 1.806;
+
   switch(face)
   {
     case 0:
-      x0[0] =  D;
-      x0[1] = -a;
-      x0[2] = -a;
+      x0[0] =  0.921;
+      x0[1] = -0.211;
+      x0[2] =  0;
       
-      xf[0] =  D;
-      xf[1] =  a;
-      xf[2] =  a;
+      xf[0] =  0.921;
+      xf[1] =  0.211;
+      xf[2] =  0.831;
       break;
     case 1:
-      x0[0] =  D;
-      x0[1] =  a;
-      x0[2] = -a;
+      x0[0] =  0.921;
+      x0[1] =  0.211;
+      x0[2] =  0;
       
-      xf[0] =  a;
-      xf[1] =  D;
-      xf[2] =  a;
+      xf[0] =  0.521;
+      xf[1] =  0.903;
+      xf[2] =  0.831;
       break;
     case 2:
-      x0[0] =  a;
-      x0[1] =  D;
-      x0[2] = -a;
+      x0[0] =  0.521;
+      x0[1] =  0.903;
+      x0[2] =  0;
       
-      xf[0] = -a;
-      xf[1] =  D;
-      xf[2] =  a;
+      xf[0] = -0.521;
+      xf[1] =  0.903;
+      xf[2] =  0.831;
       break;
     case 3:
-      x0[0] = -a;
-      x0[1] =  D;
-      x0[2] = -a;
+      x0[0] = -0.521;
+      x0[1] =  0.903;
+      x0[2] =  0;
       
-      xf[0] = -D;
-      xf[1] =  a;
-      xf[2] =  a;
+      xf[0] = -0.921;
+      xf[1] =  0.211;
+      xf[2] =  0.831;
       break;
     case 4:
-      x0[0] = -D;
-      x0[1] =  a;
-      x0[2] = -a;
+      x0[0] = -0.921;
+      x0[1] =  0.211;
+      x0[2] =  0;
       
-      xf[0] = -D;
-      xf[1] = -a;
-      xf[2] =  a;
+      xf[0] = -0.921;
+      xf[1] = -0.211;
+      xf[2] =  0.831;
       break;
     case 5:
-      x0[0] = -D;
-      x0[1] = -a;
-      x0[2] = -a;
+      x0[0] = -0.921;
+      x0[1] = -0.211;
+      x0[2] =  0;
       
-      xf[0] = -a;
-      xf[1] = -D;
-      xf[2] =  a;
+      xf[0] = -0.521;
+      xf[1] = -0.903;
+      xf[2] =  0.831;
       break;
     case 6:
-      x0[0] = -a;
-      x0[1] = -D;
-      x0[2] = -a;
+      x0[0] = -0.521;
+      x0[1] = -0.903;
+      x0[2] =  0;
       
-      xf[0] =  a;
-      xf[1] = -D;
-      xf[2] =  a;
+      xf[0] =  0.521;
+      xf[1] = -0.903;
+      xf[2] =  0.831;
       break;
     case 7:
-      x0[0] =  a;
-      x0[1] = -D;
-      x0[2] = -a;
+      x0[0] =  0.521;
+      x0[1] = -0.903;
+      x0[2] =  0;
       
-      xf[0] =  D;
-      xf[1] = -a;
-      xf[2] =  a;
+      xf[0] =  0.906;
+      xf[1] = -0.217;
+      xf[2] =  0.831;
       break;
     default:
       break;
@@ -1092,7 +1091,7 @@ void face2map(double *r, double *x)
   double D = a*(1.0 + sqrt(2.0));
   
   //get height on face
-  double z = r[2] - -a/2.0;
+  double z = r[2];
   
   int i;
   
@@ -1143,14 +1142,14 @@ void map2face(double *r, double *x)
   {
     r[0] = a + D - x[0];
     r[1] = x[1];
-    r[2] = a*0.5;
+    r[2] = a;
   }
   //bottom face is also a tad bit easier
   else if (fabs(x[0])<D*0.5 && fabs(x[1])<D*0.5 && fabs(x[0])+fabs(x[1])<0.5*(a+D))
   {
     r[0] = x[0];
     r[1] = x[1];
-    r[2] = -a*0.5;
+    r[2] = 0;
   }
   //the sides are really tricky
   else
@@ -1186,7 +1185,7 @@ void map2face(double *r, double *x)
     for(i=0; i<2; i++) r[i] = x[i] - zmag*n[i];
     
     //add rz
-    r[2] = zmag-a/2.0;
+    r[2] = zmag;
     
     free(x0);
     free(xf);

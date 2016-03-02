@@ -141,19 +141,20 @@ void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed)
   if(source->face == 9)
   {
     draw_octagon(source->r, seed);
-    source->r[2] = fabs(source->r[2]);
+    source->r[2] = source->r[2];
   }
   else if(source->face == 8)
   {
     draw_octagon(source->r, seed);
-    source->r[2] = -fabs(source->r[2]);
+    source->r[2] = 0.0;
   }
   else if(gsl_rng_uniform(seed) < a*a/A)
   {
     draw_side(source->r, source->face, seed);
   }
   else source->face=-1;
-  
+
+
   //printf("trial side=%i ",source->face);
   //map side to x-y plane
   if(source->face > -1) face2map(source->r, source->map);
@@ -172,7 +173,7 @@ void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed)
   //momentum and impact time
   source->P  = gsl_ran_exponential(seed,20);
   source->t0 = gsl_rng_uniform(seed)*data->T;
-  
+
 }
 
 void proposal(struct Flags *flags, struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r, int *reject)
