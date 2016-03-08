@@ -46,15 +46,10 @@ struct Source
   double beta;
   double *k;
 
-
-
 };
 
 struct Model
 {
-  /* Spacecraft parameters */
-  double I;    //moment of inertia (ultimately a tensor)
-  double mass; //mass
   double *Ais; //inertial sensing noise
   double *Ath; //thruster noise
   double *Ars; //rotational sensing noise
@@ -71,6 +66,20 @@ struct Model
   double **s;
 };
 
+struct Spacecraft
+{
+  /* Spacecraft parameters */
+  double **R;        //position of proof masses
+  double **x;        //position of spacecraft corners
+  double ***I;       //moment of inertia (ultimately a tensor)
+  double ***invI;    //inverse moment of inertia (ultimately a tensor)
+  double M;          //mass
+  double W;          //spacecraft width  (x-direction, m)
+  double D;          //spacecraft depth  (y-direction, m)
+  double H;          //spacecraft height (z-direciton, m)
+
+};
+
 struct Data
 {
   int N;
@@ -78,6 +87,7 @@ struct Data
   int imin;
   int imax;
    long seed;
+  long nseed;
   double T;
   double dt;
   double df;
@@ -118,15 +128,15 @@ struct Flags
 
 void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, int mc);
 
-void proposal(struct Flags *flags, struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r, int *reject);
+void proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int *reject);
 
-void dimension_proposal(struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r, int Nmax, int *test);
+void dimension_proposal(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int Nmax, int *test);
 
 void detector_proposal(struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r);
 
-void impact_proposal(struct Data *data, struct Source *model, struct Source *trial, gsl_rng *r);
+void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *model, struct Source *trial, gsl_rng *r);
 
-void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed);
+void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source *source, gsl_rng *seed);
 
 void logprior(struct Data *data, struct Model *model, struct Model *injection);
 
@@ -138,7 +148,7 @@ double log_mass_prior(double m0, double m);
 /*                                                                                    */
 /* ********************************************************************************** */
 
-void LPFImpulseResponse(double **h, struct Data *data, struct Source *source);
+void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, struct Source *source);
 
 void SineGaussianFourier(double *hs, double t0, double P, int N, int flag, double Tobs);
 
@@ -150,9 +160,9 @@ void recursive_phase_evolution(double dre, double dim, double *cosPhase, double 
 /*                                                                                    */
 /* ********************************************************************************** */
 
-void max_loglikelihood(struct Data *data, struct Model *model);
+void max_loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *model);
 
-double loglikelihood(struct Data *data, struct Model *model, struct Flags *flags);
+double loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Flags *flags);
 
 double loglike_normalization(int imin, int imax, double *Sn);
 
@@ -168,11 +178,11 @@ double AngularSensingNoise(double f, double A, double I);
 
 double ThrusterNoise(double f, double A);
 
-void Sn(struct Data *data, struct Model *model, double **Snf);
+void Sn(struct Data *data, struct Spacecraft *lpf, struct Model *model, double **Snf);
 
-void setup_psd_histogram(struct Data *data, struct Model *model, struct PSDposterior *psd);
+void setup_psd_histogram(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct PSDposterior *psd);
 
-void populate_psd_histogram(struct Data *data, struct Model *model, int MCMCSTEPS, struct PSDposterior *psd);
+void populate_psd_histogram(struct Data *data, struct Spacecraft *lpf, struct Model *model, int MCMCSTEPS, struct PSDposterior *psd);
 
 /* ********************************************************************************** */
 /*                                                                                    */
@@ -180,11 +190,15 @@ void populate_psd_histogram(struct Data *data, struct Model *model, int MCMCSTEP
 /*                                                                                    */
 /* ********************************************************************************** */
 
-double snr(struct Data *data, struct Model *model);
+double snr(struct Data *data, struct Spacecraft *lpf, struct Model *model);
 
 double fourier_nwip(int imin, int imax, double *a, double *b, double *Sn);
 
 void crossproduct(double *b, double *c, double *a);
+
+void matrix_multiply(double **A, double **B, double **C, int N);
+
+void matrix_invert(double **A, double **invA, int N);
 
 /* ********************************************************************************** */
 /*                                                                                    */
@@ -194,9 +208,9 @@ void crossproduct(double *b, double *c, double *a);
 
 void simulate_data(struct Data *data);
 
-void simulate_injection(struct Data *data, struct Model *injection);
+void simulate_injection(struct Data *data, struct Spacecraft *lpf, struct Model *injection);
 
-void simulate_noise(struct Data *data, struct Model *injection, gsl_rng *r);
+void simulate_noise(struct Data *data, struct Spacecraft *lpf, struct Model *injection, gsl_rng *r);
 
 /* ********************************************************************************** */
 /*                                                                                    */
@@ -213,3 +227,6 @@ void initialize_source(struct Source *source);
 void initialize_model(struct Model *model, int N, int D, int DOF);
 
 void free_source(struct Source *source);
+
+void initialize_spacecraft(struct Spacecraft *spacecraft);
+
