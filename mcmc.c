@@ -292,7 +292,7 @@ int main(int argc, char **argv)
             accept++;
           }
           source=trial->source[0];
-          if(trial->logL>-1e60)fprintf(stdout,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", trial->logL-injection->logL ,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
+//          if(trial->logL>-1e60)fprintf(stdout,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", trial->logL-injection->logL ,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
 
         }//Metropolis-Hastings
       }//Loop over inter-model updates
@@ -319,7 +319,7 @@ int main(int argc, char **argv)
     for(n=0; n<model[ic]->N; n++)
     {
       source = model[ic]->source[n];
-      face2map(source->r,source->map);
+      face2map(lpf, source->r,source->map);
       which_face_r(source->r);
       fprintf(impactchain,"%lg ",model[ic]->logL-injection->logL);
       fprintf(impactchain,"%i ",model[ic]->N);

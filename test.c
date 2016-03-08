@@ -29,7 +29,7 @@ int main()
 
 
 
-   double *r0 = malloc(3*sizeof(double));
+   //double *r0 = malloc(3*sizeof(double));
    int ii=0;
    double a = 1.0;
    double A = 2.*(1.0 + sqrt(2.))*a*a;
@@ -44,7 +44,7 @@ int main()
       if(face == 8 || face == 9)
       {
          //draw_r(r0, r);
-         draw_octagon(r0, r);
+         //draw_octagon(r0, r);
          //printf("%lg %lg %lg %i\n",r0[0],r0[1],r0[2],which_side(r0));
          flux[face]+=1.0/A;
       }

@@ -120,12 +120,12 @@ void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source 
   source->face = (int)floor(10*gsl_rng_uniform(seed));
   if(source->face == 9)
   {
-    draw_octagon(source->r, seed);
+    draw_octagon(lpf, source->r, seed);
     source->r[2] = source->r[2];
   }
   else if(source->face == 8)
   {
-    draw_octagon(source->r, seed);
+    draw_octagon(lpf, source->r, seed);
     source->r[2] = 0.0;
   }
   else if(gsl_rng_uniform(seed) < area[source->face]/area[9])
@@ -137,7 +137,7 @@ void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source 
 
   //printf("trial side=%i ",source->face);
   //map side to x-y plane
-  if(source->face > -1) face2map(source->r, source->map);
+  if(source->face > -1) face2map(lpf, source->r, source->map);
   
   
   //pick sky location
@@ -192,7 +192,7 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
 {
   
   //uniform
-  if(gsl_rng_uniform(r)<0.5)
+  if(gsl_rng_uniform(r)<1.5)
   {
     draw_impact_point(data,lpf,trial,r);
     
@@ -217,7 +217,7 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
 
     //printf("face=%i, r0={%g,%g,%g} ",trial->face, trial->r[0],trial->r[1], trial->r[2]);
 
-    face2map(model->r, model->map);
+    face2map(lpf, model->r, model->map);
 
     //printf("x={%g,%g} ",trial->map[0],trial->map[1]);
 
@@ -1134,7 +1134,7 @@ void initialize_spacecraft(struct Spacecraft *spacecraft)
   for(i=0; i<2; i++) spacecraft->R[i] = malloc(3*sizeof(double));
 
   /* Spacecraft M-frame corners */
-  spacecraft->x = malloc(8*sizeof(double *));
+  spacecraft->x = malloc(9*sizeof(double *));
   for(j=0; j<9; j++) spacecraft->x[j] = malloc(2*sizeof(double));
 
 }

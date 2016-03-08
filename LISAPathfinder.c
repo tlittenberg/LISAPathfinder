@@ -540,17 +540,25 @@ int check_impact(double costheta, double phi, int face)
 
 int check_side(struct Spacecraft *lpf, double *r)
 {
-
   //spacecraft dimensions
-//  double A = 0.831;
-  double D = 1.842;
-  double H = 1.806;
+  //double A = lpf->x[2][1] - lpf->x[2][0];
+  double D = lpf->x[0][0] - lpf->x[4][0];
+  double H = lpf->x[2][1] - lpf->x[6][1];
   
 
   double *x0 = malloc(3*sizeof(double));
   double *xf = malloc(3*sizeof(double));
   int face = which_face_r(r);
-  get_edge(lpf, x0, xf, face);
+
+  if(face<8)get_edge(lpf, x0, xf, face);
+  else
+  {
+    x0[0] =  lpf->x[1][0];//0.921;
+    x0[1] =  lpf->x[1][1];//
+    
+    xf[0] =  lpf->x[2][0];//0.521;
+    xf[1] =  lpf->x[2][1];//0.903;
+  }
 
   double m = -fabs((xf[1] - x0[1])/(xf[0] - x0[0]));
 
@@ -582,10 +590,10 @@ int check_side(struct Spacecraft *lpf, double *r)
     case 7:
       break;
     case 8:
-      if(fabs(r[0])>D*0.5 || fabs(r[1])>H*0.5 || fabs(r[1])<=m*(fabs(r[0])-x0[0]) + x0[1]) flag = 1;
+      if(fabs(r[0])>D*0.5 || fabs(r[1])>H*0.5 || fabs(r[1])-fabs(x0[1]) > m*(fabs(r[0])-fabs(x0[0])) ) flag = 1;
       break;
     case 9:
-      if(fabs(r[0])>D*0.5 || fabs(r[1])>H*0.5 || fabs(r[1])<=m*(fabs(r[0])-x0[0]) + x0[1]) flag = 1;
+      if(fabs(r[0])>D*0.5 || fabs(r[1])>H*0.5 || fabs(r[1])-fabs(x0[1]) > m*(fabs(r[0])-fabs(x0[0])) ) flag = 1;
       break;
     default:
       break;
@@ -598,11 +606,11 @@ int check_side(struct Spacecraft *lpf, double *r)
   return flag;
 }
 
-int which_side(double *r)
+int which_side(struct Spacecraft *lpf, double *r)
 {
-  double A = 0.831;
-//  double D = 1.842;
-//  double H = 1.806;
+  double A = lpf->x[2][1] - lpf->x[2][0];
+  //double D = lpf->x[0][0] - lpf->x[4][0];
+  //double H = lpf->x[2][1] - lpf->x[6][1];
 
   int i,face;
   double *n=malloc(3*sizeof(double));
@@ -644,23 +652,26 @@ int which_side(double *r)
 
 
 
-void draw_octagon(double *r, gsl_rng *seed)
+void draw_octagon(struct Spacecraft *lpf, double *r, gsl_rng *seed)
 {
 
-  double A = 0.831;
-  double D = 1.842;
-  double H = 1.806;
+  double A = lpf->H;
+  double D = lpf->W;//lpf->x[0][0] - lpf->x[4][0];
+  double H = lpf->D;//lpf->x[2][1] - lpf->x[6][1];
+
+//  lpf->W = lpf->x[0][0] - lpf->x[4][0];
+//  lpf->D = lpf->x[2][1] - lpf->x[6][1];
 
   //spacecraft dimensions
   //double a = 1.0;
   //double D = a*(1.0 + sqrt(2.0));
 
   double x0[2],xf[2];
-  x0[0] =  0.921;
-  x0[1] =  0.211;
+  x0[0] =  lpf->x[1][0];//0.921;
+  x0[1] =  lpf->x[1][1];//
 
-  xf[0] =  0.521;
-  xf[1] =  0.903;
+  xf[0] =  lpf->x[2][0];//0.521;
+  xf[1] =  lpf->x[2][1];//0.903;
 
   //line connecting
   // y - y0 = m*(x-x0)
@@ -749,9 +760,8 @@ int which_face_r(double *r)
   double *n=malloc(3*sizeof(double));
   double nk;
   double nk_max = -1.0;
-  double a = 0.831;
 
-  if(r[2]>=a)       face = 9;
+  if(r[2]>=SC_H)    face = 9;
   else if (r[2]<=0) face = 8;
   else
   {
@@ -963,16 +973,15 @@ void get_edge(struct Spacecraft *lpf, double *x0, double *xf, int face)
 //  double h = 1.806;
 
   int i;
-
-  if(face>-1)
+  if(face>-1 && face < 8)
   {
-  for(i=0; i<2; i++)
-  {
-    x0[i] = lpf->x[face][i];
-    xf[i] = lpf->x[face+1][i];
-  }
-  x0[2] = 0.0;
-  xf[2] = lpf->H;
+    for(i=0; i<2; i++)
+    {
+      x0[i] = lpf->x[face][i];
+      xf[i] = lpf->x[face+1][i];
+    }
+    x0[2] = 0.0;
+    xf[2] = lpf->H;
   }
   else
   {
@@ -1076,7 +1085,7 @@ void get_edge(struct Spacecraft *lpf, double *x0, double *xf, int face)
   
 }
 
-void face2map(double *r, double *x)
+void face2map(struct Spacecraft *lpf, double *r, double *x)
 {
   //which face of spacecraft was hit?
   int face = which_face_r(r);
@@ -1091,9 +1100,9 @@ void face2map(double *r, double *x)
   
   int i;
 
-  double A = 0.831;
-  double D = 1.842;
-//  double H = 1.806;
+  double A = lpf->x[2][1] - lpf->x[2][0];
+  double D = lpf->x[0][0] - lpf->x[4][0];
+  //double H = lpf->x[2][1] - lpf->x[6][1];
 
 
   
@@ -1139,11 +1148,11 @@ void map2face(struct Spacecraft *lpf, double *r, double *x)
   //double D = a*(1.0 + sqrt(2.0));
 
   double x0[2],xf[2];
-  x0[0] =  SC_BOT_CORNER_5_X;
-  x0[1] =  SC_BOT_CORNER_5_Y;
-
-  xf[0] =  SC_BOT_CORNER_4_X;
-  xf[1] =  SC_BOT_CORNER_4_Y;
+  x0[0] =  lpf->x[1][0];//0.921;
+  x0[1] =  lpf->x[1][1];//
+  
+  xf[0] =  lpf->x[2][0];//0.521;
+  xf[1] =  lpf->x[2][1];//0.903;
 
   //line connecting
   // y - y0 = m*(x-x0)
@@ -1152,9 +1161,9 @@ void map2face(struct Spacecraft *lpf, double *r, double *x)
   double m = (xf[1] - x0[1])/(xf[0] - x0[0]);
 
 
-  double A = 0.831;
-  double D = 1.842;
-  double H = 1.806;
+  double A = lpf->x[2][1] - lpf->x[2][0];
+  double D = lpf->x[0][0] - lpf->x[4][0];
+  double H = lpf->x[2][1] - lpf->x[6][1];
 
   //top face is way to the right, so that's easy
   if(x[0] > D/2.0 + A)
