@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_linalg.h>
+
 
 #include "Subroutines.h"
 #include "LISAPathfinder.h"
@@ -96,64 +99,42 @@ void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, 
   
 }
 
-void draw_impact_point_cube(struct Data *data, struct Source *source, gsl_rng *seed)
-{
-  //pick where on the surface
-  draw_face(source->map, seed);
-  
-  //pick sky location
-  source->costheta = -1.0 + 2.0*gsl_rng_uniform(seed);
-  source->phi      = gsl_rng_uniform(seed)*2.0*M_PI;
-  
-  //store incident face
-  source->face = which_face(source->map[0],source->map[1]);
-  
-  /*
-   //get angle w.r.t. normal
-   source->omega[0] = sin(acos(source->cosalpha))*cos(source->beta);
-   source->omega[1] = sin(acos(source->cosalpha))*sin(source->beta);
-   source->omega[2] = source->cosalpha;
-   
-   //get true source position
-   //rotate_sky_to_3D(source->omega, source->face, &source->costheta, &source->phi);
-   */
-  
-  //get 3D position
-  rotate_face_to_3D(source->map, source->r);
-  
-  //flag if face is not exposed to sky location
-  if(check_impact(source->costheta, source->phi, source->face)) source->face = -1;
-  
-  
-  //momentum and impact time
-  source->P  = gsl_ran_exponential(seed,20);
-  source->t0 = gsl_rng_uniform(seed)*data->T;
-  
-}
 
-void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed)
+void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source *source, gsl_rng *seed)
 {
-  double a = 1.0;
-  double A = 2.*(1.0 + sqrt(2.))*a*a;
-  
+//  double a = 1.0;
+//  double A = 2.*(1.0 + sqrt(2.))*a*a;
+  double area[10];
+  area[0] = 0.350682;
+  area[1] = 0.66421;
+  area[2] = 0.865902;
+  area[3] = 0.66421;
+  area[4] = 0.350682;
+  area[5] = 0.66421;
+  area[6] = 0.865902;
+  area[7] = 0.66421;
+  area[8] = 1.99823;
+  area[9] = 1.99823;
+
   //pick a side, any side
   source->face = (int)floor(10*gsl_rng_uniform(seed));
   if(source->face == 9)
   {
     draw_octagon(source->r, seed);
-    source->r[2] = fabs(source->r[2]);
+    source->r[2] = source->r[2];
   }
   else if(source->face == 8)
   {
     draw_octagon(source->r, seed);
-    source->r[2] = -fabs(source->r[2]);
+    source->r[2] = 0.0;
   }
-  else if(gsl_rng_uniform(seed) < a*a/A)
+  else if(gsl_rng_uniform(seed) < area[source->face]/area[9])
   {
-    draw_side(source->r, source->face, seed);
+    draw_side(lpf, source->r, source->face, seed);
   }
   else source->face=-1;
-  
+
+
   //printf("trial side=%i ",source->face);
   //map side to x-y plane
   if(source->face > -1) face2map(source->r, source->map);
@@ -162,7 +143,9 @@ void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed)
   //pick sky location
   source->costheta = -1.0 + 2.0*gsl_rng_uniform(seed);
   source->phi      = gsl_rng_uniform(seed)*2.0*M_PI;
-  
+//  source->costheta = -0.0763315;//-1.0 + 2.0*gsl_rng_uniform(seed);
+//  source->phi      = 3.43195;//gsl_rng_uniform(seed)*2.0*M_PI;
+
   
   //flag if face is not exposed to sky location
   if(check_impact(source->costheta, source->phi, source->face)) source->face = -1;
@@ -170,12 +153,13 @@ void draw_impact_point(struct Data *data, struct Source *source, gsl_rng *seed)
 
   
   //momentum and impact time
+  //printf("fudge\n");
   source->P  = gsl_ran_exponential(seed,20);
-  source->t0 = gsl_rng_uniform(seed)*data->T;
-  
+  source->t0 = 100.0 + 50*gsl_rng_uniform(seed);//*data->T;
+
 }
 
-void proposal(struct Flags *flags, struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r, int *reject)
+void proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int *reject)
 {
   int n;
   
@@ -185,68 +169,85 @@ void proposal(struct Flags *flags, struct Data *data, struct Model *model, struc
   //MCMC proposal
   if(gsl_rng_uniform(r)<0.99 || !flags->rj)
   {
-    for(n=0; n<model->N; n++) impact_proposal(data, model->source[n], trial->source[n], r);
+    for(n=0; n<model->N; n++) impact_proposal(data, lpf, model->source[n], trial->source[n], r);
   }
   //RJ proposal
-  else dimension_proposal(data, model, trial, r, 10, reject);
+  else dimension_proposal(data, lpf, model, trial, r, 10, reject);
   
 }
 
 void detector_proposal(struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r)
 {
   int i;
-  trial->mass = model->mass + gsl_ran_ugaussian(r)*1.0;     // kg
+  //trial->mass = model->mass + gsl_ran_ugaussian(r)*1.0;     // kg
   for(i=0; i<3; i++)
   {
-    trial->Ais[i]  = model->Ais[i]  + gsl_ran_ugaussian(r)*2.0e-11; // m*Hz^-1/2
-    trial->Ath[i]  = model->Ath[i]  + gsl_ran_ugaussian(r)*1.0e-10; // N*Hz^-1/2
-    trial->Ars[i]  = model->Ars[i]  + gsl_ran_ugaussian(r)*1.0e-9; // rad*Hz^-1/2
+    trial->Ais[i]  = model->Ais[i];//  + gsl_ran_ugaussian(r)*2.0e-11; // m*Hz^-1/2
+    trial->Ath[i]  = model->Ath[i];//  + gsl_ran_ugaussian(r)*1.0e-10; // N*Hz^-1/2
+    trial->Ars[i]  = model->Ars[i];//  + gsl_ran_ugaussian(r)*1.0e-9; // rad*Hz^-1/2
   }
 }
 
-void impact_proposal(struct Data *data, struct Source *model, struct Source *trial, gsl_rng *r)
+void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *model, struct Source *trial, gsl_rng *r)
 {
   
   //uniform
   if(gsl_rng_uniform(r)<0.5)
   {
-    draw_impact_point(data,trial,r);
+    draw_impact_point(data,lpf,trial,r);
     
   }
   //gaussian
   else
   {
-    trial->P  = model->P  + gsl_ran_ugaussian(r)*1.0;
-    trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.25;
+    trial->P  = model->P;//  + gsl_ran_ugaussian(r)*1.0;
+    trial->t0 = model->t0;// + gsl_ran_ugaussian(r)*0.25;
     
-    trial->phi      = model->phi + gsl_ran_ugaussian(r)*0.1;
-    trial->costheta = model->costheta + gsl_ran_ugaussian(r)*0.1;
+    trial->phi      = model->phi + gsl_ran_ugaussian(r)*0.01;
+    trial->costheta = model->costheta + gsl_ran_ugaussian(r)*0.01;
     
     //map to 2D
     trial->r[0] = model->r[0];
     trial->r[1] = model->r[1];
     trial->r[2] = model->r[2];
-    
+
+    model->face = which_face_r(trial->r);
+
     trial->face = model->face;
-    
+
+    //printf("face=%i, r0={%g,%g,%g} ",trial->face, trial->r[0],trial->r[1], trial->r[2]);
+
     face2map(model->r, model->map);
-    
+
+    //printf("x={%g,%g} ",trial->map[0],trial->map[1]);
+
     //perturb map coordinates
     trial->map[0] = model->map[0] + gsl_ran_ugaussian(r)*0.1;
     trial->map[1] = model->map[1] + gsl_ran_ugaussian(r)*0.1;
     
     //map back to 3D
-    map2face(trial->r, trial->map);
+    map2face(lpf, trial->r, trial->map);
     
     //TODO: gaussian proposal is not robust to changing faces
     trial->face = which_face_r(trial->r);
+
+    //printf("rf={%g,%g,%g} face=%i\n", trial->r[0],trial->r[1], trial->r[2],trial->face);
+
     int flag = 0;
     if(check_impact(trial->costheta, trial->phi, trial->face)) flag = 1;
-    if(trial->face!=model->face)                               flag = 2;
-    if(check_side(trial->r))                                   flag = 3;
+    else if(trial->face!=model->face)
+    {
+      flag = 2;
+//      printf("%i->%i\n",model->face,trial->face);
+//      printf("jump failed condition %i\n",flag);
+//      printf("   model face=%i, r0={%g,%g,%g}\n",model->face, model->r[0],model->r[1], model->r[2]);
+//      printf("   trial face=%i, r0={%g,%g,%g}\n",trial->face, trial->r[0],trial->r[1], trial->r[2]);
+
+    }
+    else if(check_side(lpf, trial->r))                                   flag = 3;
     if(flag>0)
     {
-      //printf("jump failed condition %i\n",flag);
+      //if(trial->face==1)printf("jump failed condition %i\n",flag);
       trial->face = -1;
     }
     //get 3D position
@@ -273,7 +274,7 @@ void impact_proposal(struct Data *data, struct Source *model, struct Source *tri
   
 }
 
-void dimension_proposal(struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r, int Nmax, int *test)
+void dimension_proposal(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int Nmax, int *test)
 {
   int n,kill;
   
@@ -283,7 +284,7 @@ void dimension_proposal(struct Data *data, struct Model *model, struct Model *tr
     if(model->N==Nmax) *test = 1;
     else
     {
-      draw_impact_point(data,trial->source[trial->N],r);
+      draw_impact_point(data,lpf,trial->source[trial->N],r);
       trial->N = model->N+1;
     }
   }
@@ -303,7 +304,7 @@ void dimension_proposal(struct Data *data, struct Model *model, struct Model *tr
 
 void logprior(struct Data *data, struct Model *model, struct Model *injection)
 {
-  model->logP = log_mass_prior(injection->mass,model->mass);
+  //model->logP = log_mass_prior(injection->mass,model->mass);
   
   int n;
   for(n=0; n<model->N; n++)
@@ -326,38 +327,51 @@ double log_mass_prior(double m0, double m)
 /*                                                                                    */
 /* ********************************************************************************** */
 
-void LPFImpulseResponse(double **h, struct Data *data, struct Source *source)
+void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, struct Source *source)
 {
-  int i,n;
+  int i,j,n;
   double *P;
   double *r = source->r;
-  
+  double *e = malloc(3*sizeof(double));
+  double *d = malloc(3*sizeof(double));
+  double *t = malloc(3*sizeof(double));
+
   double sinphi   = sin(source->phi);
   double cosphi   = cos(source->phi);
   double costheta = source->costheta;
   double sintheta = sin(acos(source->costheta));
   
   double *h_norm = malloc(data->N*2*sizeof(double));
-  
+
+
+  //calculate unit vector to source
+  e[0] = -sintheta*cosphi;
+  e[1] = -sintheta*sinphi;
+  e[2] = -costheta;
+
   //calculate normalized waveform
   SineGaussianFourier(h_norm, source->t0, 1.0, data->N, 0, data->T);
-  
-  
+
   P = malloc(data->DOF*sizeof(double));
   
-  P[0] = -source->P*sintheta*cosphi;
-  P[1] = -source->P*sintheta*sinphi;
-  P[2] = -source->P*costheta;
-  
+
+  for(i=0; i<3; i++) P[i] = e[i]*source->P;
+
   if(data->DOF>3)
   {
-    double *L = malloc(3*sizeof(double));
-    crossproduct(r,P,L);
-    P[3] = L[0];
-    P[4] = L[1];
-    P[5] = L[2];
-    
-    free(L);
+    //get vector from proof mass to impact location
+    for(i=0; i<3; i++) d[i] = r[i] - lpf->R[0][i];
+
+    //get torque direction about proof mass t = (r-R) x e
+    crossproduct(t,d,e);
+
+    //get angular acceleration omega = (I^-1)t
+    for(i=0; i<3; i++)
+    {
+      P[i+3] = 0.0;
+      for(j=0; j<3; j++) P[i+3] += t[j]*lpf->invI[0][i][j]*lpf->M*source->P;
+    }
+
   }
   
   for(i=0; i<data->DOF; i++)
@@ -371,6 +385,9 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Source *source)
   
   free(h_norm);
   free(P);
+  free(e);
+  free(d);
+  free(t);
 }
 
 void SineGaussianFourier(double *hs, double t0, double P, int N, int flag, double Tobs)
@@ -498,7 +515,7 @@ void recursive_phase_evolution(double dre, double dim, double *cosPhase, double 
 /*                                                                                    */
 /* ********************************************************************************** */
 
-void max_loglikelihood(struct Data *data, struct Model *model)
+void max_loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *model)
 {
   int i,k,n;
   
@@ -507,7 +524,7 @@ void max_loglikelihood(struct Data *data, struct Model *model)
   
   // calculate noise model
   for(i=0; i<data->N; i++)data->f[i] = (double)i*data->df;
-  Sn(data, model, Snf);
+  Sn(data, lpf, model, Snf);
   
   double **r = malloc(3*sizeof(double *));
   for(k=0; k<3; k++) r[k] = malloc(data->N*2*sizeof(double));
@@ -531,7 +548,7 @@ void max_loglikelihood(struct Data *data, struct Model *model)
   {
     // calculate signal model
     //SineGaussianFourier(model->s, model->source[n]->t0, model->source[n]->P, data->N, 0, data->T);
-    LPFImpulseResponse(model->s, data, model->source[n]);
+    LPFImpulseResponse(model->s, data, lpf, model->source[n]);
     
     
     // find maximum time shift
@@ -541,7 +558,7 @@ void max_loglikelihood(struct Data *data, struct Model *model)
     
     // re-calculate signal model
     //SineGaussianFourier(model->s, model->source[n]->t0, model->source[n]->P, data->N, 0, data->T);
-    LPFImpulseResponse(model->s, data, model->source[n]);
+    LPFImpulseResponse(model->s, data, lpf, model->source[n]);
     
     // form up residual for next parameter set
     for(i=0; i<2*data->N; i++)
@@ -557,7 +574,7 @@ void max_loglikelihood(struct Data *data, struct Model *model)
   free(r);
 }
 
-double loglikelihood(struct Data *data, struct Model *model, struct Flags *flags)
+double loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Flags *flags)
 {
   int i,k,n,re,im;
   double logL = 0.0;
@@ -566,7 +583,7 @@ double loglikelihood(struct Data *data, struct Model *model, struct Flags *flags
   double **Snf = malloc(data->DOF*sizeof(double *));
   for(i=0; i<data->DOF; i++) Snf[i] = malloc(data->N*sizeof(double));
   for(i=0; i<data->N; i++)data->f[i] = (double)i*data->df;
-  Sn(data, model, Snf);
+  Sn(data, lpf, model, Snf);
   
   double **r = malloc(data->DOF*sizeof(double *));
   for(k=0; k<data->DOF; k++) r[k] = malloc(data->N*2*sizeof(double));
@@ -604,7 +621,7 @@ double loglikelihood(struct Data *data, struct Model *model, struct Flags *flags
     }
     
     
-    LPFImpulseResponse(data->s, data, model->source[n]);
+    LPFImpulseResponse(data->s, data, lpf, model->source[n]);
     
     for(i=0; i<data->N; i++)
     {
@@ -689,7 +706,7 @@ double AngularSensingNoise(double f, double A, double I)
 }
 
 
-void Sn(struct Data *data, struct Model *model, double **Snf)
+void Sn(struct Data *data, struct Spacecraft *lpf, struct Model *model, double **Snf)
 {
   int i,n;
   for(i=0; i<data->DOF; i++)
@@ -697,23 +714,23 @@ void Sn(struct Data *data, struct Model *model, double **Snf)
     for(n=0; n<data->N; n++)
     {
       //linear d.o.f.
-      if(i<3)Snf[i][n] = InertialSensorNoise(data->f[n], model->Ais[i],model->mass) + ThrusterNoise(data->f[n],model->Ath[i]);
+      if(i<3)Snf[i][n] = InertialSensorNoise(data->f[n], model->Ais[i],lpf->M) + ThrusterNoise(data->f[n],model->Ath[i]);
       
       //angular d.o.f.
-      else   Snf[i][n] = AngularSensingNoise(data->f[n], model->Ars[i-3],model->I) + ThrusterNoise(data->f[n],model->Ath[i-3]*0.5);
+      else   Snf[i][n] = AngularSensingNoise(data->f[n], model->Ars[i-3],lpf->I[0][0][0]) + ThrusterNoise(data->f[n],model->Ath[i-3]*0.5);
     }
   }
 }
 
 
-void setup_psd_histogram(struct Data *data, struct Model *model, struct PSDposterior *psd)
+void setup_psd_histogram(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct PSDposterior *psd)
 {
   int i,j;
   
   /* Create arrays to compute PSD 2D histogram */
   double **Snf = malloc(3*sizeof(double *));
   for(i=0; i<3; i++) Snf[i] = malloc(data->N*sizeof(double));
-  Sn(data, model, Snf);
+  Sn(data, lpf, model, Snf);
   double logSn;
   double Snfmin =  1.0e60;
   double Snfmax = -1.0e60;
@@ -748,7 +765,7 @@ void setup_psd_histogram(struct Data *data, struct Model *model, struct PSDposte
   
 }
 
-void populate_psd_histogram(struct Data *data, struct Model *model, int MCMCSTEPS, struct PSDposterior *psd)
+void populate_psd_histogram(struct Data *data, struct Spacecraft *lpf, struct Model *model, int MCMCSTEPS, struct PSDposterior *psd)
 {
   int i,iy;
   double f;
@@ -758,7 +775,7 @@ void populate_psd_histogram(struct Data *data, struct Model *model, int MCMCSTEP
   {
     f = pow(10,psd->xmin+i*psd->dx);
     
-    logSn = log10(sqrt(InertialSensorNoise(f, model->Ais[0],model->mass) + ThrusterNoise(f,model->Ath[0])));
+    logSn = log10(sqrt(InertialSensorNoise(f, model->Ais[0],lpf->M) + ThrusterNoise(f,model->Ath[0])));
     
     iy = (int)floor((logSn-psd->ymin)/psd->dy);
     
@@ -772,7 +789,7 @@ void populate_psd_histogram(struct Data *data, struct Model *model, int MCMCSTEP
 /*                                                                                    */
 /* ********************************************************************************** */
 
-double snr(struct Data *data, struct Model *model)
+double snr(struct Data *data, struct Spacecraft *lpf, struct Model *model)
 {
   int i,n,k;
   
@@ -780,7 +797,7 @@ double snr(struct Data *data, struct Model *model)
   for(i=0; i<data->DOF; i++) Snf[i] = malloc(data->N*sizeof(double));
   
   // calculate noise model
-  Sn(data, model, Snf);
+  Sn(data, lpf, model, Snf);
   
   
   // calculate signal model
@@ -789,7 +806,7 @@ double snr(struct Data *data, struct Model *model)
   for(n=0; n<model->N; n++)
   {
     //SineGaussianFourier(model->s, model->source[n]->t0, model->source[n]->P, data->N, 0, data->T);
-    LPFImpulseResponse(model->s, data, model->source[n]);
+    LPFImpulseResponse(model->s, data, lpf, model->source[n]);
     
     for(k=0; k<data->DOF; k++) SNR += fourier_nwip(data->imin, data->imax, model->s[k], model->s[k], Snf[k]);
   }
@@ -829,13 +846,70 @@ void crossproduct(double *b, double *c, double *a)
   a[2] = b[0]*c[1] - b[1]*c[0];
 }
 
+void matrix_multiply(double **A, double **B, double **C, int N)
+{
+  int i,j,k;
+
+  for(i=0; i<N; i++)
+  {
+    for(j=0; j<N; j++)
+    {
+      C[i][j] = 0.0;
+      for(k=0; k<N; k++)
+      {
+        C[i][j] += A[i][k]*B[k][j];
+      }
+    }
+  }
+}
+
+void matrix_invert(double **A, double **invA, int N)
+{
+  int i,j;
+
+  // Find eigenvectors and eigenvalues
+  gsl_matrix *GSLmatrx = gsl_matrix_alloc(N,N);
+  gsl_matrix *GSLinvrs = gsl_matrix_alloc(N,N);
+
+  for(i=0; i<N; i++)for(j=0; j<N; j++) gsl_matrix_set(GSLmatrx,i,j,A[i][j]);
+
+  // sort and put them into evec
+  gsl_permutation * permutation = gsl_permutation_alloc(N);
+  gsl_linalg_LU_decomp(GSLmatrx, permutation, &i);
+  gsl_linalg_LU_invert(GSLmatrx, permutation, GSLinvrs);
+
+  //unpack arrays from gsl inversion
+  for(i=0; i<N; i++)
+  {
+    for(j=0; j<N; j++) invA[i][j] = gsl_matrix_get(GSLinvrs,i,j);
+  }
+
+//  //test inversion
+//  double **I = malloc(N*sizeof(double *));
+//  for(i=0; i<N; i++) I[i] = malloc(N*sizeof(double));
+//
+//  matrix_multiply(A,invA,I,N);
+//  for(i=0; i<N; i++)
+//  {
+//    for(j=0; j<N; j++)
+//    {
+//      printf("%.0f ",I[i][j]);
+//    }
+//    printf("\n");
+//  }
+//
+//  for(i=0; i<N; i++) free(I[i]);
+//  free(I);
+
+}
+
 /* ********************************************************************************** */
 /*                                                                                    */
 /*                        Data handling and injection routines                        */
 /*                                                                                    */
 /* ********************************************************************************** */
 
-void simulate_injection(struct Data *data, struct Model *injection)
+void simulate_injection(struct Data *data, struct Spacecraft *lpf, struct Model *injection)
 {
   int n,i,k;
   int re,im;
@@ -843,7 +917,7 @@ void simulate_injection(struct Data *data, struct Model *injection)
   for(n=0; n<injection->N; n++)
   {
     
-    LPFImpulseResponse(data->s, data, injection->source[n]);
+    LPFImpulseResponse(data->s, data, lpf, injection->source[n]);
     
     for(i=0; i<data->N; i++)
     {
@@ -897,7 +971,7 @@ void simulate_data(struct Data *data)
   
 }
 
-void simulate_noise(struct Data *data, struct Model *injection, gsl_rng *r)
+void simulate_noise(struct Data *data, struct Spacecraft *lpf, struct Model *injection, gsl_rng *r)
 {
   int i,k;
   int re,im;
@@ -909,7 +983,7 @@ void simulate_noise(struct Data *data, struct Model *injection, gsl_rng *r)
   
   // calculate noise model
   for(i=0; i<data->N; i++)data->f[i] = (double)i*data->df;
-  Sn(data, injection, Snf);
+  Sn(data, lpf, injection, Snf);
   
   
   for(i=0; i<data->N; i++)
@@ -923,7 +997,7 @@ void simulate_noise(struct Data *data, struct Model *injection, gsl_rng *r)
     {
       data->n[k][re] = 0.5*gsl_ran_ugaussian(r)*sqrt(Snf[k][i]);
       data->n[k][im] = 0.5*gsl_ran_ugaussian(r)*sqrt(Snf[k][i]);
-      fprintf(dataFile,"%lg %lg %lg %lg ",data->n[k][re]*data->n[k][re] + data->n[k][im]*data->n[k][im],InertialSensorNoise(data->f[i], injection->Ais[k],injection->mass),ThrusterNoise(data->f[i],injection->Ath[k]),Snf[k][i]);
+      fprintf(dataFile,"%lg %lg %lg %lg ",data->n[k][re]*data->n[k][re] + data->n[k][im]*data->n[k][im],InertialSensorNoise(data->f[i], injection->Ais[k],lpf->M),ThrusterNoise(data->f[i],injection->Ath[k]),Snf[k][i]);
       
     }
     fprintf(dataFile,"\n");
@@ -964,8 +1038,8 @@ void copy_source(struct Source *source, struct Source *copy, int DOF)
 
 void copy_model(struct Model *model, struct Model *copy, int N, int DOF)
 {
-  copy->I    = model->I;
-  copy->mass = model->mass;
+
+  //copy->mass = model->mass;
   copy->logL = model->logL;
   copy->logP = model->logP;
   
@@ -975,13 +1049,27 @@ void copy_model(struct Model *model, struct Model *copy, int N, int DOF)
   for(n=0; n<model->N; n++) copy_source(model->source[n],copy->source[n], DOF);
   
   int i,k;
+
   for(k=0; k<3; k++)
   {
     copy->Ais[k]  = model->Ais[k];
     copy->Ath[k]  = model->Ath[k];
     copy->Ars[k]  = model->Ars[k];
   }
-  
+
+//  //moment of inertia tensors
+//  for(i=0; i<2; i++) // test masses
+//  {
+//    for(j=0; j<3; j++) // x
+//    {
+//      for(k=0; k<3; k++) //y
+//      {
+//        copy->I[i][j][k]    = model->I[i][j][k];
+//        copy->invI[i][j][k] = model->invI[i][j][k];
+//      }
+//    }
+//  }
+
   
   for(k=0; k<DOF; k++)
   {
@@ -1001,6 +1089,7 @@ void initialize_source(struct Source *source)
   source->omega = malloc(3*sizeof(double));
 }
 
+
 void initialize_model(struct Model *model, int N, int D, int DOF)
 {
   int i;
@@ -1018,6 +1107,36 @@ void initialize_model(struct Model *model, int N, int D, int DOF)
     model->source[i] = malloc(sizeof(struct Source));
     initialize_source(model->source[i]);
   }
+
+//  model->I    = malloc(2*sizeof(double **));
+//  model->invI = malloc(2*sizeof(double **));
+//  for(j=0; j<2; j++) model->I[j]    = malloc(3*sizeof(double *));
+//  for(j=0; j<2; j++) model->invI[j] = malloc(3*sizeof(double *));
+//  for(j=0; j<2; j++) for(i=0; i<3; i++) model->I[j][i]    = malloc(N*sizeof(double));
+//  for(j=0; j<2; j++) for(i=0; i<3; i++) model->invI[j][i] = malloc(N*sizeof(double));
+}
+
+void initialize_spacecraft(struct Spacecraft *spacecraft)
+{
+  int i,j;
+
+  /* Moment of inertia tensor */
+  spacecraft->I    = malloc(2*sizeof(double **));
+  spacecraft->invI = malloc(2*sizeof(double **));
+
+  for(j=0; j<2; j++) spacecraft->I[j]    = malloc(3*sizeof(double *));
+  for(j=0; j<2; j++) spacecraft->invI[j] = malloc(3*sizeof(double *));
+  for(j=0; j<2; j++) for(i=0; i<3; i++) spacecraft->I[j][i]    = malloc(3*sizeof(double));
+  for(j=0; j<2; j++) for(i=0; i<3; i++) spacecraft->invI[j][i] = malloc(3*sizeof(double));
+
+  /* Position of proof masses */
+  spacecraft->R = malloc(2*sizeof(double *));
+  for(i=0; i<2; i++) spacecraft->R[i] = malloc(3*sizeof(double));
+
+  /* Spacecraft M-frame corners */
+  spacecraft->x = malloc(8*sizeof(double *));
+  for(j=0; j<9; j++) spacecraft->x[j] = malloc(2*sizeof(double));
+
 }
 
 void free_source(struct Source *source)
@@ -1039,7 +1158,15 @@ void free_model(struct Model *model, int N, int D, int DOF)
   free(model->Ais);
   for(i=0; i<DOF; i++) free(model->s[i]);
   free(model->s);
-  
+
+//  for(j=0; j<2; j++) for(i=0; i<3; i++) free(model->I[j][i]);
+//  for(j=0; j<2; j++) for(i=0; i<3; i++) free(model->invI[j][i]);
+//  for(j=0; j<2; j++) free(model->I[j]);
+//  for(j=0; j<2; j++) free(model->invI[j]);
+//  free(model->I);
+//  free(model->invI);
+
+
   free(model);
 }
 

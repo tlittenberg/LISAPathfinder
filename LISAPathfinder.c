@@ -11,25 +11,38 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
+#include "LPF.h"
+#include "Subroutines.h"
 #include "LISAPathfinder.h"
 
 
-void MomentOfInertia(double **I)
+void MomentOfInertia(double ***I)
 {
-  double b = 1.0;
+
+  I[0][0][0] = EOM_SC_IH1_XX;
+  I[0][0][1] = EOM_SC_IH1_XY;
+  I[0][0][2] = EOM_SC_IH1_XZ;
   
-  I[0][0] = b*b/6.;
-  I[0][1] = 0.0;
-  I[0][2] = 0.0;
+  I[0][1][0] = EOM_SC_IH1_YX;
+  I[0][1][1] = EOM_SC_IH1_YY;
+  I[0][1][2] = EOM_SC_IH1_YZ;
   
-  I[1][0] = 0.0;
-  I[1][1] = b*b/6.;
-  I[1][2] = 0.0;
-  
-  I[2][0] = 0.0;
-  I[2][1] = 0.0;
-  I[2][2] = b*b/6.;
-  
+  I[0][2][0] = EOM_SC_IH1_ZX;
+  I[0][2][1] = EOM_SC_IH1_ZY;
+  I[0][2][2] = EOM_SC_IH1_ZZ;
+
+  I[1][0][0] = EOM_SC_IH2_XX;
+  I[1][0][1] = EOM_SC_IH2_XY;
+  I[1][0][2] = EOM_SC_IH2_XZ;
+
+  I[1][1][0] = EOM_SC_IH2_YX;
+  I[1][1][1] = EOM_SC_IH2_YY;
+  I[1][1][2] = EOM_SC_IH2_YZ;
+
+  I[1][2][0] = EOM_SC_IH2_ZX;
+  I[1][2][1] = EOM_SC_IH2_ZY;
+  I[1][2][2] = EOM_SC_IH2_ZZ;
+
 }
 
 void draw_face(double *x, gsl_rng *seed)
@@ -495,102 +508,17 @@ void rotation(double *r, double *k, double theta, double *kp)
   
 }
 
-
-int check_impact_cube(double costheta, double phi, int face)
-{
-  double n[3];
-  double k[3];
-  
-  if(face==-1)return 1;
-  
-  //get norm to the current face
-  switch(face)
-  {
-    case 0:
-      
-      n[0] =  0.;
-      n[1] = -1.;
-      n[2] =  0.;
-      
-      break;
-      
-    case 1:
-      
-      n[0] =  1.;
-      n[1] =  0.;
-      n[2] =  0.;
-      
-      break;
-      
-    case 2:
-      
-      n[0] =  0.;
-      n[1] =  1.;
-      n[2] =  0.;
-      
-      break;
-      
-    case 3:
-      
-      n[0] = -1.;
-      n[1] =  0.;
-      n[2] =  0.;
-      
-      break;
-      
-      
-    case 4:
-      
-      n[0] =  0.;
-      n[1] =  0.;
-      n[2] = -1.;
-      break;
-      
-      
-    case 5:
-      
-      n[0] =  0.;
-      n[1] =  0.;
-      n[2] =  1.;
-      break;
-      
-      
-    default:
-      return 1;
-      break;
-  }
-  
-  //compute line-of-sight vector k
-  //get angle w.r.t. normal
-  k[0] = sin(acos(costheta))*cos(phi);
-  k[1] = sin(acos(costheta))*sin(phi);
-  k[2] = costheta;
-  
-  //compute dot product between n and k
-  double nk = n[0]*k[0] + n[1]*k[1] + n[2]*k[2];
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  if(nk > 0) return 0;
-  else       return 1;
-  
-}
-
 int check_impact(double costheta, double phi, int face)
 {
   double *n=malloc(3*sizeof(double));
   double k[3];
   
-  if(face==-1)return 1;
-  
-  
+  if(face==-1)
+  {
+    free(n);
+    return 1;
+  }
+
   //get norm to the current face
   get_normal(n,face);
   
@@ -610,29 +538,36 @@ int check_impact(double costheta, double phi, int face)
   
 }
 
-int check_side(double *r)
+int check_side(struct Spacecraft *lpf, double *r)
 {
-  
+
   //spacecraft dimensions
-  double a = 1.0;
-  double D = a*(1.0 + sqrt(2.0));
+//  double A = 0.831;
+  double D = 1.842;
+  double H = 1.806;
   
-  double *x0 = malloc(2*sizeof(double));
-  double *xf = malloc(2*sizeof(double));
+
+  double *x0 = malloc(3*sizeof(double));
+  double *xf = malloc(3*sizeof(double));
   int face = which_face_r(r);
-  get_edge(x0, xf, face);
-  
+  get_edge(lpf, x0, xf, face);
+
+  double m = -fabs((xf[1] - x0[1])/(xf[0] - x0[0]));
+
   int flag = 0;
   
   switch(face)
   {
     case 0:
       if(r[1]>xf[1] || r[1]<x0[1] || r[2]<x0[2] || r[2]>xf[2]) flag = 1;
+      //printf("x0={%g,%g,%g}, xf={%g,%g,%g}, r={%g,%g,%g}, flag=%i\n",x0[0],x0[1],x0[2],xf[0],xf[1],xf[2],r[0],r[1],r[2],flag);
       break;
     case 1:
+      //if(fabs(r[0])>D*0.5 || fabs(r[1])>H*0.5 || fabs(r[1])-m*fabs(r[0])>fabs(x0[1]) - m*fabs(x0[0])) flag = 1;
+      //printf("x0={%g,%g,%g}, xf={%g,%g,%g}, r={%g,%g,%g}, flag=%i\n",x0[0],x0[1],x0[2],xf[0],xf[1],xf[2],r[0],r[1],r[2],flag);
       break;
     case 2:
-      if(r[0]>xf[0] || r[0]<x0[0] || r[2]<x0[2] || r[2]>xf[2]) flag = 1;
+      if(r[0]<xf[0] || r[0]>x0[0] || r[2]<x0[2] || r[2]>xf[2]) flag = 1;
       break;
     case 3:
       break;
@@ -642,15 +577,15 @@ int check_side(double *r)
     case 5:
       break;
     case 6:
-      if(r[0]>xf[0] || r[0]<x0[0] || r[2]<x0[2] || r[2]>xf[2]) flag = 1;
+      if(r[0]<xf[0] || r[0]>x0[0] || r[2]<x0[2] || r[2]>xf[2]) flag = 1;
       break;
     case 7:
       break;
     case 8:
-      if(fabs(r[0])>D*0.5 || fabs(r[1])>D*0.5 || fabs(r[0])+fabs(r[1])>0.5*(a+D)) flag = 1;
+      if(fabs(r[0])>D*0.5 || fabs(r[1])>H*0.5 || fabs(r[1])<=m*(fabs(r[0])-x0[0]) + x0[1]) flag = 1;
       break;
     case 9:
-      if(fabs(r[0])>D*0.5 || fabs(r[1])>D*0.5 || fabs(r[0])+fabs(r[1])>0.5*(a+D)) flag = 1;
+      if(fabs(r[0])>D*0.5 || fabs(r[1])>H*0.5 || fabs(r[1])<=m*(fabs(r[0])-x0[0]) + x0[1]) flag = 1;
       break;
     default:
       break;
@@ -665,6 +600,10 @@ int check_side(double *r)
 
 int which_side(double *r)
 {
+  double A = 0.831;
+//  double D = 1.842;
+//  double H = 1.806;
+
   int i,face;
   double *n=malloc(3*sizeof(double));
   double nk;
@@ -679,8 +618,8 @@ int which_side(double *r)
   rnorm=sqrt(rnorm);
   for(i=0; i<3; i++) rhat[i] = r[i]/sqrt(rnorm);
   
-  if(r[2]>0.499) face = 8;
-  else if(r[2]<-0.499) face = 9;
+  if(r[2]==A) face = 9;
+  else if(r[2]==0) face = 8;
   else
   {
     
@@ -707,8 +646,30 @@ int which_side(double *r)
 
 void draw_octagon(double *r, gsl_rng *seed)
 {
-  double a = 1.0;
-  double D = a*(1.0 + sqrt(2.0));
+
+  double A = 0.831;
+  double D = 1.842;
+  double H = 1.806;
+
+  //spacecraft dimensions
+  //double a = 1.0;
+  //double D = a*(1.0 + sqrt(2.0));
+
+  double x0[2],xf[2];
+  x0[0] =  0.921;
+  x0[1] =  0.211;
+
+  xf[0] =  0.521;
+  xf[1] =  0.903;
+
+  //line connecting
+  // y - y0 = m*(x-x0)
+  // y = mx - mx0 + y0
+  // y - mx < y0 - mx0
+  double m = (xf[1] - x0[1])/(xf[0] - x0[0]);
+
+
+
   double q[3];
   
   int pass = 0;
@@ -718,15 +679,16 @@ void draw_octagon(double *r, gsl_rng *seed)
   while(!pass)
   {
     x = gsl_rng_uniform(seed)*D/2.0;
-    y = gsl_rng_uniform(seed)*D/2.0;
-    z = a/2.0;
-    
-    if(y<-x+0.5*(a+D)) pass = 1;
+    y = gsl_rng_uniform(seed)*H/2.0;
+    z = A;
+
+
+    if( y-m*x < x0[1] - m*x0[0] ) pass = 1;
   }
   
   
   int i;
-  for(i=0; i<3; i++)
+  for(i=0; i<2; i++)
   {
     q[i] = 1.0;
     if(gsl_rng_uniform(seed)<0.5)q[i] *= -1.0;
@@ -734,27 +696,19 @@ void draw_octagon(double *r, gsl_rng *seed)
   
   r[0]=q[0]*x;
   r[1]=q[1]*y;
-  r[2]=q[2]*z;
-  
-  
+  r[2]=z;
+
 }
 
-void draw_side(double *r, int face, gsl_rng *seed)
+void draw_side(struct Spacecraft *lpf, double *r, int face, gsl_rng *seed)
 {
-  
-  double a = 1.0;
-  double D = a*(1.0 + sqrt(2.0));
-  
-  //everything is 1/2
-  a = a/2.0;
-  D = D/2.0;
   
   double *x0,*xf;
   x0 = malloc(3*sizeof(double));
   xf = malloc(3*sizeof(double));
   
   //int face = (int)floor(gsl_rng_uniform(seed)*8.0);
-  get_edge(x0, xf, face);
+  get_edge(lpf, x0, xf, face);
   
   if(fabs(xf[0]-x0[0]) > fabs(xf[1]-x0[1]))
   {
@@ -770,7 +724,18 @@ void draw_side(double *r, int face, gsl_rng *seed)
     //solve for x
     r[0] = x0[0] + ((xf[0] - x0[0])/(xf[1] - x0[1]))*(r[1]-x0[1]);
   }
-  
+
+
+
+  //find x
+  r[0] = x0[0] + (xf[0] - x0[0])*gsl_rng_uniform(seed);
+
+  if(face==0 || face==2 || face==4 || face== 6)
+    r[1] = x0[1] + (xf[1] - x0[1])*gsl_rng_uniform(seed);
+
+  else
+    r[1] = ((xf[1] - x0[1])/(xf[0] - x0[0]))*(r[0] - x0[0]) + x0[1];
+
   //z
   r[2] = x0[2] + (xf[2] - x0[2])*gsl_rng_uniform(seed);
   
@@ -784,10 +749,10 @@ int which_face_r(double *r)
   double *n=malloc(3*sizeof(double));
   double nk;
   double nk_max = -1.0;
-  double a = 1.0;
-  
-  if(r[2]>=a/2)        face = 9;
-  else if (r[2]<=-a/2) face = 8;
+  double a = 0.831;
+
+  if(r[2]>=a)       face = 9;
+  else if (r[2]<=0) face = 8;
   else
   {
     
@@ -820,71 +785,71 @@ void write_octagon()
   D/=2.0;
   FILE *out;
   //draw bottom
-  out = fopen("bottom.dat","w");
-  fprintf(out,"%lg %lg %lg\n",D,a,-a);
-  fprintf(out,"%lg %lg %lg\n",a,D,-a);
-  fprintf(out,"%lg %lg %lg\n",-a,D,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",D,a,-a);
+  out = fopen("bottom_temp.dat","w");
+  fprintf(out,"%lg %lg %lg\n",D,a,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,D,0.0);
+  fprintf(out,"%lg %lg %lg\n",-a,D,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",D,a,0.0);
   fclose(out);
   
   //draw top
-  out = fopen("top.dat","w");
-  fprintf(out,"%lg %lg %lg\n",D,a,a);
-  fprintf(out,"%lg %lg %lg\n",a,D,a);
-  fprintf(out,"%lg %lg %lg\n",-a,D,a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",D,a,a);
+  out = fopen("top_temp.dat","w");
+  fprintf(out,"%lg %lg %lg\n",D,a,2*a);
+  fprintf(out,"%lg %lg %lg\n",a,D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,a,2*a);
   fclose(out);
   
   //draw sides
-  out = fopen("sides.dat","w");
+  out = fopen("sides_temp.dat","w");
   //all the way around the bottom
-  fprintf(out,"%lg %lg %lg\n",D,a,-a);
-  fprintf(out,"%lg %lg %lg\n",a,D,-a);
-  fprintf(out,"%lg %lg %lg\n",-a,D,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",D,a,-a);
+  fprintf(out,"%lg %lg %lg\n",D,a,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,D,0.0);
+  fprintf(out,"%lg %lg %lg\n",-a,D,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",D,a,0.0);
   //step up
-  fprintf(out,"%lg %lg %lg\n",D,a,a);
+  fprintf(out,"%lg %lg %lg\n",D,a,2*a);
   //all the way around the top
-  fprintf(out,"%lg %lg %lg\n",a,D,a);
-  fprintf(out,"%lg %lg %lg\n",-a,D,a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",D,a,a);
-  fprintf(out,"%lg %lg %lg\n",a,D,a);
+  fprintf(out,"%lg %lg %lg\n",a,D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,a,2*a);
+  fprintf(out,"%lg %lg %lg\n",a,D,2*a);
   //step down
-  fprintf(out,"%lg %lg %lg\n",a,D,-a);
+  fprintf(out,"%lg %lg %lg\n",a,D,0.0);
   //work your way around the sides
-  fprintf(out,"%lg %lg %lg\n",-a,D,-a);
-  fprintf(out,"%lg %lg %lg\n",-a,D,a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,a);
-  fprintf(out,"%lg %lg %lg\n",-D,a,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",-D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",-a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,-a);
-  fprintf(out,"%lg %lg %lg\n",a,-D,a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,a);
-  fprintf(out,"%lg %lg %lg\n",D,-a,-a);
-  fprintf(out,"%lg %lg %lg\n",D,a,-a);
+  fprintf(out,"%lg %lg %lg\n",-a,D,0.0);
+  fprintf(out,"%lg %lg %lg\n",-a,D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-D,a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",-D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",-a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,-D,0.0);
+  fprintf(out,"%lg %lg %lg\n",a,-D,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,-a,2*a);
+  fprintf(out,"%lg %lg %lg\n",D,-a,0.0);
+  fprintf(out,"%lg %lg %lg\n",D,a,0.0);
   
 }
 
@@ -898,7 +863,8 @@ void get_normal(double *n, int face)
   /*                                              */
   /************************************************/
   
-  double sq2 = 1.0/sqrt(2.0);
+  double e1 = 0.865769;
+  double e2 = 0.500444;
   
   switch(face)
   {
@@ -912,8 +878,8 @@ void get_normal(double *n, int face)
       
     case 1:
       
-      n[0] =  sq2;
-      n[1] =  sq2;
+      n[0] =  e1;
+      n[1] =  e2;
       n[2] =  0.;
       
       break;
@@ -928,8 +894,8 @@ void get_normal(double *n, int face)
       
     case 3:
       
-      n[0] = -sq2;
-      n[1] = sq2;
+      n[0] = -e1;
+      n[1] = e2;
       n[2] =  0.;
       
       break;
@@ -945,8 +911,8 @@ void get_normal(double *n, int face)
       
     case 5:
       
-      n[0] = -sq2;
-      n[1] = -sq2;
+      n[0] = -e1;
+      n[1] = -e2;
       n[2] =  0.;
       break;
       
@@ -959,8 +925,8 @@ void get_normal(double *n, int face)
       
     case 7:
       
-      n[0] =  sq2;
-      n[1] =  -sq2;
+      n[0] =  e1;
+      n[1] =  -e2;
       n[2] =  0.;
       break;
       
@@ -985,96 +951,128 @@ void get_normal(double *n, int face)
 }
 
 
-void get_edge(double *x0, double *xf, int face)
+void get_edge(struct Spacecraft *lpf, double *x0, double *xf, int face)
 {
   /************************************************/
   /*                                              */
   /*    xyz coordinates for spacecraft corners    */
   /*                                              */
   /************************************************/
-  double a = 1.0;
-  double D = a*(1.0 + sqrt(2.0));
-  
-  a = a/2.0;
-  D = D/2.0;
-  
+//  double d = 0.831;
+//  double w = 1.842;
+//  double h = 1.806;
+
+  int i;
+
+  if(face>-1)
+  {
+  for(i=0; i<2; i++)
+  {
+    x0[i] = lpf->x[face][i];
+    xf[i] = lpf->x[face+1][i];
+  }
+  x0[2] = 0.0;
+  xf[2] = lpf->H;
+  }
+  else
+  {
+    for(i=0; i<2; i++)
+    {
+      x0[i] = lpf->x[1][i];
+      xf[i] = lpf->x[2][i];
+    }
+    x0[0] = 0.0;
+    xf[0] = lpf->H;
+  }
+  /*
   switch(face)
   {
     case 0:
-      x0[0] =  D;
-      x0[1] = -a;
-      x0[2] = -a;
+      x0[0] =  0.921;
+      x0[1] = -0.211;
+      x0[2] =  0;
       
-      xf[0] =  D;
-      xf[1] =  a;
-      xf[2] =  a;
+      xf[0] =  0.921;
+      xf[1] =  0.211;
+      xf[2] =  0.831;
       break;
     case 1:
-      x0[0] =  D;
-      x0[1] =  a;
-      x0[2] = -a;
+      x0[0] =  0.921;
+      x0[1] =  0.211;
+      x0[2] =  0;
       
-      xf[0] =  a;
-      xf[1] =  D;
-      xf[2] =  a;
+      xf[0] =  0.521;
+      xf[1] =  0.903;
+      xf[2] =  0.831;
       break;
     case 2:
-      x0[0] =  a;
-      x0[1] =  D;
-      x0[2] = -a;
+      x0[0] =  0.521;
+      x0[1] =  0.903;
+      x0[2] =  0;
       
-      xf[0] = -a;
-      xf[1] =  D;
-      xf[2] =  a;
+      xf[0] = -0.521;
+      xf[1] =  0.903;
+      xf[2] =  0.831;
       break;
     case 3:
-      x0[0] = -a;
-      x0[1] =  D;
-      x0[2] = -a;
+      x0[0] = -0.521;
+      x0[1] =  0.903;
+      x0[2] =  0;
       
-      xf[0] = -D;
-      xf[1] =  a;
-      xf[2] =  a;
+      xf[0] = -0.921;
+      xf[1] =  0.211;
+      xf[2] =  0.831;
       break;
     case 4:
-      x0[0] = -D;
-      x0[1] =  a;
-      x0[2] = -a;
+      x0[0] = -0.921;
+      x0[1] =  0.211;
+      x0[2] =  0;
       
-      xf[0] = -D;
-      xf[1] = -a;
-      xf[2] =  a;
+      xf[0] = -0.921;
+      xf[1] = -0.211;
+      xf[2] =  0.831;
       break;
     case 5:
-      x0[0] = -D;
-      x0[1] = -a;
-      x0[2] = -a;
+      x0[0] = -0.921;
+      x0[1] = -0.211;
+      x0[2] =  0;
       
-      xf[0] = -a;
-      xf[1] = -D;
-      xf[2] =  a;
+      xf[0] = -0.521;
+      xf[1] = -0.903;
+      xf[2] =  0.831;
       break;
     case 6:
-      x0[0] = -a;
-      x0[1] = -D;
-      x0[2] = -a;
+      x0[0] = -0.521;
+      x0[1] = -0.903;
+      x0[2] =  0;
       
-      xf[0] =  a;
-      xf[1] = -D;
-      xf[2] =  a;
+      xf[0] =  0.521;
+      xf[1] = -0.903;
+      xf[2] =  0.831;
       break;
     case 7:
-      x0[0] =  a;
-      x0[1] = -D;
-      x0[2] = -a;
+      x0[0] =  0.521;
+      x0[1] = -0.903;
+      x0[2] =  0;
       
-      xf[0] =  D;
-      xf[1] = -a;
-      xf[2] =  a;
+      xf[0] =  0.906;
+      xf[1] = -0.217;
+      xf[2] =  0.831;
       break;
     default:
+
+      //face 1 is the default (top right quadrant of decks
+      x0[0] =  0.921;
+      x0[1] =  0.211;
+      x0[2] =  0;
+
+      xf[0] =  0.521;
+      xf[1] =  0.903;
+      xf[2] =  0.831;
+
       break;
   }
+   */
   
 }
 
@@ -1087,15 +1085,17 @@ void face2map(double *r, double *x)
   double *n = malloc(3*sizeof(double));
   get_normal(n,face);
   
-  //spacecraft dimensions
-  double a = 1.0;
-  double D = a*(1.0 + sqrt(2.0));
-  
+
   //get height on face
-  double z = r[2] - -a/2.0;
+  double z = r[2];
   
   int i;
-  
+
+  double A = 0.831;
+  double D = 1.842;
+//  double H = 1.806;
+
+
   
   //    if(face==6)
   //    {
@@ -1109,7 +1109,7 @@ void face2map(double *r, double *x)
   else if(face==9) //top
   {
     
-    x[0] = a + D - r[0];
+    x[0] = A + D - r[0];
     x[1] = r[1];
     
   }
@@ -1130,27 +1130,45 @@ void face2map(double *r, double *x)
   
 }
 
-void map2face(double *r, double *x)
+void map2face(struct Spacecraft *lpf, double *r, double *x)
 {
   int i;
   
   //spacecraft dimensions
-  double a = 1.0;
-  double D = a*(1.0 + sqrt(2.0));
-  
+  //double a = 1.0;
+  //double D = a*(1.0 + sqrt(2.0));
+
+  double x0[2],xf[2];
+  x0[0] =  SC_BOT_CORNER_5_X;
+  x0[1] =  SC_BOT_CORNER_5_Y;
+
+  xf[0] =  SC_BOT_CORNER_4_X;
+  xf[1] =  SC_BOT_CORNER_4_Y;
+
+  //line connecting
+  // y - y0 = m*(x-x0)
+  // y = mx - mx0 + y0
+  // y - mx < y0 - mx0
+  double m = (xf[1] - x0[1])/(xf[0] - x0[0]);
+
+
+  double A = 0.831;
+  double D = 1.842;
+  double H = 1.806;
+
   //top face is way to the right, so that's easy
-  if(x[0] > D/2.0 + a)
+  if(x[0] > D/2.0 + A)
   {
-    r[0] = a + D - x[0];
+    r[0] = A + D - x[0];
     r[1] = x[1];
-    r[2] = a*0.5;
+    r[2] = A;
   }
   //bottom face is also a tad bit easier
-  else if (fabs(x[0])<D*0.5 && fabs(x[1])<D*0.5 && fabs(x[0])+fabs(x[1])<0.5*(a+D))
+  else if( fabs(x[0])<D*0.5 && fabs(x[1])<H*0.5 && fabs(x[1])<=m*(fabs(x[0])-x0[0]) + x0[1] )
   {
     r[0] = x[0];
     r[1] = x[1];
-    r[2] = -a*0.5;
+    r[2] = 0;
   }
   //the sides are really tricky
   else
@@ -1159,10 +1177,10 @@ void map2face(double *r, double *x)
     double mx = x[1]/x[0]; //slope of map vector
     
     //find edge of octagon intersected by x
-    double *x0 = malloc(2*sizeof(double));
-    double *xf = malloc(2*sizeof(double));
+    double *x0 = malloc(3*sizeof(double));
+    double *xf = malloc(3*sizeof(double));
     int face = which_face_r(r);
-    get_edge(x0, xf, face);
+    get_edge(lpf, x0, xf, face);
     
     //find slope of edge
     double mp;
@@ -1186,7 +1204,7 @@ void map2face(double *r, double *x)
     for(i=0; i<2; i++) r[i] = x[i] - zmag*n[i];
     
     //add rz
-    r[2] = zmag-a/2.0;
+    r[2] = zmag;
     
     free(x0);
     free(xf);
@@ -1194,4 +1212,6 @@ void map2face(double *r, double *x)
     free(n);
   }
 }
+
+
 

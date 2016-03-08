@@ -50,7 +50,7 @@ int main()
       }
       else if(gsl_rng_uniform(r) < a*a/A)
       {
-         draw_side(r0, face, r);
+         //draw_side(r0, face, r);
          //printf("%lg %lg %lg %i\n",r0[0],r0[1],r0[2],which_side(r0));
          flux[face]+=1.0/a;
       }
@@ -92,7 +92,7 @@ int main()
 
   for(i=0; i<1000000; i++)
   {
-    draw_impact_point(data,source,r);
+    //draw_impact_point(data,source,r);
 
 
     if(source->face==4 || source->face==5)
