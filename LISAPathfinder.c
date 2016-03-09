@@ -567,7 +567,7 @@ int check_side(struct Spacecraft *lpf, double *r)
   switch(face)
   {
     case 0:
-      if(r[1]>xf[1] || r[1]<x0[1] || r[2]<x0[2] || r[2]>xf[2]) flag = 1;
+      if(r[1]>xf[1] || r[1]<x0[1] || r[2]<0.0 || r[2]>xf[2]) flag = 1;
       //printf("x0={%g,%g,%g}, xf={%g,%g,%g}, r={%g,%g,%g}, flag=%i\n",x0[0],x0[1],x0[2],xf[0],xf[1],xf[2],r[0],r[1],r[2],flag);
       break;
     case 1:
@@ -575,17 +575,18 @@ int check_side(struct Spacecraft *lpf, double *r)
       //printf("x0={%g,%g,%g}, xf={%g,%g,%g}, r={%g,%g,%g}, flag=%i\n",x0[0],x0[1],x0[2],xf[0],xf[1],xf[2],r[0],r[1],r[2],flag);
       break;
     case 2:
-      if(r[0]<xf[0] || r[0]>x0[0] || r[2]<x0[2] || r[2]>xf[2]) flag = 1;
+      if(r[0]<xf[0] || r[0]>x0[0] || r[2]<0.0 || r[2]>xf[2]) flag = 1;
       break;
     case 3:
       break;
     case 4:
-      if(r[1]>xf[1] || r[1]<x0[1] || r[2]<x0[2] || r[2]>xf[2]) flag = 1;
+      if(r[1]<xf[1] || r[1]>x0[1] || r[2]<0.0 || r[2]>xf[2]) flag = 1;
+      //if(flag==1) printf("failed face 4: %g %g -> %g,%g %g,%g\n",r[1],r[2],xf[1],x0[1],0.0,xf[2]);
       break;
     case 5:
       break;
     case 6:
-      if(r[0]<xf[0] || r[0]>x0[0] || r[2]<x0[2] || r[2]>xf[2]) flag = 1;
+      if(r[0]>xf[0] || r[0]<x0[0] || r[2]<0.0 || r[2]>xf[2]) flag = 1;
       break;
     case 7:
       break;
@@ -608,7 +609,7 @@ int check_side(struct Spacecraft *lpf, double *r)
 
 int which_side(struct Spacecraft *lpf, double *r)
 {
-  double A = lpf->x[2][1] - lpf->x[2][0];
+  double A = lpf->H;//lpf->x[2][1] - lpf->x[2][0];
   //double D = lpf->x[0][0] - lpf->x[4][0];
   //double H = lpf->x[2][1] - lpf->x[6][1];
 
@@ -736,20 +737,20 @@ void draw_side(struct Spacecraft *lpf, double *r, int face, gsl_rng *seed)
     r[0] = x0[0] + ((xf[0] - x0[0])/(xf[1] - x0[1]))*(r[1]-x0[1]);
   }
 
-
-
-  //find x
-  r[0] = x0[0] + (xf[0] - x0[0])*gsl_rng_uniform(seed);
-
-  if(face==0 || face==2 || face==4 || face== 6)
-    r[1] = x0[1] + (xf[1] - x0[1])*gsl_rng_uniform(seed);
-
-  else
-    r[1] = ((xf[1] - x0[1])/(xf[0] - x0[0]))*(r[0] - x0[0]) + x0[1];
+//
+//
+//  //find x
+//  r[0] = x0[0] + (xf[0] - x0[0])*gsl_rng_uniform(seed);
+//
+//  if(face==0 || face==2 || face==4 || face== 6)
+//    r[1] = x0[1] + (xf[1] - x0[1])*gsl_rng_uniform(seed);
+//
+//  else
+//    r[1] = ((xf[1] - x0[1])/(xf[0] - x0[0]))*(r[0] - x0[0]) + x0[1];
 
   //z
   r[2] = x0[2] + (xf[2] - x0[2])*gsl_rng_uniform(seed);
-  
+
   free(x0);
   free(xf);
 }
@@ -990,8 +991,8 @@ void get_edge(struct Spacecraft *lpf, double *x0, double *xf, int face)
       x0[i] = lpf->x[1][i];
       xf[i] = lpf->x[2][i];
     }
-    x0[0] = 0.0;
-    xf[0] = lpf->H;
+    x0[2] = 0.0;
+    xf[2] = lpf->H;
   }
   /*
   switch(face)
@@ -1100,7 +1101,7 @@ void face2map(struct Spacecraft *lpf, double *r, double *x)
   
   int i;
 
-  double A = lpf->x[2][1] - lpf->x[2][0];
+  double A = lpf->H;//lpf->x[2][1] - lpf->x[2][0];
   double D = lpf->x[0][0] - lpf->x[4][0];
   //double H = lpf->x[2][1] - lpf->x[6][1];
 
@@ -1161,7 +1162,7 @@ void map2face(struct Spacecraft *lpf, double *r, double *x)
   double m = (xf[1] - x0[1])/(xf[0] - x0[0]);
 
 
-  double A = lpf->x[2][1] - lpf->x[2][0];
+  double A = lpf->H;//lpf->x[2][1] - lpf->x[2][0];
   double D = lpf->x[0][0] - lpf->x[4][0];
   double H = lpf->x[2][1] - lpf->x[6][1];
 

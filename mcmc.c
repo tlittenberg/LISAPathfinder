@@ -267,6 +267,9 @@ int main(int argc, char **argv)
 
         //choose new parameters for y
         proposal(flags, data, lpf, model[index[ic]], trial, r, &reject);
+//        if(ic==0 && trial->source[0]->face==1)printf("draw={%g,%g,%g}\n", trial->source[0]->r[0],trial->source[0]->r[1],trial->source[0]->r[2]);
+
+
 
         //compute maximized likelihood
         //if(mc<BURNIN) max_loglikelihood(data, trial);
@@ -277,14 +280,14 @@ int main(int argc, char **argv)
           trial->logL = loglikelihood(data, lpf, trial, flags);
 
           //compute new prior
-          //logprior(data, trial, injection);
+          logprior(data, trial, injection);
 
           //compute Hastings ratio
           H     = (trial->logL - model[index[ic]]->logL)/temp[index[ic]] + trial->logP - model[index[ic]]->logP;
           alpha = log(gsl_rng_uniform(r));
-          
-          //if(ic==0 && trial->source[0]->face==8)printf("H=%g, logLy=%g, logLx=%g\n",H,trial->logL,model[index[ic]]->logL);
-          
+
+//          if(ic==0 && trial->source[0]->face==1)printf("H=%g, logLy=%g, logLx=%g\n",H,trial->logL,model[index[ic]]->logL);
+
           //adopt new position w/ probability H
           if(H>alpha)
           {

@@ -134,7 +134,6 @@ void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source 
   }
   else source->face=-1;
 
-
   //printf("trial side=%i ",source->face);
   //map side to x-y plane
   if(source->face > -1) face2map(lpf, source->r, source->map);
@@ -149,13 +148,11 @@ void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source 
   
   //flag if face is not exposed to sky location
   if(check_impact(source->costheta, source->phi, source->face)) source->face = -1;
-  //printf("trial side after sky check=%i ",source->face);
 
-  
   //momentum and impact time
   //printf("fudge\n");
   source->P  = gsl_ran_exponential(seed,20);
-  source->t0 = 100.0 + 50*gsl_rng_uniform(seed);//*data->T;
+  source->t0 = gsl_rng_uniform(seed)*data->T;
 
 }
 
@@ -192,7 +189,7 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
 {
   
   //uniform
-  if(gsl_rng_uniform(r)<1.5)
+  if(gsl_rng_uniform(r)<0.5)
   {
     draw_impact_point(data,lpf,trial,r);
     
@@ -200,8 +197,8 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
   //gaussian
   else
   {
-    trial->P  = model->P;//  + gsl_ran_ugaussian(r)*1.0;
-    trial->t0 = model->t0;// + gsl_ran_ugaussian(r)*0.25;
+    trial->P  = model->P  + gsl_ran_ugaussian(r)*1.0;
+    trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.25;
     
     trial->phi      = model->phi + gsl_ran_ugaussian(r)*0.01;
     trial->costheta = model->costheta + gsl_ran_ugaussian(r)*0.01;
@@ -219,11 +216,19 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
 
     face2map(lpf, model->r, model->map);
 
-    //printf("x={%g,%g} ",trial->map[0],trial->map[1]);
+//    if(model->face==4)printf("x={%g,%g} ",model->r[0],model->r[1]);
 
     //perturb map coordinates
-    trial->map[0] = model->map[0] + gsl_ran_ugaussian(r)*0.1;
-    trial->map[1] = model->map[1] + gsl_ran_ugaussian(r)*0.1;
+    if(gsl_ran_ugaussian(r)<0.5)
+    {
+    trial->map[0] = model->map[0] + gsl_ran_ugaussian(r)*0.01;
+    trial->map[1] = model->map[1] + gsl_ran_ugaussian(r)*0.01;
+    }
+    else
+    {
+      trial->map[0] = model->map[0] + gsl_ran_ugaussian(r)*0.05;
+      trial->map[1] = model->map[1] + gsl_ran_ugaussian(r)*0.05;
+    }
     
     //map back to 3D
     map2face(lpf, trial->r, trial->map);
@@ -231,20 +236,31 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
     //TODO: gaussian proposal is not robust to changing faces
     trial->face = which_face_r(trial->r);
 
-    //printf("rf={%g,%g,%g} face=%i\n", trial->r[0],trial->r[1], trial->r[2],trial->face);
+//    if(trial->face==4)printf("rf={%g,%g,%g} face=%i\n", trial->r[0],trial->r[1], trial->r[2],trial->face);
 
     int flag = 0;
-    if(check_impact(trial->costheta, trial->phi, trial->face)) flag = 1;
+    if(check_impact(trial->costheta, trial->phi, trial->face))
+    {flag = 1;
+//    if(model->face == 4){
+//      printf("jump failed condition %i\n",flag);
+//      printf("   trial face=%i, r0={%g,%g,%g} sky={%g,%g}\n",trial->face, trial->r[0],trial->r[1], trial->r[2],trial->costheta, trial->phi);
+//    }
+    }
     else if(trial->face!=model->face)
     {
       flag = 2;
+//      if(model->face == 1){
 //      printf("%i->%i\n",model->face,trial->face);
 //      printf("jump failed condition %i\n",flag);
 //      printf("   model face=%i, r0={%g,%g,%g}\n",model->face, model->r[0],model->r[1], model->r[2]);
 //      printf("   trial face=%i, r0={%g,%g,%g}\n",trial->face, trial->r[0],trial->r[1], trial->r[2]);
-
+//      }
     }
-    else if(check_side(lpf, trial->r))                                   flag = 3;
+    else if(check_side(lpf, trial->r))
+    {
+      flag = 3;
+      //if(trial->face==1)printf("jump failed condition %i\n",flag);
+    }
     if(flag>0)
     {
       //if(trial->face==1)printf("jump failed condition %i\n",flag);
