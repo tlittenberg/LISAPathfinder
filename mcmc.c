@@ -49,8 +49,8 @@ int main(int argc, char **argv)
   data->dt = 0.5;
   data->df = 1.0/data->T;
   data->N  = (int)(data->T/data->dt)/2;
-
-   parse(argc, argv, data, flags);
+  
+  parse(argc, argv, data, flags);
 
   data->fmin = 1.0e-4; //Hz
   data->fmax = (double)data->N/data->T;  //Hz
@@ -71,11 +71,15 @@ int main(int argc, char **argv)
 
   data->f = malloc(data->N*sizeof(double));
 
-   /* set up GSL random number generator */
+   /* set up GSL random number generators */
    const gsl_rng_type *T = gsl_rng_default;
    gsl_rng *r = gsl_rng_alloc (T);
+   gsl_rng *ir = gsl_rng_alloc (T);
    gsl_rng_env_setup();
    gsl_rng_set (r, data->seed);
+   gsl_rng_set (ir, data->iseed);
+
+
 
   /* Simulate noise data */
   struct Model *injection = malloc(sizeof(struct Model));
@@ -98,12 +102,12 @@ int main(int argc, char **argv)
   {
     source = injection->source[n];
     source->face = -1;
-    while(source->face ==-1) draw_impact_point(data, source, r);
+    while(source->face ==-1) draw_impact_point(data, source, ir);
       source->P = 20;
     printf("hit on face %i\n",source->face);
   }
 
-  simulate_noise(data, injection, r);
+  simulate_noise(data, injection, ir);
   simulate_data(data);
   simulate_injection(data,injection);
   injection->logL = loglikelihood(data, injection);
@@ -298,13 +302,14 @@ static void print_usage() {
    printf("Usage: \n");
    printf("REQUIRED:\n");
    printf("  -d | --dof     : degrees of freedom (3 or 6) \n");
-   printf("  -s | --seed    : seed for all RNGs \n");
+   printf("  -s | --seed    : seed for mcmc RNGs \n");
    printf("OPTIONAL:\n");
+   printf("  -i | --iseed   : seed for injection/data RNG (same) \n");
    printf("  -d | --dof     : degrees of freedom (6)   \n");
    printf("  -h | --help    : usage information        \n");
    printf("  -v | --verbose : enable verbose output    \n");
    printf("EXAMPLE:\n");
-    printf("./mcmc --dof 6 --seed 1234 \n");
+   printf("./mcmc --dof 6 --seed 1234 \n");
    printf("\n");
    exit(EXIT_FAILURE);
 }
@@ -315,6 +320,7 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
 {
    data->DOF = 6;
    data->seed = 1234;
+   data->iseed = -1;
    flags->verbose = 0;
 
    if(argc==1) print_usage();
@@ -324,13 +330,14 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
       {"dof",     required_argument, 0,  'd' },
       {"help",    no_argument,       0,  'h' },
       {"seed",    required_argument, 0,  's' },
+      {"iseed",   required_argument, 0,  'i' },
       {"verbose", no_argument,       0,  'v' },
       {0,         0,                 0,   0  }
    };
 
    int opt=0;
    int long_index =0;
-
+   
    //Loop through argv string and pluck out arguments
    while ((opt = getopt_long_only(argc, argv,"apl:b:",
                              long_options, &long_index )) != -1) {
@@ -343,6 +350,8 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
             break;
          case 's' : data->seed = atoi(optarg);
             break;
+         case 'i' : data->iseed = atoi(optarg);
+            break;
          case 'v' : flags->verbose = 1;
             break;
          default: print_usage();
@@ -350,10 +359,13 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
       }
    }
 
+   //default is to set injection from the same mcmc seed.
+   if(data->iseed<0)data->iseed=data->seed;
    //Report on set parameters
    fprintf(stdout,"***** RUN SETTINGS *****\n");
    fprintf(stdout,"Number of data channles ... %i\n",data->DOF);
    fprintf(stdout,"Random number seed ........ %li\n",data->seed);
+   fprintf(stdout,"Injection random number seed ........ %li\n",data->iseed);
    fprintf(stdout,"******* RUN FLAGS ******\n");
    if(flags->verbose)fprintf(stdout,"Verbose flag .............. ENABLED \n");
    else              fprintf(stdout,"Verbose flag .............. DISABLED\n");

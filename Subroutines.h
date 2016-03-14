@@ -78,6 +78,7 @@ struct Data
   int imin;
   int imax;
    long seed;
+   long iseed;
   double T;
   double dt;
   double df;
