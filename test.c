@@ -29,7 +29,7 @@ int main()
 
 
 
-   double *r0 = malloc(3*sizeof(double));
+   //double *r0 = malloc(3*sizeof(double));
    int ii=0;
    double a = 1.0;
    double A = 2.*(1.0 + sqrt(2.))*a*a;
@@ -44,13 +44,13 @@ int main()
       if(face == 8 || face == 9)
       {
          //draw_r(r0, r);
-         draw_octagon(r0, r);
+         //draw_octagon(r0, r);
          //printf("%lg %lg %lg %i\n",r0[0],r0[1],r0[2],which_side(r0));
          flux[face]+=1.0/A;
       }
       else if(gsl_rng_uniform(r) < a*a/A)
       {
-         draw_side(r0, face, r);
+         //draw_side(r0, face, r);
          //printf("%lg %lg %lg %i\n",r0[0],r0[1],r0[2],which_side(r0));
          flux[face]+=1.0/a;
       }
@@ -92,7 +92,7 @@ int main()
 
   for(i=0; i<1000000; i++)
   {
-    draw_impact_point(data,source,r);
+    //draw_impact_point(data,source,r);
 
 
     if(source->face==4 || source->face==5)

@@ -2,7 +2,7 @@ reset
 
 FILE  = "impactchain.dat"
 
-
+unset key
 
 set cbrange [-20:0]
 
@@ -12,6 +12,7 @@ set zlabel 'z'
 set cblabel 'logL'
 
 
+set palette rgb -21,-22,-23
 
 #Columns for impactchain
 #1 logL
@@ -21,11 +22,13 @@ set cblabel 'logL'
 #11 spacecraft:  y
 #12 spacecraft:  z
 
-r = 5 # set radius of celestial sphere
+r = 10 # set radius of celestial sphere
 
 splot \
-	FILE every 10::500000 u 10:11:12:1 w d palette,\
-	FILE every 10::500000 u (r*sin(acos($7))*cos($8)):(r*sin(acos($7))*sin($8)):(r*$7) w p ls 7 ps 0.5 lc rgb "grey"
+	FILE every 10::1000 u 10:11:12:1 w d palette,\
+	FILE every 10::1000 u (r*sin(acos($7))*cos($8)):(r*sin(acos($7))*sin($8)):(r*$7) w p ls 7 ps 0.5 lc rgb "grey",\
+	'sides.dat' u 1:2:($3+0.470) w l lc rgb "black",\
+	'injection.dat' u 7:8:9 w p ls 6 ps 3 lc rgb "blue"
 
 
 
