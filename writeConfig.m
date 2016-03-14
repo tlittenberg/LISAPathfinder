@@ -51,11 +51,12 @@ groupParams{3} = [...
   LPFParam.EOM_H2SC_Y,...
   LPFParam.EOM_H2SC_Z];
 
-[IH1,IH2] = getHousingInertias();
+[IB,IH1,IH2] = getInertias();
 
 % Spacecraft Mass Properties
 groupParams{4} = [...
   LPFParam.EOM_SC_M,...
+  IB,...
   IH1,...
   IH2];
 
@@ -196,8 +197,8 @@ end
 
 end
 
-function [IH1params, IH2params] = getHousingInertias()
-% function to get the moments of inertia in the housing frames
+function [IBparams, IH1params, IH2params] = getInertias()
+% function to get the moments of inertia in the body and housing frames
 
 M = double(LPFParam.EOM_SC_M);
 
@@ -228,6 +229,13 @@ kk = 0;
 for ii = 1:3
   for jj = 1:3
     kk = kk+1;
+    % B
+    IBparams(kk) = LPFParam(...
+      sprintf('EOM_SC_IB_%s%s',coordNames{ii},coordNames{jj}),... %name
+      IB(ii,jj), ...% value
+      unit('kg*m^2'), ...% units
+      sprintf('%s%s component of spacecraft moment of inertia tensor about B',...
+      coordNames{ii},coordNames{jj}));
     % H1
     IH1params(kk) = LPFParam(...
       sprintf('EOM_SC_IH1_%s%s',coordNames{ii},coordNames{jj}),... %name

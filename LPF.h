@@ -1,5 +1,5 @@
 // Configuration file for MCMC LPF Micrometeorite code
-// Written by writeConfig.m at 2016-03-03 10:27:33
+// Written by writeConfig.m at 2016-03-14 16:25:48
 
 // Spacecraft Geometry
 #define SC_H 8.315000e-01 // Height of spacecraft [m]
@@ -26,32 +26,41 @@
 // Housing 1 Geometry
 #define EOM_H1SC_X 1.880000e-01 // X of housing 1 [m]
 #define EOM_H1SC_Y 0.000000e+00 // Y of housing 1 [m]
-#define EOM_H1SC_Z 6.093000e-01 // Z of housing 1 [m]
+#define EOM_H1SC_Z 5.325000e-01 // Z of housing 1 [m]
 
 // Housing 2 Geometry
 #define EOM_H2SC_X -1.880000e-01 // X of housing 2 [m]
 #define EOM_H2SC_Y 0.000000e+00 // Y of housing 2 [m]
-#define EOM_H2SC_Z 6.093000e-01 // Z of housing 2 [m]
+#define EOM_H2SC_Z 5.325000e-01 // Z of housing 2 [m]
 
 // Spacecraft Mass Properties
 #define EOM_SC_M 4.227000e+02 // SC mass [kg]
-#define EOM_SC_IH1_XX 1.173278e+02 // XX component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
+#define EOM_SC_IB_XX 1.091104e+02 // XX component of spacecraft moment of inertia tensor about B [kg m^(2)]
+#define EOM_SC_IB_XY 1.268100e-02 // XY component of spacecraft moment of inertia tensor about B [kg m^(2)]
+#define EOM_SC_IB_XZ 9.933450e-01 // XZ component of spacecraft moment of inertia tensor about B [kg m^(2)]
+#define EOM_SC_IB_YX 1.268100e-02 // YX component of spacecraft moment of inertia tensor about B [kg m^(2)]
+#define EOM_SC_IB_YY 1.163150e+02 // YY component of spacecraft moment of inertia tensor about B [kg m^(2)]
+#define EOM_SC_IB_YZ 1.192014e+00 // YZ component of spacecraft moment of inertia tensor about B [kg m^(2)]
+#define EOM_SC_IB_ZX 9.933450e-01 // ZX component of spacecraft moment of inertia tensor about B [kg m^(2)]
+#define EOM_SC_IB_ZY 1.192014e+00 // ZY component of spacecraft moment of inertia tensor about B [kg m^(2)]
+#define EOM_SC_IB_ZZ 1.916742e+02 // ZZ component of spacecraft moment of inertia tensor about B [kg m^(2)]
+#define EOM_SC_IH1_XX 1.107767e+02 // XX component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
 #define EOM_SC_IH1_XY 4.768056e-01 // XY component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
-#define EOM_SC_IH1_XZ -9.782081e+00 // XZ component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
+#define EOM_SC_IH1_XZ -3.841286e+00 // XZ component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
 #define EOM_SC_IH1_YX 4.768056e-01 // YX component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
-#define EOM_SC_IH1_YY 1.386731e+02 // YY component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
-#define EOM_SC_IH1_YZ 1.545307e+00 // YZ component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
-#define EOM_SC_IH1_ZX -9.782081e+00 // ZX component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
-#define EOM_SC_IH1_ZY 1.545307e+00 // ZY component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
+#define EOM_SC_IH1_YY 1.321220e+02 // YY component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
+#define EOM_SC_IH1_YZ 1.350526e+00 // YZ component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
+#define EOM_SC_IH1_ZX -3.841286e+00 // ZX component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
+#define EOM_SC_IH1_ZY 1.350526e+00 // ZY component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
 #define EOM_SC_IH1_ZZ 2.058452e+02 // ZZ component of spacecraft moment of inertia tensor about H1 [kg m^(2)]
-#define EOM_SC_IH2_XX 1.173278e+02 // XX component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
+#define EOM_SC_IH2_XX 1.107767e+02 // XX component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
 #define EOM_SC_IH2_XY -4.768056e-01 // XY component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
-#define EOM_SC_IH2_XZ 1.235759e+01 // XZ component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
+#define EOM_SC_IH2_XZ 6.092164e+00 // XZ component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
 #define EOM_SC_IH2_YX -4.768056e-01 // YX component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
-#define EOM_SC_IH2_YY 1.402624e+02 // YY component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
-#define EOM_SC_IH2_YZ 1.545307e+00 // YZ component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
-#define EOM_SC_IH2_ZX 1.235759e+01 // ZX component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
-#define EOM_SC_IH2_ZY 1.545307e+00 // ZY component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
+#define EOM_SC_IH2_YY 1.337113e+02 // YY component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
+#define EOM_SC_IH2_YZ 1.350526e+00 // YZ component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
+#define EOM_SC_IH2_ZX 6.092164e+00 // ZX component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
+#define EOM_SC_IH2_ZY 1.350526e+00 // ZY component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
 #define EOM_SC_IH2_ZZ 2.074346e+02 // ZZ component of spacecraft moment of inertia tensor about H2 [kg m^(2)]
 
 // Cold gas thruster positions
