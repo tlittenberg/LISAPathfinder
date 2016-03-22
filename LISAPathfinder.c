@@ -16,35 +16,6 @@
 #include "LISAPathfinder.h"
 
 
-void MomentOfInertia(double ***I)
-{
-
-  I[0][0][0] = EOM_SC_IH1_XX;
-  I[0][0][1] = EOM_SC_IH1_XY;
-  I[0][0][2] = EOM_SC_IH1_XZ;
-  
-  I[0][1][0] = EOM_SC_IH1_YX;
-  I[0][1][1] = EOM_SC_IH1_YY;
-  I[0][1][2] = EOM_SC_IH1_YZ;
-  
-  I[0][2][0] = EOM_SC_IH1_ZX;
-  I[0][2][1] = EOM_SC_IH1_ZY;
-  I[0][2][2] = EOM_SC_IH1_ZZ;
-
-  I[1][0][0] = EOM_SC_IH2_XX;
-  I[1][0][1] = EOM_SC_IH2_XY;
-  I[1][0][2] = EOM_SC_IH2_XZ;
-
-  I[1][1][0] = EOM_SC_IH2_YX;
-  I[1][1][1] = EOM_SC_IH2_YY;
-  I[1][1][2] = EOM_SC_IH2_YZ;
-
-  I[1][2][0] = EOM_SC_IH2_ZX;
-  I[1][2][1] = EOM_SC_IH2_ZY;
-  I[1][2][2] = EOM_SC_IH2_ZZ;
-
-}
-
 void draw_face(double *x, gsl_rng *seed)
 {
   double b=1.0;

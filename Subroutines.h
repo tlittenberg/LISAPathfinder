@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
-
+#include "Spacecraft.h"
 
 /* ********************************************************************************** */
 /*                                                                                    */
@@ -66,20 +66,6 @@ struct Model
   double **s;
 };
 
-struct Spacecraft
-{
-  /* Spacecraft parameters */
-  double **R;        //position of proof masses
-  double **x;        //position of spacecraft corners
-  double ***I;       //moment of inertia (ultimately a tensor)
-  double ***invI;    //inverse moment of inertia (ultimately a tensor)
-  double M;          //mass
-  double W;          //spacecraft width  (x-direction, m)
-  double D;          //spacecraft depth  (y-direction, m)
-  double H;          //spacecraft height (z-direciton, m)
-
-};
-
 struct Data
 {
   int N;
@@ -115,9 +101,10 @@ struct PSDposterior
 
 struct Flags
 {
-   int verbose;
-    int prior;
+  int verbose;
+  int prior;
   int rj;
+  int use_spacecraft;
 };
 
 
@@ -129,17 +116,20 @@ struct Flags
 
 void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, int mc);
 
-void proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int *reject);
+void proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int *reject, int nmax, int *drew_prior);
 
-void dimension_proposal(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int Nmax, int *test);
+void dimension_proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int Nmax, int *test);
 
 void detector_proposal(struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r);
 
 void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *model, struct Source *trial, gsl_rng *r);
+void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source *model, struct Source *trial, gsl_rng *r, int *drew_prior);
 
 void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source *source, gsl_rng *seed);
+void draw_impact_point_sc(struct Data *data, struct Spacecraft *lpf, struct Source *source, gsl_rng *seed);
 
 void logprior(struct Data *data, struct Model *model, struct Model *injection);
+void logprior_sc(struct Data *data,struct Spacecraft *lpf,  struct Model *model, struct Model *injection, int *drew_prior);
 
 double log_mass_prior(double m0, double m);
 
@@ -201,6 +191,9 @@ void matrix_multiply(double **A, double **B, double **C, int N);
 
 void matrix_invert(double **A, double **invA, int N);
 
+void check_incidence(struct Spacecraft *lpf,struct Model * model);
+
+
 /* ********************************************************************************** */
 /*                                                                                    */
 /*                        Data handling and injection routines                        */
@@ -228,6 +221,4 @@ void initialize_source(struct Source *source);
 void initialize_model(struct Model *model, int N, int D, int DOF);
 
 void free_source(struct Source *source);
-
-void initialize_spacecraft(struct Spacecraft *spacecraft);
 

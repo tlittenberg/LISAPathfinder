@@ -12,6 +12,7 @@
 #include "Subroutines.h"
 #include "LISAPathfinder.h"
 #include "TimePhaseMaximization.h"
+#include "LPF.h"
 
 /* ********************************************************************************** */
 /*                                                                                    */
@@ -156,7 +157,7 @@ void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source 
 
 }
 
-void proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int *reject)
+void proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int *reject, int nmax, int *drew_prior)
 {
   int n;
   
@@ -166,11 +167,148 @@ void proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, st
   //MCMC proposal
   if(gsl_rng_uniform(r)<0.99 || !flags->rj)
   {
-    for(n=0; n<model->N; n++) impact_proposal(data, lpf, model->source[n], trial->source[n], r);
+    for(n=0; n<model->N; n++){
+      //printf("(source=%i) ",n);
+      if(flags->use_spacecraft==0)
+	impact_proposal(data, lpf, model->source[n], trial->source[n], r);
+      else
+	impact_proposal_sc(data, lpf, model->source[n], trial->source[n], r, &drew_prior[n]);
+    }
   }
   //RJ proposal
-  else dimension_proposal(data, lpf, model, trial, r, 10, reject);
+  else dimension_proposal(flags, data, lpf, model, trial, r, nmax, reject);
   
+}
+
+/*  John's version of this with some fixes especially to make draw consistent with a meanaingful prior.
+void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source *source, gsl_rng *seed)
+{
+//  double a = 1.0;
+//  double A = 2.*(1.0 + sqrt(2.))*a*a;
+  double area[10];
+  area[0] = 0.350682;
+  area[1] = 0.66421;
+  area[2] = 0.865902;
+  area[3] = 0.66421;
+  area[4] = 0.350682;
+  area[5] = 0.66421;
+  area[6] = 0.865902;
+  area[7] = 0.66421;
+  area[8] = 2.77331;
+  area[9] = 2.77331;
+  
+  source->face=-1;
+  while(source->face<0){
+    //pick a side, any side
+    source->face = (int)floor(10*gsl_rng_uniform(seed));
+    if(source->face == 9)
+      {
+	draw_octagon(lpf, source->r, seed);
+	source->r[2] = source->r[2];
+      }
+    else if(source->face == 8)
+      {
+	draw_octagon(lpf, source->r, seed);
+	source->r[2] = 0.0;
+      }
+    else if(gsl_rng_uniform(seed) < area[source->face]/area[9])
+      {
+	draw_side(lpf, source->r, source->face, seed);
+      }
+    else source->face=-1;
+    
+    //printf("trial side=%i ",source->face);
+    //map side to x-y plane
+    if(source->face > -1) face2map(lpf, source->r, source->map);
+    
+    //pick sky location
+    //source->costheta = -1.0 + 2.0*gsl_rng_uniform(seed);
+    //source->phi      = gsl_rng_uniform(seed)*2.0*M_PI;
+    double cos2thetaF= gsl_rng_uniform(seed);
+    double costhetaF=sqrt(cos2thetaF);
+    double phiF=gsl_rng_uniform(seed)*2.0*M_PI;
+    face_sky_to_body_sky(source->face,costhetaF,phiF,&source->costheta,&source->phi);
+    while(source->phi > 2.0*M_PI) source->phi -= 2.0*M_PI;
+    while(source->phi < 0)        source->phi += 2.0*M_PI;
+    
+    //flag if face is not exposed to sky location
+    static int count=0;
+    if(check_impact(source->costheta, source->phi, source->face)){//
+      if(source->face>-1)printf("This should (almost?) never fail. (count=%i),costhetaF=%g\n",count,costhetaF);
+      source->face = -1;
+    }
+    count++;
+    //momentum and impact time
+    //printf("fudge\n");
+    source->P  = gsl_ran_exponential(seed,20);
+    source->t0 = gsl_rng_uniform(seed)*data->T;
+  }
+}
+*/
+
+void draw_impact_point_sc(struct Data *data, struct Spacecraft *lpf, struct Source *source, gsl_rng *seed)
+{
+  const int nface=10;
+  int i;
+  static double cum_area[nface];
+  static double total_area;
+  static int have_cum_area=0;
+  //compute and store the cumulative area
+  if(have_cum_area==0){
+    have_cum_area=1;
+    double sum=0;
+    for(i=0;i<nface;i++){
+      double area=lpf->faces[i]->area;
+      sum+=area;
+      printf("area[%i]=%g, cum=%g\n",i,area,sum);
+      cum_area[i]=sum;
+    }
+    total_area=sum;
+  }
+
+  //draw a face distrib by area
+  double x = gsl_rng_uniform(seed);
+  source->face=-1;
+  for(i=0;i<nface;i++)
+    if(cum_area[i]>=x*total_area){
+      source->face=i;
+      break;
+    }
+  int iface=-1;
+
+  //draw an impact point
+  double rface[2];
+  while(iface!=source->face){//since faces aren't nec. rectangles, keep drawing until it sticks
+    iface=source->face;
+    double x=gsl_rng_uniform(seed)*lpf->faces[iface]->rmax[0];
+    double y=gsl_rng_uniform(seed)*lpf->faces[iface]->rmax[1];
+    //printf(" drew (%g,%g) on face %i\n",x,y,iface);
+    rface[0]=x;
+    rface[1]=y;  
+    adjust_face(lpf,&iface,rface);
+  }
+  face2body(lpf,iface,rface,source->r);
+  
+  //pick sky location
+  double cos2thetaF= gsl_rng_uniform(seed);
+  double costhetaF=sqrt(cos2thetaF);
+  double phiF=gsl_rng_uniform(seed)*2.0*M_PI;
+  face_sky_to_body_sky(lpf,source->face,costhetaF,phiF,&source->costheta,&source->phi);//this currently uses old get_normal
+  while(source->phi > 2.0*M_PI) source->phi -= 2.0*M_PI;
+  while(source->phi < 0)        source->phi += 2.0*M_PI;
+  
+  //flag if face is not exposed to sky location
+  static int count=0;
+  if(incidence(lpf,source->face,source->costheta, source->phi)<0){
+    //printf("face=%i, cth=%g, phi=%g, inc=%g\n",source->face,source->costheta,source->phi,incidence(lpf,source->costheta, source->phi, source->face));
+    if(source->face>-1)printf("This should (almost?) never fail. (count=%i),costhetaF=%g\n",count,costhetaF);
+    source->face = -1;
+  }
+  count++;
+  //momentum and impact time
+  source->P  = gsl_ran_exponential(seed,20);
+  source->t0 = gsl_rng_uniform(seed)*data->T;
+  //printf("drew impact point on face=%i\n",source->face);
 }
 
 void detector_proposal(struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r)
@@ -289,8 +427,72 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
   //    }
   
 }
+  
+void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source *model, struct Source *trial, gsl_rng *r, int *drew_prior)
+{
+  
+  //uniform
+  if(gsl_rng_uniform(r)<0.5)
+  {
+    draw_impact_point_sc(data,lpf,trial,r);
+    //printf("draw\n");
+    *drew_prior=1;
+  }
+  //gaussian
+  else
+  {
+    //printf("gauss\n");
+    trial->P  = model->P  + gsl_ran_ugaussian(r)*1.0;
+    trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.25;
+    
+    trial->phi      = model->phi + gsl_ran_ugaussian(r)*0.01;
+    trial->costheta = model->costheta + gsl_ran_ugaussian(r)*0.01;
+    
+    //map to 2D
+    trial->r[0] = model->r[0];
+    trial->r[1] = model->r[1];
+    trial->r[2] = model->r[2];
 
-void dimension_proposal(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int Nmax, int *test)
+    //model->face = which_face_r(trial->r);
+
+    trial->face = model->face;
+
+    //printf("face=%i, r0={%g,%g,%g} ",trial->face, trial->r[0],trial->r[1], trial->r[2]);
+
+    double *rface=malloc(2*sizeof(double));
+    int iface=model->face;
+    //printf("\n\n\nGaussian step:\n");
+    body2face(lpf,iface,trial->r,rface);      
+    double deltascale;//for sanity check;
+    if(0 && iface>=0){
+      //sanity check on results for testing:
+      double dx=model->r[0] - trial->r[0];
+      double dy=model->r[1] - trial->r[1];
+      double dz=model->r[2] - trial->r[2];
+      double delta=sqrt(dx*dx+dy*dy+dz*dz)/deltascale;
+      if(delta>1.0001||delta<0.707){	  
+	printf("--Problem: Step too %s model->r=(%g,%g,%g)  trial->r=(%g,%g,%g)  deltascale=%g  delta=%g\n",(delta>1?"large":"small"),
+	       model->r[0],model->r[1],model->r[2],trial->r[0],trial->r[1],trial->r[2],deltascale,delta);
+	body2face(lpf,model->face,model->r,rface);
+	printf("  Model face[%i],rface=(%g,%g)\n",model->face,rface[0],rface[1]);
+	body2face(lpf,trial->face,trial->r,rface);
+	printf("  Trial face[%i],rface=(%g,%g)\n",trial->face,rface[0],rface[1]);
+      }
+    }
+    
+    while(trial->phi > 2.0*M_PI) trial->phi -= 2.0*M_PI;
+    while(trial->phi < 0)        trial->phi += 2.0*M_PI;
+    
+    while(trial->costheta >  1.0) trial->costheta =  2.0-trial->costheta;
+    while(trial->costheta < -1.0) trial->costheta = -2.0-trial->costheta;
+
+    *drew_prior=0;
+    
+  }
+  
+}
+
+void dimension_proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int Nmax, int *test)
 {
   int n,kill;
   
@@ -300,7 +502,8 @@ void dimension_proposal(struct Data *data, struct Spacecraft *lpf, struct Model 
     if(model->N==Nmax) *test = 1;
     else
     {
-      draw_impact_point(data,lpf,trial->source[trial->N],r);
+      if(flags->use_spacecraft==0)draw_impact_point(data,lpf,trial->source[trial->N],r);
+      else draw_impact_point_sc(data,lpf,trial->source[trial->N],r);
       trial->N = model->N+1;
     }
   }
@@ -331,6 +534,54 @@ void logprior(struct Data *data, struct Model *model, struct Model *injection)
     if(model->source[n]->P < 0.0) model->logP = -1.0e60;
   }
 }
+
+void logprior_sc(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *injection, int *drew_prior)
+{
+  //model->logP = log_mass_prior(injection->mass,model->mass);
+  ///JGB:Seems that the prior was not initialized.  How did this work?
+  model->logP=0;
+
+  int n;
+  for(n=0; n<model->N; n++)
+  {
+    
+    if(model->source[n]->t0 < 0.0 || model->source[n]->t0 > data->T) model->logP = -1.0e60;
+    
+    if(model->source[n]->P < 0.0) model->logP = -1.0e60;
+
+    ///JGB:Prior on the face/impact-dir, but not if the trial was drawn from prior/
+    if(drew_prior[n]==0){
+      int iface=model->source[n]->face;
+      if(iface>=0){
+	model->logP+=log(lpf->faces[iface]->area/lpf->lpf_area);
+	double inc_cos=incidence(lpf,iface,model->source[n]->costheta,model->source[n]->phi);
+	if(inc_cos>0)
+	  model->logP+=log(inc_cos);
+	else
+	  model->logP=-1e60;
+      } else model->logP=-1e60;
+      
+      //printf("prior on face %i for source[%i]=%g\n",iface,n,model->logP);
+    }
+    //printf("cum prior %i = %g\n",n,model->logP);
+  }
+}
+
+//just for debugging
+void check_incidence(struct Spacecraft *lpf,struct Model *model){
+  int i;
+  for(i=0;i<model->N;i++){
+    int iface=model->source[i]->face;
+    double cth_inc=-1;
+    if(iface>=0){
+      double cth=model->source[i]->costheta;
+      double phi=model->source[i]->phi;
+      cth_inc=incidence(lpf,iface,cth,phi);
+    }
+    if(cth_inc<0)printf(" invalid incidence (cth_inc=%g) for source[%i] on face %i\n",cth_inc,i,iface);
+  }
+}  
+
 
 double log_mass_prior(double m0, double m)
 {
@@ -592,6 +843,7 @@ void max_loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *
 
 double loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Flags *flags)
 {
+  //return 0;
   int i,k,n,re,im;
   double logL = 0.0;
   
@@ -1130,29 +1382,6 @@ void initialize_model(struct Model *model, int N, int D, int DOF)
 //  for(j=0; j<2; j++) model->invI[j] = malloc(3*sizeof(double *));
 //  for(j=0; j<2; j++) for(i=0; i<3; i++) model->I[j][i]    = malloc(N*sizeof(double));
 //  for(j=0; j<2; j++) for(i=0; i<3; i++) model->invI[j][i] = malloc(N*sizeof(double));
-}
-
-void initialize_spacecraft(struct Spacecraft *spacecraft)
-{
-  int i,j;
-
-  /* Moment of inertia tensor */
-  spacecraft->I    = malloc(2*sizeof(double **));
-  spacecraft->invI = malloc(2*sizeof(double **));
-
-  for(j=0; j<2; j++) spacecraft->I[j]    = malloc(3*sizeof(double *));
-  for(j=0; j<2; j++) spacecraft->invI[j] = malloc(3*sizeof(double *));
-  for(j=0; j<2; j++) for(i=0; i<3; i++) spacecraft->I[j][i]    = malloc(3*sizeof(double));
-  for(j=0; j<2; j++) for(i=0; i<3; i++) spacecraft->invI[j][i] = malloc(3*sizeof(double));
-
-  /* Position of proof masses */
-  spacecraft->R = malloc(2*sizeof(double *));
-  for(i=0; i<2; i++) spacecraft->R[i] = malloc(3*sizeof(double));
-
-  /* Spacecraft M-frame corners */
-  spacecraft->x = malloc(9*sizeof(double *));
-  for(j=0; j<9; j++) spacecraft->x[j] = malloc(2*sizeof(double));
-
 }
 
 void free_source(struct Source *source)

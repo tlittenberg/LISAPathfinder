@@ -7,17 +7,20 @@ CCFLAGS = -g -Wall -O3 -std=gnu99
 
 CC = gcc
 
-OBJS = Subroutines.o TimePhaseMaximization.o LISAPathfinder.o
+OBJS = Subroutines.o TimePhaseMaximization.o LISAPathfinder.o Spacecraft.o
 
 all: $(OBJS) mcmc test
 
 LISAPathfinder.o: LISAPathfinder.c LISAPathfinder.h
 	$(CC) $(CCFLAGS) -c LISAPathfinder.c $(INCDIR:%=-I%) $(LIBDIR:%=-L%)
 
+Spacecraft.o: Spacecraft.c Spacecraft.h
+	$(CC) $(CCFLAGS) -c Spacecraft.c $(INCDIR:%=-I%) $(LIBDIR:%=-L%)
+
 TimePhaseMaximization.o: TimePhaseMaximization.c TimePhaseMaximization.h
 	$(CC) $(CCFLAGS) -c TimePhaseMaximization.c $(INCDIR:%=-I%) $(LIBDIR:%=-L%)
 
-Subroutines.o: Subroutines.c Subroutines.h 
+Subroutines.o: Subroutines.c Subroutines.h Spacecraft.h 
 	$(CC) $(CCFLAGS) -c Subroutines.c $(INCDIR:%=-I%) $(LIBDIR:%=-L%)
 
 mcmc: mcmc.c $(OBJS)

@@ -151,7 +151,7 @@ int main(int argc, char **argv)
   /* Simulate noise data */
   struct Model *injection = malloc(sizeof(struct Model));
   initialize_model(injection,data->N,6, data->DOF);
-
+  
 
   for(i=0; i<3; i++)
   {
@@ -159,21 +159,25 @@ int main(int argc, char **argv)
     injection->Ath[i] = 1.0e-8; // N*Hz^-1/2
     injection->Ars[i] = 2.0e-7; // rad*Hz^-1/2
   }
-
+  
   /* Simulate source data */
-   struct Source *source;
+  struct Source *source;
 
-    injection->N = 1;
+  injection->N = 1;
   for(n=0; n<injection->N; n++)
   {
     source = injection->source[n];
     source->face = -1;
-    while(source->face ==-1) draw_impact_point(data, lpf, source, ir);
+    if(flags->use_spacecraft==0)while(source->face ==-1) draw_impact_point(data, lpf, source, ir);
+    else while(source->face ==-1) draw_impact_point_sc(data, lpf, source, ir);
     source->P = 20;
+    //source->P = 0;//    ***************************************           hack to test the prior without signal
     printf("hit on face %i\n",source->face);
   }
 
   simulate_noise(data, lpf, injection, nr);
+  //int k;for(i=0; i<2*data->N; i++)for(k=0; k<data->DOF; k++)data->n[k][i]=0;//    ************* hack to test the prior without noise
+
   simulate_data(data);
   simulate_injection(data,lpf,injection);
   injection->logL = loglikelihood(data, lpf, injection, flags);
@@ -214,7 +218,6 @@ int main(int argc, char **argv)
 
     copy_model(injection, model[ic], data->N, data->DOF);
 
-
     detector_proposal(data,injection,model[ic],r);
 
     for(n=0; n<model[ic]->N; n++)
@@ -223,9 +226,14 @@ int main(int argc, char **argv)
       model[ic]->source[n]->t0 = gsl_rng_uniform(r)*data->T;
 
     }
-
-    logprior(data, model[ic], injection);
+    int nmax=10;
+    int *drew_prior=malloc(nmax*sizeof(int));    
+    for(i=0;i<nmax;i++)drew_prior[i]=1;
+    if(flags->use_spacecraft==0)logprior(data, model[ic], injection);
+    else logprior_sc(data, lpf, model[ic], injection,drew_prior);
     model[ic]->logL = loglikelihood(data, lpf, model[ic], flags);
+
+    free(drew_prior);
   }
 
   /* set up distribution */
@@ -259,18 +267,25 @@ int main(int argc, char **argv)
   /* Here is the MCMC loop */
   for(mc=0;mc<MCMCSTEPS;mc++)
   {
-
+    //printf("\nmc=%i: ",mc);
     for(ic=0; ic<NC; ic++)
     {
+      int nmax=10;
+      int *drew_impact_from_prior=malloc(nmax*sizeof(int));
+
+      //debugging
+      //printf("ic,index= %i, %i (model):\n",ic,index[ic]);
+      //check_incidence(lpf,model[index[ic]]);
+
       for(n=0; n<10; n++)
       {
         reject=0;
 
         //copy x to y
         copy_model(model[index[ic]], trial, data->N, data->DOF);
-
+	
         //choose new parameters for y
-        proposal(flags, data, lpf, model[index[ic]], trial, r, &reject);
+        proposal(flags, data, lpf, model[index[ic]], trial, r, &reject, nmax, drew_impact_from_prior);
 //        if(ic==0 && trial->source[0]->face==1)printf("draw={%g,%g,%g}\n", trial->source[0]->r[0],trial->source[0]->r[1],trial->source[0]->r[2]);
 
 
@@ -284,10 +299,19 @@ int main(int argc, char **argv)
           trial->logL = loglikelihood(data, lpf, trial, flags);
 
           //compute new prior
-          logprior(data, trial, injection);
-
+	  if(flags->use_spacecraft==0)
+	    logprior(data, trial, injection);
+	  else {
+	    logprior_sc(data, lpf, trial, injection, drew_impact_from_prior);
+	    //printf("trial->logP=%g\n",trial->logP);
+	    //This is hacky, but we have to do this for the model again knowing if we need to include the impact prior.
+	    logprior_sc(data, lpf, model[index[ic]], injection, drew_impact_from_prior);
+	    //printf("model->logP=%g\n",model[index[ic]]->logP);
+	  }
+	  
           //compute Hastings ratio
           H     = (trial->logL - model[index[ic]]->logL)/temp[index[ic]] + trial->logP - model[index[ic]]->logP;
+	  //printf("H = %g + %g - %g -> %g\n",(trial->logL - model[index[ic]]->logL)/temp[index[ic]],trial->logP, model[index[ic]]->logP,H);
           alpha = log(gsl_rng_uniform(r));
 
 //          if(ic==0 && trial->source[0]->face==1)printf("H=%g, logLy=%g, logLx=%g\n",H,trial->logL,model[index[ic]]->logL);
@@ -297,12 +321,18 @@ int main(int argc, char **argv)
           {
             copy_model(trial, model[index[ic]], data->N, data->DOF);
             accept++;
+
+	    //debugging
+	    //printf("(accepted trial):\n");
+	    //check_incidence(lpf,model[index[ic]]);
           }
           source=trial->source[0];
 //          if(trial->logL>-1e60)fprintf(stdout,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", trial->logL-injection->logL ,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
 
         }//Metropolis-Hastings
       }//Loop over inter-model updates
+      free(drew_impact_from_prior);
+
     }//Loop over chains
 
 
@@ -322,12 +352,16 @@ int main(int argc, char **argv)
       fprintf(noisechain,"%lg %lg %lg ",(injection->Ais[i]-model[ic]->Ais[i])/injection->Ais[i],(injection->Ath[i]-model[ic]->Ath[i])/injection->Ath[i],(injection->Ars[i]-model[ic]->Ars[i])/injection->Ars[i]);
     }
     fprintf(noisechain,"\n");
-    
+
     for(n=0; n<model[ic]->N; n++)
     {
       source = model[ic]->source[n];
-      face2map(lpf, source->r,source->map);
-      which_face_r(source->r);
+      //printf(".");
+      //check_source_incidence(lpf,source,n);
+      if(flags->use_spacecraft==0){
+	face2map(lpf, source->r,source->map);
+	which_face_r(source->r);
+      }
       fprintf(impactchain,"%lg ",model[ic]->logL-injection->logL);
       fprintf(impactchain,"%i ",model[ic]->N);
       fprintf(impactchain,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", source->t0,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
@@ -338,6 +372,7 @@ int main(int argc, char **argv)
       for(n=0; n<model[ic]->N; n++)
       {
         source = model[ic]->source[n];
+
         fprintf(stdout,"%lg ",model[ic]->logL-injection->logL);
         fprintf(stdout,"%i ",model[ic]->N);
         fprintf(stdout,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", source->t0,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
@@ -402,6 +437,7 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
    flags->verbose = 0;
    flags->prior = 0;
    flags->rj = 1;
+   flags->use_spacecraft = 0;  //set to 1 for John's treatment of spacecraft surface structure  
 
    if(argc==1) print_usage();
 
@@ -415,6 +451,7 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
       {"iseed",   required_argument, 0,  'i' },
       {"verbose", no_argument,       0,  'v' },
       {"prior",   no_argument,       0,  'p' },
+      {"johns",   no_argument,       0,  'j' },
       {0,         0,                 0,   0  }
    };
 
@@ -435,13 +472,15 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
             break;
          case 'p' : flags->prior = 1;
               break;
-        case 'n' : data->nseed = atoi(optarg);
+         case 'n' : data->nseed = atoi(optarg);
           break;
          case 's' : data->seed = atoi(optarg);
             break;
          case 'i' : data->iseed = atoi(optarg);
             break;
          case 'v' : flags->verbose = 1;
+	    break;
+         case 'j' : flags->use_spacecraft = 1;
             break;
          default: print_usage();
             exit(EXIT_FAILURE);

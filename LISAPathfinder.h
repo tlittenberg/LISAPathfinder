@@ -12,8 +12,6 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
-void MomentOfInertia(double ***I);
-
 void draw_face(double *x, gsl_rng *seed);
 void draw_r(double *r, gsl_rng *seed);
 
@@ -46,5 +44,4 @@ void get_edge(struct Spacecraft *lpf, double *x0, double *xf, int face);
 
 void face2map(struct Spacecraft *lpf, double *r, double *x);
 void map2face(struct Spacecraft *lpf, double *r, double *x);
-
 
