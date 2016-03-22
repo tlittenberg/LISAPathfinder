@@ -56,6 +56,7 @@ struct Spacecraft
   double W;          //spacecraft width  (x-direction, m)
   double D;          //spacecraft depth  (y-direction, m)
   double H;          //spacecraft height (z-direciton, m)
+  int nfaces;
   struct FaceData **faces;   //info about the spaces.
   double lpf_area;
 };
@@ -96,5 +97,13 @@ void face_sky_to_body_sky(struct Spacecraft *lpf, int face, double costhetaF, do
 void get_normal_lpf(struct Spacecraft *lpf, double *n, int face);
 
 double incidence(struct Spacecraft *lpf,int iface, double cth, double phi);
+
+void write_faces(FILE *out, struct Spacecraft *lpf);
+
+int test_cut(struct FaceData *fd,int icut, double x, double y);
+
+void get_cut_line(struct FaceData *fd,int icut, double *x0, double *y0, double *x1, double *y1);
+
+void get_cut_intersection(struct FaceData *fd,int icut, double x0, double y0, double x1, double y1, double *x, double *y);
 
 

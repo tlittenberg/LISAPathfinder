@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 //***********************************************
-//   Routines utilizing Spacecraft data
+//   Routines setting Spacecraft data
 //***********************************************
 
 
@@ -26,13 +26,15 @@ void initialize_spacecraft(struct Spacecraft *spacecraft)
   spacecraft->R = malloc(2*sizeof(double *));
   for(i=0; i<2; i++) spacecraft->R[i] = malloc(3*sizeof(double));
 
-  /* Spacecraft M-frame corners */
+  /* Spacecraft M-frame corners */  //disused?
   spacecraft->x = malloc(9*sizeof(double *));
   for(j=0; j<9; j++) spacecraft->x[j] = malloc(2*sizeof(double));
 
-  /* Info on the space-craft faces and their connections */
-  spacecraft->faces = malloc(10*sizeof(struct FaceData*));
-  for(i=0;i<10;i++)spacecraft->faces[i]=malloc(sizeof(struct FaceData));
+  /* Info on the spacecraft faces and their connections */
+  int nfaces=10;
+  spacecraft->nfaces=nfaces;
+  spacecraft->faces = malloc(nfaces*sizeof(struct FaceData*));
+  for(i=0;i<nfaces;i++)spacecraft->faces[i]=malloc(sizeof(struct FaceData));
   
   double xmin=SC_BOT_CORNER_1_X,xmax=SC_BOT_CORNER_5_X,ymin=SC_BOT_CORNER_7_Y,ymax=SC_BOT_CORNER_3_Y;
   //face 0 extends on side from corner 1 to corner 2.
@@ -104,7 +106,7 @@ void initialize_spacecraft(struct Spacecraft *spacecraft)
   set_cut( spacecraft->faces[9], 2, SC_BOT_CORNER_4_X, SC_BOT_CORNER_5_Y, 1, 0, 1);
   set_cut( spacecraft->faces[9], 3, SC_BOT_CORNER_7_X, SC_BOT_CORNER_6_Y, 0, 0, 0);  
   spacecraft->lpf_area=0;
-  for(i=0;i<10;i++)spacecraft->lpf_area+=spacecraft->faces[i]->area;
+  for(i=0;i<nfaces;i++)spacecraft->lpf_area+=spacecraft->faces[i]->area;
   printf("lpf_area=%g\n",spacecraft->lpf_area);
 }
 
@@ -218,12 +220,12 @@ void MomentOfInertia(double ***I)
 
 
 //***********************************************
-//   Routines utilizing Spacecraft data
+//   Routines handling Spacecraft faces
 //***********************************************
 
-void adjust_face(struct Spacecraft *lpf, int *face, double *r)
+void adjust_face(struct Spacecraft *lpf, int *iface, double *r)
 {
-  if(*face<0)return;
+  if(*iface<0)return;
   int i;
   //spacecraft dimensions
   int last=-1;
@@ -231,7 +233,7 @@ void adjust_face(struct Spacecraft *lpf, int *face, double *r)
   int ixy=0;//would be better to randomly choose 0/1 to avoid a tiny asymmetry in jumps that wrap around 2 edges near a cut.
 
   //First we must check if the face coordinate point falls in (or beyond) one of the cut regions.
-  struct FaceData *fd=lpf->faces[*face];
+  struct FaceData *fd=lpf->faces[*iface];
   double xmax=fd->rmax[0];
   double ymax=fd->rmax[1];
   double x=r[0],y=r[1]; //define the coordinate point (x,y) confined to the rectangle for the cut test.
@@ -240,33 +242,21 @@ void adjust_face(struct Spacecraft *lpf, int *face, double *r)
   if(y<0)y=0;
   if(y>ymax)y=ymax;
   for(i=0;i<fd->ncuts;i++){ //loop over the specified cuts.
-    double x0=0,x1=0,y0=0,y1=0;
-    double xc=fd->cut_xc[i];
-    double yc=fd->cut_yc[i];
-    int left=fd->cut_left[i];
-    int top=fd->cut_top[i];
-    int sign=1-2*fd->cut_above[i]; // i.e. -1 if cut_above==1, 1 if cut_above==0
-    if(left==1){//cut defined from ( 0, yc ) to ( xc, 0 ) or ( xc, ymax ) if top==1
-      x0=0;y0=yc;
-      x1=xc;y1=ymax*top;
-    }  else {              //cut defined from ( xc, 0 ) or ( xc, ymax ) [if top==1] to ( xmax, yc ).
-      x0=xc;y0=ymax*top;
-      x1=xmax;y1=yc;
-    }
-    //cut line is 0=x0+(x-x0)*(y1-y0)/(x1-x0)-y
-    if( sign * ( y0+(x-x0)*(y1-y0)/(x1-x0)-y ) > 0 ){ //do cut!
-      *face=-1;return;
+    if(test_cut(fd,i,x,y)==1){
+      *iface=-1;
+      return;
     }
   }//end of cuts
   
   //Next roll over to another face if needed.
-  while(*face>=0&&(*face!=last||last!=nextlast)){//require no change twice consequtively
+  while(*iface>=0&&(*iface!=last||last!=nextlast)){//require no change twice consequtively
     nextlast=last;
-    last=*face;
-    wrap_face(lpf,ixy,face,r);
+    last=*iface;
+    wrap_face(lpf,ixy,iface,r);
     ixy=1-ixy;
   }
 }
+
 
 void wrap_face(struct Spacecraft *lpf, int dir, int *iface, double *r){
   struct FaceData *face=lpf->faces[*iface];
@@ -394,6 +384,177 @@ double incidence(struct Spacecraft *lpf,int iface, double cth, double phi){
   double nk = rho*(normvec[0]*cos(phi) + normvec[1]*sin(phi)) + normvec[2]*cth;
   return nk;
 }  
+
+//Handling face cuts
+
+void write_faces(FILE *out, struct Spacecraft *lpf){
+  int n,i,j,k;
+  for(n=0;n<lpf->nfaces;n++){//loop over faces
+    struct FaceData *f=lpf->faces[n];
+    int np=4;
+    double p[lpf->nfaces+2*f->ncuts][2];
+    //first add in the corner points (in face frame)
+    p[0][0]=0;
+    p[0][1]=0;
+    p[1][0]=f->rmax[0];
+    p[1][1]=0;
+    p[2][0]=f->rmax[0];
+    p[2][1]=f->rmax[1];
+    p[3][0]=0;
+    p[3][1]=f->rmax[1];
+    
+    //The trick is handling the cuts, each of which adds two points, but may eliminate other points
+    for(k=0;k<f->ncuts;k++){
+      //Now loop over the corners to see which (if any are cut);
+      //For a convex shape the cut-corners must be consequtive
+      int iex0=-1,nex=0,cutlast=0; //exclude nex corners beginning with corner iex0;
+      for(i=0;i<np;i++){
+	if(test_cut(f,k,p[i][0],p[i][1])==1){//exclude corner
+	  if(cutlast==0)iex0=i;
+	  nex++;
+	  cutlast=1;
+	  //printf("face %i, cut %i: cutting point[%i]=(%g,%g)\n",n,k,i,p[i][0],p[i][1]);
+	} else cutlast=0;
+      }
+      double newp1[2],newp2[2];
+      int i0,i1;
+      if(nex==0)continue;//nothing to cut.
+      //The cut intersects the line from p[iex0-1] to p[iex0] to form a new point
+      i1=iex0;
+      i0=i1-1; if(i0<0)i0+=np;//wrap
+      get_cut_intersection(f,k,p[i0][0],p[i0][1],p[i1][0],p[i1][1],&newp1[0],&newp1[1]);
+      double x0,y0,x1,y1;
+      get_cut_line(f,k,&x0,&y0,&x1,&y1);
+      //printf("face %i, cut %i: first intersection cut=(%g,%g)-(%g,%g)\n",n,k,x0,y0,x1,y1);
+      //printf("face %i, cut %i: first intersection edge=[%i](%g,%g)-[%i](%g,%g)\n",n,k,i0,p[i0][0],p[i0][1],i1,p[i1][0],p[i1][1]);
+      //printf("face %i, cut %i: first intersection point=(%g,%g)\n",n,k,newp1[0],newp1[1]);
+      //The cut intersects the line from p[iex0+nex-1] to p[iex0+nex] to form a new point
+      i1=iex0+nex; if(i1>=np)i1-=np;//wrap
+      i0=i1-1;if(i0<0)i0+=np;//wrap
+      get_cut_intersection(f,k,p[i0][0],p[i0][1],p[i1][0],p[i1][1],&newp2[0],&newp2[1]);
+      if(nex==1){//need to insert a point
+	for(i=np;i>iex0+nex;i--)for(j=0;j<2;j++)p[i][j]=p[i-1][j];
+	np++;
+      } else if(nex>2){//need to delete points
+	for(i=iex0+nex;i<np;i++)for(j=0;j<2;j++)p[i+2-nex][j]=p[i][j];
+	np-=(nex-2);
+      }
+      //insert new points
+      for(j=0;j<2;j++)p[iex0][j]=newp1[j];
+      for(j=0;j<2;j++)p[iex0+1][j]=newp2[j];
+    }//end of cuts
+
+    //write the results out
+    /*
+    double r[3];
+    for(i=0;i<np;i++){
+      face2body(lpf,n,p[i],r);
+      fprintf(out,"%g, %g, %g\n",r[0],r[1],r[2]);
+    }
+    face2body(lpf,n,p[0],r);
+    */
+    for(i=0;i<(np-1)/2;i++){
+      double r00[3];
+      double r01[3];
+      double r10[3];
+      double r11[3];
+      int i0=i;
+      int i0opp=np-1-i0;
+      int i1=i0+1;
+      int i1opp=np-1-i1;
+      face2body(lpf,n,p[i0],r00);
+      face2body(lpf,n,p[i0opp],r01);
+      face2body(lpf,n,p[i1],r10);
+      face2body(lpf,n,p[i1opp],r11);
+      int ngrid=5;
+      for(j=0;j<ngrid+1;j++){
+	for(k=0;k<ngrid+1;k++){
+	  double dj=j/(double)ngrid;
+	  double dk=k/(double)ngrid;
+	  fprintf(out,"%g, %g, %g\n",
+		  (r00[0]*(1-dj)+r01[0]*dj)*(1-dk)+(r10[0]*(1-dj)+r11[0]*dj)*dk,
+		  (r00[1]*(1-dj)+r01[1]*dj)*(1-dk)+(r10[1]*(1-dj)+r11[1]*dj)*dk,
+		  (r00[2]*(1-dj)+r01[2]*dj)*(1-dk)+(r10[2]*(1-dj)+r11[2]*dj)*dk);
+	}
+	fprintf(out,"\n");
+      }
+      fprintf(out,"\n");
+    }
+  }//end of loop over faces
+}
+
+//***********************************************
+//   Routines handling Spacecraft face cuts
+//***********************************************
+
+
+//test whether point (x,y) is excluded by the cut. Returns 1 if excluded; Result undef. if (x,y) is outside rect.
+int test_cut(struct FaceData *fd,int icut, double x, double y){
+  double x0=0,x1=0,y0=0,y1=0;
+  int sign=1-2*fd->cut_above[icut]; // i.e. -1 if cut_above==1, 1 if cut_above==0
+  get_cut_line(fd,icut,&x0,&y0,&x1,&y1);
+  //cut line is 0=x0+(x-x0)*(y1-y0)/(x1-x0)-y
+  if( sign * ( y0+(x-x0)*(y1-y0)/(x1-x0)-y ) > 0 )return 1; //do cut!
+  return 0;
+}
+
+void get_cut_line(struct FaceData *fd,int icut, double *x0, double *y0, double *x1, double *y1){
+  double xmax=fd->rmax[0];
+  double ymax=fd->rmax[1];
+  double xc=fd->cut_xc[icut];
+  double yc=fd->cut_yc[icut];
+  int left=fd->cut_left[icut];
+  int top=fd->cut_top[icut];
+  //printf("rmax=(%g,%g), xc=(%g,%g), left=%i, top=%i\n",xmax,ymax,xc,yc,left,top);
+  if(left==1){//cut defined from ( 0, yc ) to ( xc, 0 ) or ( xc, ymax ) if top==1
+    *x0=0;
+    *y0=yc;
+    *x1=xc;
+    *y1=ymax*top;
+    //printf(" leftt: pc0=(%g,%g), pc1=(%g,%g)\n",0.0,yc,xc,ymax*top);
+  }  else {              //cut defined from ( xc, 0 ) or ( xc, ymax ) [if top==1] to ( xmax, yc ).
+    *x0=xc;
+    *y0=ymax*top;
+    *x1=xmax;
+    *y1=yc;
+    //printf("right: pc0=(%g,%g), pc1=(%g,%g)\n",xc,xmax*top,xmax,yc);
+  }
+  //printf("cut: pc0=(%g,%g), pc1=(%g,%g)\n",*x0,*y0,*x1,*y1);
+  //cut line is 0=x0+(x-x0)*(y1-y0)/(x1-x0)-y
+}
+
+//find where cut meets a line
+void get_cut_intersection(struct FaceData *fd,int icut, double x0, double y0, double x1, double y1, double *x, double *y){
+  double xc0=0,yc0=0,xc1=0,yc1=0;
+  get_cut_line(fd,icut,&xc0,&yc0,&xc1,&yc1);
+  //printf("p0=(%g,%g), p1=(%g,%g)\n",x0,y0,x1,y1);
+  //printf("pc0=(%g,%g), pc1=(%g,%g)\n",xc0,yc0,xc1,yc1);
+  double dx=x1-x0;
+  double dy=y1-y0;
+  double dxc=xc1-xc0;
+  double dyc=yc1-yc0;
+  double Cxx=dx*dxc;
+  double Cxy=dx*dyc;
+  double Cyx=dy*dxc;
+  double Cyy=dy*dyc;
+  //printf("dx=%g, dy=%g, dxc=%g, dyc=%g\n",dx,dy,dxc,dyc);
+  //printf("Cxx=%g, Cxy=%g, Cyx=%g, Cyy=%g\n",Cxx,Cxy,Cyx,Cyy);
+  *x = ( (yc0-y0)*Cxx - xc0*Cxy + x0*Cyx ) / ( Cyx - Cxy );
+  *y = ( (xc0-x0)*Cyy - yc0*Cyx + y0*Cxy ) / ( Cxy - Cyx );
+
+  //check:
+  //  Delta = Cxy-Cyx
+  // (x-x0)*-Delta = (yc0-y0)*Cxx - xc0*Cxy + x0*Cyx + x0*(Cxy - Cyx)
+  //               = (yc0-y0)*Cxx - (xc0-x0)*Cxy 
+  // (y-y0)*Delta =  (xc0-x0)*Cyy - yc0*Cyx + y0*Cxy - y0*(Cxy - Cyx)
+  // (y-y0)*Delta =  (xc0-x0)*Cyy - (yc0-y0)*Cyx
+  // (y-y0)*dx0*Delta = (xc0-x0)*dx0*Cyy - (yc0-y0)*dx0*Cyx
+  //                  = (xc0-x0)*dy0*Cxy - (yc0-y0)*dy0*Cxx
+  //                  = dy0*((xc0-x0)*Cxy - (yc0-y0)*Cxx )
+  //                  = dy0*(x-x0)*Delta                               check!
+}
+
+
 
 
 

@@ -136,18 +136,22 @@ int main(int argc, char **argv)
 
   data->f = malloc(data->N*sizeof(double));
 
-   /* set up GSL random number generators */
-   const gsl_rng_type *T = gsl_rng_default;
-
-   gsl_rng *ir = gsl_rng_alloc (T);
-   gsl_rng *nr = gsl_rng_alloc (T);
-   gsl_rng *r  = gsl_rng_alloc (T);
-   gsl_rng_env_setup();
-   gsl_rng_set (r, data->seed);
-   gsl_rng_set (nr, data->nseed);
-   gsl_rng_set (ir, data->iseed);
-
-
+  /* set up GSL random number generators */
+  const gsl_rng_type *T = gsl_rng_default;
+  
+  gsl_rng *ir = gsl_rng_alloc (T);
+  gsl_rng *nr = gsl_rng_alloc (T);
+  gsl_rng *r  = gsl_rng_alloc (T);
+  gsl_rng_env_setup();
+  gsl_rng_set (r, data->seed);
+  gsl_rng_set (nr, data->nseed);
+  gsl_rng_set (ir, data->iseed);
+  
+  /* Dump info on faces */
+  FILE *facefile = fopen("faces.dat","w");
+  write_faces(facefile,lpf);
+  fclose(facefile);
+  
   /* Simulate noise data */
   struct Model *injection = malloc(sizeof(struct Model));
   initialize_model(injection,data->N,6, data->DOF);
