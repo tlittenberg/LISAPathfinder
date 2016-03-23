@@ -4,7 +4,7 @@ FILE  = "impactchain.dat"
 
 unset key
 
-set cbrange [-20:0]
+set cbrange [-10:0]
 
 set xlabel 'x'
 set ylabel 'y'
@@ -28,9 +28,11 @@ set pm3d depthorder hidden3d
 set pm3d border lc rgb "grey"
 set hidden3d front
 
+idown=200
+
 splot \
-	FILE every 10::20000 u 10:11:12:1 w d palette,\
-	FILE every 100::20000 u (r*sin(acos($7))*cos($8)):(r*sin(acos($7))*sin($8)):(r*$7) w p ls 7 ps 0.3 lc rgb "grey",\
+	FILE every idown::20000 u 10:11:12:1 w d palette,\
+	FILE every idown::20000 u (r*sin(acos($7))*cos($8)):(r*sin(acos($7))*sin($8)):(r*$7) w p ls 7 ps 0.3 lc rgb "grey",\
 	'faces.dat' u ($1):($2):($3):(-20) w pm3d,\
 	'injection.dat' u 7:8:9 w p ls 6 ps 3 lc rgb "blue",\
         'injection.dat' u (r*sin(acos($3))*cos($4)):(r*sin(acos($3))*cos($4)):(r*$3) w p ls 6 ps 3 lc rgb "red"	

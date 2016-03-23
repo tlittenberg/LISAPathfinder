@@ -288,6 +288,11 @@ int main(int argc, char **argv)
         //copy x to y
         copy_model(model[index[ic]], trial, data->N, data->DOF);
 	
+	//debug
+	//printf("pre-proposal:\n");
+	//double rloc[2];
+	//body2face(lpf,model[index[ic]]->source[0]->face,model[index[ic]]->source[0]->r,rloc);
+
         //choose new parameters for y
         proposal(flags, data, lpf, model[index[ic]], trial, r, &reject, nmax, drew_impact_from_prior);
 //        if(ic==0 && trial->source[0]->face==1)printf("draw={%g,%g,%g}\n", trial->source[0]->r[0],trial->source[0]->r[1],trial->source[0]->r[2]);
@@ -320,6 +325,10 @@ int main(int argc, char **argv)
 
 //          if(ic==0 && trial->source[0]->face==1)printf("H=%g, logLy=%g, logLx=%g\n",H,trial->logL,model[index[ic]]->logL);
 
+	  //debugging
+          //source=model[index[ic]]->source[0];
+          //if(trial->logL>-1e60)fprintf(stdout,"m %lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", trial->logL-injection->logL ,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
+
           //adopt new position w/ probability H
           if(H>alpha)
           {
@@ -330,8 +339,9 @@ int main(int argc, char **argv)
 	    //printf("(accepted trial):\n");
 	    //check_incidence(lpf,model[index[ic]]);
           }
-          source=trial->source[0];
-//          if(trial->logL>-1e60)fprintf(stdout,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", trial->logL-injection->logL ,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
+	  //debugging
+          //source=trial->source[0];
+          //if(trial->logL>-1e60)fprintf(stdout,"t %lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", trial->logL-injection->logL ,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
 
         }//Metropolis-Hastings
       }//Loop over inter-model updates
@@ -365,6 +375,9 @@ int main(int argc, char **argv)
       if(flags->use_spacecraft==0){
 	face2map(lpf, source->r,source->map);
 	which_face_r(source->r);
+      } else {
+	int iface=source->face;
+	body2face(lpf, iface, source->r,source->map);
       }
       fprintf(impactchain,"%lg ",model[ic]->logL-injection->logL);
       fprintf(impactchain,"%i ",model[ic]->N);

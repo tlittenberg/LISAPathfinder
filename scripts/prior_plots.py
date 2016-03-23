@@ -55,7 +55,7 @@ def side_area(x0,y0,x1,y1):
     return math.sqrt((y1-y0)**2+(x1-x0)**2)*H
 
 def side_normal(x0,y0,x1,y1):
-    return np.array([y1-y0,-(x1-x0)])/math.sqrt((y1-y0)**2+(x1-x0)**2)
+    return -np.array([y1-y0,-(x1-x0)])/math.sqrt((y1-y0)**2+(x1-x0)**2)
 
 top_area=0
 top_area+=triangle_area(C1_X,C1_Y,C2_X,C2_Y,C3_X,C3_Y)
@@ -102,6 +102,9 @@ phi=math.atan2(C1_Y-C8_Y,C1_X-C8_X);print("x-sect at phi=",phi,": ",area(phi)," 
     
 data=np.loadtxt("impactchain.dat")
 #data=np.loadtxt("mini_impactchain.dat")
+nburnfac=0.3
+data=data[nburnfac*data.shape[0]:]
+
 skydata=data[:,6:8]
 print np.shape(data)
 print data
@@ -184,13 +187,12 @@ plt.grid(True)
 pp.savefig()
 plt.clf()
 
-print "checking incidence angles:"
-
-for t in data:
-    iface=t[8]
-    if(iface<8):
-        if(iface<0 or math.cos(t[7]-phi_norm[iface])<0):
-            print "err:"+str(t.tolist())
+#print "checking incidence angles:"
+#for t in data:
+#    iface=t[8]
+#    if(iface<8):
+#        if(iface<0 or math.cos(t[7]-phi_norm[iface])<0):
+#            print "err:"+str(t.tolist())
 
 for iface in range(8):
     facephi=[t[7] for t in data if t[8]==iface]
@@ -211,6 +213,44 @@ for iface in range(8):
     l = plt.plot(bins, np.sqrt(1-bins*bins)/(math.pi/2), '--r', linewidth=1)
     plt.xlabel('cth on face '+str(iface))
     plt.ylabel('Probability')
+    plt.grid(True)
+    #plt.show()
+    pp.savefig()
+    plt.clf()
+
+#We downsample the data for scatter plots    
+downfac=50 #downsample factor
+ncol=12
+print "data shape: ",data.shape
+icross=int(data.shape[0]/downfac)
+datad=data[0:downfac*icross].reshape(downfac,icross,ncol)[0]
+
+for iface in range(10):
+    x=np.array([t[4] for t in data if abs(t[8])==iface])
+    y=np.array([t[5] for t in data if abs(t[8])==iface])
+    xd=np.array([t[4] for t in datad if abs(t[8])==iface])
+    yd=np.array([t[5] for t in datad if abs(t[8])==iface])
+    plotarea=fa[iface]
+    plotareatop=3.326652
+    if(iface>7): #for consistent plot densities we want the area of the full rectangle rather than the octagon face area
+        plotarea=plotareatop
+    nbins=math.sqrt(plotarea/plotareatop)*50
+    #n, bins, patches = plt.hist2d(x,y, bins=nbins)
+    n, xbins, ybins = np.histogram2d(x,y, bins=nbins)
+    im = plt.imshow(n, interpolation='nearest', origin='low',extent=[xbins[0], xbins[-1], ybins[0], ybins[-1]])
+    plt.title('impact point density on face '+str(iface))
+    plt.xlabel('x')
+    plt.ylabel('y')
+    pp.savefig()
+    plt.clf()
+    #print xd,yd
+    print np.shape(xd)
+    plt.scatter(xd,yd)
+    plt.xlim(xbins[0], xbins[-1])
+    plt.ylim(ybins[0], ybins[-1])
+    plt.title('impact point scatter on face '+str(iface))
+    plt.xlabel('x')
+    plt.ylabel('y')
     plt.grid(True)
     #plt.show()
     pp.savefig()

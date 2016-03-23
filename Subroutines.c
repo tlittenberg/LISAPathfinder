@@ -169,6 +169,7 @@ void proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, st
   {
     for(n=0; n<model->N; n++){
       //printf("(source=%i) ",n);
+      //printf("in-proposal: n=%i\n",n);
       if(flags->use_spacecraft==0)
 	impact_proposal(data, lpf, model->source[n], trial->source[n], r);
       else
@@ -293,7 +294,7 @@ void draw_impact_point_sc(struct Data *data, struct Spacecraft *lpf, struct Sour
   double cos2thetaF= gsl_rng_uniform(seed);
   double costhetaF=sqrt(cos2thetaF);
   double phiF=gsl_rng_uniform(seed)*2.0*M_PI;
-  face_sky_to_body_sky(lpf,source->face,costhetaF,phiF,&source->costheta,&source->phi);//this currently uses old get_normal
+  face_sky_to_body_sky(lpf,source->face,costhetaF,phiF,&source->costheta,&source->phi);
   while(source->phi > 2.0*M_PI) source->phi -= 2.0*M_PI;
   while(source->phi < 0)        source->phi += 2.0*M_PI;
   
@@ -330,7 +331,6 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
   if(gsl_rng_uniform(r)<0.5)
   {
     draw_impact_point(data,lpf,trial,r);
-    
   }
   //gaussian
   else
@@ -359,13 +359,15 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
     //perturb map coordinates
     if(gsl_ran_ugaussian(r)<0.5)
     {
-    trial->map[0] = model->map[0] + gsl_ran_ugaussian(r)*0.01;
-    trial->map[1] = model->map[1] + gsl_ran_ugaussian(r)*0.01;
+      trial->map[0] = model->map[0] + gsl_ran_ugaussian(r)*0.01;
+      trial->map[1] = model->map[1] + gsl_ran_ugaussian(r)*0.01;
+      printf("gaussian small\n");
     }
     else
     {
       trial->map[0] = model->map[0] + gsl_ran_ugaussian(r)*0.05;
       trial->map[1] = model->map[1] + gsl_ran_ugaussian(r)*0.05;
+      printf("gaussian big\n");
     }
     
     //map back to 3D
@@ -441,6 +443,8 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
   //gaussian
   else
   {
+    double *rface=malloc(2*sizeof(double));
+
     //printf("gauss\n");
     trial->P  = model->P  + gsl_ran_ugaussian(r)*1.0;
     trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.25;
@@ -448,22 +452,35 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     trial->phi      = model->phi + gsl_ran_ugaussian(r)*0.01;
     trial->costheta = model->costheta + gsl_ran_ugaussian(r)*0.01;
     
-    //map to 2D
     trial->r[0] = model->r[0];
     trial->r[1] = model->r[1];
     trial->r[2] = model->r[2];
 
-    //model->face = which_face_r(trial->r);
-
     trial->face = model->face;
 
     //printf("face=%i, r0={%g,%g,%g} ",trial->face, trial->r[0],trial->r[1], trial->r[2]);
+    //debug check
+    //body2face(lpf,model->face,trial->r,rface);      
 
-    double *rface=malloc(2*sizeof(double));
     int iface=model->face;
     //printf("\n\n\nGaussian step:\n");
     body2face(lpf,iface,trial->r,rface);      
-    double deltascale;//for sanity check;
+    //debug check
+    //face2body(lpf,iface,rface,trial->r);
+    
+    double scale=0.05;
+    if(gsl_ran_ugaussian(r)<0.5)scale=0.01;
+    double stepx=gsl_ran_ugaussian(r)*scale;
+    double stepy=gsl_ran_ugaussian(r)*scale;
+    double deltascale=sqrt(stepx*stepx+stepy*stepy);
+    rface[0] += stepx;
+    rface[1] += stepy;
+
+    adjust_face(lpf,&iface,rface);
+    face2body(lpf,iface,rface,trial->r);
+    trial->face=iface;
+    
+    //debug check
     if(0 && iface>=0){
       //sanity check on results for testing:
       double dx=model->r[0] - trial->r[0];
@@ -487,7 +504,7 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     while(trial->costheta < -1.0) trial->costheta = -2.0-trial->costheta;
 
     *drew_prior=0;
-    
+    //printf("returning from proposal trial->face=%i\n",trial->face);
   }
   
 }
@@ -843,7 +860,7 @@ void max_loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *
 
 double loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Flags *flags)
 {
-  //return 0;
+  return 0;
   int i,k,n,re,im;
   double logL = 0.0;
   

@@ -83,7 +83,6 @@ void initialize_spacecraft(struct Spacecraft *spacecraft)
   spacecraft->faces[8]->rmax[1]=ymax-ymin;
   set_basis(spacecraft->faces[8]->basis,1,0,0,0,1,0);
   spacecraft->faces[8]->area=2.77331;
-  spacecraft->faces[8]->invert=1;
   printf("r0=(%g,%g,%g)\n",spacecraft->faces[8]->r0[0],spacecraft->faces[8]->r0[1],spacecraft->faces[8]->r0[2]);
   printf("rmax=(%g,%g)\n",spacecraft->faces[8]->rmax[0],spacecraft->faces[8]->rmax[1]);
   //set cut-outs for bottom
@@ -98,6 +97,7 @@ void initialize_spacecraft(struct Spacecraft *spacecraft)
   spacecraft->faces[9]->rmax[1]=ymax-ymin;
   set_basis(spacecraft->faces[9]->basis,1,0,0,0,1,0);
   spacecraft->faces[9]->area=2.77331;
+  spacecraft->faces[9]->invert=0;
   printf("r0=(%g,%g,%g)\n",spacecraft->faces[9]->r0[0],spacecraft->faces[9]->r0[1],spacecraft->faces[9]->r0[2]);
   printf("rmax=(%g,%g)\n",spacecraft->faces[9]->rmax[0],spacecraft->faces[9]->rmax[1]);
   //set cut-outs for top
@@ -145,7 +145,7 @@ void initialize_face(struct FaceData *face, int ncuts,double x0,double y0,double
   face->basis[1]=malloc(3*sizeof(double));
   face->basis[2]=malloc(3*sizeof(double));
   set_basis(face->basis,dx/face->rmax[0],dy/face->rmax[0],0,0,0,1);
-  face->invert=0;
+  face->invert=1; //We are setting outward normals
   face->r0=malloc(3*sizeof(double));
   face->r0[0]=x0;
   face->r0[1]=y0;
@@ -234,6 +234,7 @@ void adjust_face(struct Spacecraft *lpf, int *iface, double *r)
 
   //First we must check if the face coordinate point falls in (or beyond) one of the cut regions.
   struct FaceData *fd=lpf->faces[*iface];
+  //printf("adjust: [%i](%g,%g), rmax=(%g,%g)\n",*iface,r[0],r[1],fd->rmax[0],fd->rmax[1]);
   double xmax=fd->rmax[0];
   double ymax=fd->rmax[1];
   double x=r[0],y=r[1]; //define the coordinate point (x,y) confined to the rectangle for the cut test.
@@ -261,20 +262,19 @@ void adjust_face(struct Spacecraft *lpf, int *iface, double *r)
 void wrap_face(struct Spacecraft *lpf, int dir, int *iface, double *r){
   struct FaceData *face=lpf->faces[*iface];
   struct FaceData *oface;
+  //printf("wrap?: [%i](%g,%g), rmax[%i]=%g\n",*iface,r[0],r[1],dir,face->rmax[dir]);
   double newr[2];
   int odir=-1,end=0,ioface=-1,flip=0;
   if(dir==0){//x
     if(r[dir]<0){
       ioface=face->xdn_face;
       odir=face->xdn_dir;
-      //r0=face->xdn0;
       flip=face->xdn_flip;
       end=face->xdn_end;
       r[dir]*=-1;
     } else if (r[dir]>face->rmax[dir]) {
       ioface=face->xup_face;
       odir=face->xup_dir;
-      //r0=face->xup0;
       flip=face->xup_flip;
       end=face->xup_end;
       r[dir]-=face->rmax[dir];
@@ -283,21 +283,21 @@ void wrap_face(struct Spacecraft *lpf, int dir, int *iface, double *r){
     if(r[dir]<0){
       ioface=face->ydn_face;
       odir=face->ydn_dir;
-      //r0=face->ydn0;
       flip=face->ydn_flip;
       end=face->ydn_end;
       r[dir]*=-1;
     } else if (r[dir]>face->rmax[dir]) {
       ioface=face->yup_face;
       odir=face->yup_dir;
-      //r0=face->yup0;
       flip=face->yup_flip;
       end=face->yup_end;
       r[dir]-=face->rmax[dir];
     }
   }
   if(odir<0)return;
+  //printf("wrapping from face %i to face %i\n",*iface, ioface);
   if(ioface>=0){
+    //printf("start: [%i](%g,%g), rmax[%i]=%g\n",*iface,r[0],r[1],dir,face->rmax[dir]);
     int i;
     oface=lpf->faces[ioface];
     //compute the zero-offset for the transf to the new face's frame
@@ -313,6 +313,7 @@ void wrap_face(struct Spacecraft *lpf, int dir, int *iface, double *r){
     if(flip==1)newr[1-odir]*=-1;
     r[0]=newr[0];
     r[1]=newr[1];
+    //printf("   to: [%i](%g,%g), rmax[%i]=%g, end=%i, flip=%i\n",ioface,newr[0],newr[1],odir,oface->rmax[odir],end,flip);
   } 
   *iface=ioface;    
 }
@@ -325,6 +326,11 @@ void face2body(struct Spacecraft *lpf, int iface, double *rface, double *rbody){
   for(i=0;i<3;i++) rbody[i] = face->r0[i] + rface[0]*face->basis[0][i] + rface[1]*face->basis[1][i];
   //printf("r0=(%g,%g,%g)\n",face->r0[0],face->r0[1],face->r0[2]);
   //printf(" converted face -> body: [%i](%g,%g) -> (%g,%g,%g)\n",iface,rface[0],rface[1],rbody[0],rbody[1],rbody[2]);
+  //double rref[3];
+  //printf("r0=(%g,%g,%g)\n",face->r0[0],face->r0[1],face->r0[2]);
+  //for(i=0;i<3;i++) rref[i] = rbody[i] - face->r0[i];
+  //double zmiss=face->basis[2][0]*rref[0]+face->basis[2][1]*rref[1]+face->basis[2][2]*rref[2];
+  //if(fabs(zmiss)>1e-12)printf("* * * * * Off-face! zmiss=%g\n",zmiss);
 }
 
 //Returns 3d body-frame vector from in-face coordinate
@@ -336,7 +342,9 @@ void body2face(struct Spacecraft *lpf, int iface, double *rbody, double *rface){
   //First reference face corner
   //printf("r0=(%g,%g,%g)\n",face->r0[0],face->r0[1],face->r0[2]);
   for(i=0;i<3;i++) rref[i] = rbody[i] - face->r0[i];
-  //printf("e3.rref=%g\n",face->basis[2][0]*rref[0]+face->basis[2][1]*rref[1]+face->basis[2][2]*rref[2]);
+  //double zmiss=face->basis[2][0]*rref[0]+face->basis[2][1]*rref[1]+face->basis[2][2]*rref[2];
+  //printf("e3.rref=%g\n",zmiss);
+  //if(fabs(zmiss)>1e-12)printf("***** Off-face! zmiss=%g\n",zmiss);
   for(j=0;j<2;j++){
     rface[j]=0;
     for(i=0;i<3;i++) rface[j] += face->basis[j][i]*rref[i];
@@ -344,12 +352,17 @@ void body2face(struct Spacecraft *lpf, int iface, double *rbody, double *rface){
   //printf(" converted body -> face: (%g,%g,%g) -> [%i](%g,%g)\n",rbody[0],rbody[1],rbody[2],iface,rface[0],rface[1]); 
 }
 
-///JBG: Tyson probably already has something that could be made to work, but this is indep. and optimized for this computation.
+
+///JBG: Tyson probably already has something that could be made to work, but this is indep. and optimized for this computation
 void face_sky_to_body_sky(struct Spacecraft *lpf, int face, double costhetaF, double phiF, double* costheta, double* phi)
 {
   double *n=malloc(3*sizeof(double));
   get_normal_lpf(lpf,n,face);//We assume this is unit-normalized
 
+  //There are two conventions that are important here:
+  //We assume either:  sky-costheta and sky-phi point *toward* the source and the face normals are *outward*
+  //              or:  sky-costheta and sky-phi point *away from* the source and the face normals are *inward*
+  
   //This computation should realize, beginning with some unit vector in the face frame, (with the "x-side" assumed to
   //be moving toward the bottom [if that matters]) first a rotation to shift the face normal to the right inclination
   //in the x-z plane, then a rotation of the x-y plane.
@@ -368,7 +381,7 @@ void face_sky_to_body_sky(struct Spacecraft *lpf, int face, double costhetaF, do
 }
 
 void get_normal_lpf(struct Spacecraft *lpf, double *n, int face){
-  //This are inward-facing
+  //Whether this is inward-facing or outward facing depends on how inverts are set in initialization
   if(face<0)return;
   struct FaceData *fc = lpf->faces[face];
   int i;
@@ -444,7 +457,12 @@ void write_faces(FILE *out, struct Spacecraft *lpf){
       for(j=0;j<2;j++)p[iex0+1][j]=newp2[j];
     }//end of cuts
 
-    //write the results out
+    //Write the results out
+
+    //First write a comment with basic face info:
+    double rn[3];
+    get_normal_lpf(lpf,rn,n);
+    fprintf(out,"#Face %i: normal=(%g,%g,%g)\n",n,rn[0],rn[1],rn[2]);
     /*
     double r[3];
     for(i=0;i<np;i++){
