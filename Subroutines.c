@@ -860,7 +860,7 @@ void max_loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *
 
 double loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Flags *flags)
 {
-  return 0;
+  //return 0;
   int i,k,n,re,im;
   double logL = 0.0;
   
