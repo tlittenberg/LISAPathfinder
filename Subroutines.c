@@ -105,6 +105,7 @@ void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source 
 {
 //  double a = 1.0;
 //  double A = 2.*(1.0 + sqrt(2.))*a*a;
+  //TODO: Areas need to be computed from LPF.h
   double area[10];
   area[0] = 0.350682;
   area[1] = 0.66421;
@@ -306,11 +307,17 @@ void draw_impact_point_sc(struct Data *data, struct Spacecraft *lpf, struct Sour
     source->face = -1;
   }
   count++;
+  //printf("drew impact point on face=%i\n",source->face);
+}
+
+void draw_impactor(struct Data *data, struct Source *source, gsl_rng *seed)
+{
   //momentum and impact time
   source->P  = gsl_ran_exponential(seed,20);
   source->t0 = gsl_rng_uniform(seed)*data->T;
-  //printf("drew impact point on face=%i\n",source->face);
 }
+
+
 
 void detector_proposal(struct Data *data, struct Model *model, struct Model *trial, gsl_rng *r)
 {
@@ -437,6 +444,13 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
   if(gsl_rng_uniform(r)<0.5)
   {
     draw_impact_point_sc(data,lpf,trial,r);
+
+    //10% of time also draw time & amplitude from prior
+    if(gsl_rng_uniform(r)<0.1)
+    {
+      draw_impactor(data, trial, r);
+    }
+
     //printf("draw\n");
     *drew_prior=1;
   }
@@ -521,6 +535,7 @@ void dimension_proposal(struct Flags *flags, struct Data *data, struct Spacecraf
     {
       if(flags->use_spacecraft==0)draw_impact_point(data,lpf,trial->source[trial->N],r);
       else draw_impact_point_sc(data,lpf,trial->source[trial->N],r);
+      draw_impactor(data, trial->source[trial->N], r);
       trial->N = model->N+1;
     }
   }

@@ -127,6 +127,7 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
 
 void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source *source, gsl_rng *seed);
 void draw_impact_point_sc(struct Data *data, struct Spacecraft *lpf, struct Source *source, gsl_rng *seed);
+void draw_impactor(struct Data *data, struct Source *source, gsl_rng *seed);
 
 void logprior(struct Data *data, struct Model *model, struct Model *injection);
 void logprior_sc(struct Data *data,struct Spacecraft *lpf,  struct Model *model, struct Model *injection, int *drew_prior);

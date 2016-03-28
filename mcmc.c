@@ -155,13 +155,13 @@ int main(int argc, char **argv)
   /* Simulate noise data */
   struct Model *injection = malloc(sizeof(struct Model));
   initialize_model(injection,data->N,6, data->DOF);
-  
+
 
   for(i=0; i<3; i++)
   {
-    injection->Ais[i] = 2.0e-9; // m*Hz^-1/2
-    injection->Ath[i] = 1.0e-8; // N*Hz^-1/2
-    injection->Ars[i] = 2.0e-7; // rad*Hz^-1/2
+    injection->Ais[i] = NOISE_GRS_POS;
+    injection->Ath[i] = NOISE_COLD_GAS;
+    injection->Ars[i] = NOISE_GRS_ANG;
   }
   
   /* Simulate source data */
@@ -174,7 +174,8 @@ int main(int argc, char **argv)
     source->face = -1;
     if(flags->use_spacecraft==0)while(source->face ==-1) draw_impact_point(data, lpf, source, ir);
     else while(source->face ==-1) draw_impact_point_sc(data, lpf, source, ir);
-    source->P = 20;
+    draw_impactor(data, source, r);
+    source->P = 40;
     //source->P = 0;//    ***************************************           hack to test the prior without signal
     printf("hit on face %i\n",source->face);
   }
@@ -226,7 +227,7 @@ int main(int argc, char **argv)
 
     for(n=0; n<model[ic]->N; n++)
     {
-      model[ic]->source[n]->P  = gsl_rng_uniform(r)*100;
+      model[ic]->source[n]->P  = gsl_ran_exponential(r,100.);
       model[ic]->source[n]->t0 = gsl_rng_uniform(r)*data->T;
 
     }
