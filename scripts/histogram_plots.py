@@ -23,17 +23,19 @@ C8_X = -5.263000e-01 # x coordinate of spacecraft bottom deck corner 8 [m]
 C8_Y = -9.090000e-01 # y coordinate of spacecraft bottom deck corner 8 [m]
 H = 8.315000e-01
 
+
 def area(phi_off):
     phi_off=phi_off
+    xproj=lambda y,x:math.sqrt(x*x+y*y)*math.sin(math.atan2(y,x)+phi_off)
     x=np.zeros(8)
-    x[0]=math.sin(math.atan2(C1_Y,C1_X)+phi_off);
-    x[1]=math.sin(math.atan2(C2_Y,C2_X)+phi_off);
-    x[2]=math.sin(math.atan2(C3_Y,C3_X)+phi_off);
-    x[3]=math.sin(math.atan2(C4_Y,C4_X)+phi_off);
-    x[4]=math.sin(math.atan2(C5_Y,C5_X)+phi_off);
-    x[5]=math.sin(math.atan2(C6_Y,C6_X)+phi_off);
-    x[6]=math.sin(math.atan2(C7_Y,C7_X)+phi_off);
-    x[7]=math.sin(math.atan2(C8_Y,C8_X)+phi_off);
+    x[0]=xproj(C1_Y,C1_X);
+    x[1]=xproj(C2_Y,C2_X);
+    x[2]=xproj(C3_Y,C3_X);
+    x[3]=xproj(C4_Y,C4_X);
+    x[4]=xproj(C5_Y,C5_X);
+    x[5]=xproj(C6_Y,C6_X);
+    x[6]=xproj(C7_Y,C7_X);
+    x[7]=xproj(C8_Y,C8_X);
     w=max(x)-min(x)
     return w*H
 
