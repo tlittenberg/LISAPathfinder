@@ -250,7 +250,7 @@ void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source 
 
 void draw_impact_point_sc(struct Data *data, struct Spacecraft *lpf, struct Source *source, gsl_rng *seed)
 {
-  const int nface=10;
+  enum{ nface=10};
   int i;
   static double cum_area[nface];
   static double total_area;
