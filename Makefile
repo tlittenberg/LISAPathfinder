@@ -1,15 +1,23 @@
-#assumes   module load comp/intel-15.0.3.187 
-GSLROOT = /usr/local/other/SLES11.1/gsl/1.16/gnu-4.8.1
-CXX = icpc
-CC = icc
 
-INCDIR = /opt/local/include $(GSLROOT)/include
-LIBDIR = /opt/local/lib $(GSLROOT)/lib
+ifneq ($(findstring discover,$(shell hostname)),)
+  #build for discover
+  #assumes   module load comp/intel-15.0.3.187 
+  GSLROOT = /usr/local/other/SLES11.1/gsl/1.16/gnu-4.8.1
+  #CXX = icpc
+  CC = icc
+  INCDIR = $(GSLROOT)/include
+  LIBDIR = $(GSLROOT)/lib
+else 
+  #OSX build
+  CC = gcc
+  INCDIR = /opt/local/include
+  LIBDIR = /opt/local/lib
+endif
+
 
 LIBS  = gsl gslcblas m
 CCFLAGS = -g -Wall -O3 -std=gnu99 
 
-CC = gcc
 
 OBJS = Subroutines.o TimePhaseMaximization.o LISAPathfinder.o Spacecraft.o
 
