@@ -1,9 +1,13 @@
+#assumes   module load comp/intel-15.0.3.187 
+GSLROOT = /usr/local/other/SLES11.1/gsl/1.16/gnu-4.8.1
+CXX = icpc
+CC = icc
 
-INCDIR = /opt/local/include
-LIBDIR = /opt/local/lib
+INCDIR = /opt/local/include $(GSLROOT)/include
+LIBDIR = /opt/local/lib $(GSLROOT)/lib
 
 LIBS  = gsl gslcblas m
-CCFLAGS = -g -Wall -O3 -std=gnu99
+CCFLAGS = -g -Wall -O3 -std=gnu99 
 
 CC = gcc
 
