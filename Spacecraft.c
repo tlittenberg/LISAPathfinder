@@ -3,6 +3,8 @@
 #include "LPF.h"
 #include "Spacecraft.h"
 #include <stdlib.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 //***********************************************
 //   Routines setting Spacecraft data
