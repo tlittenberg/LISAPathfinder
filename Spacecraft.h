@@ -84,7 +84,7 @@ void MomentOfInertia(double ***I);
   
 //Spacecraft struct utilization
 
-void adjust_face(struct Spacecraft *lpf, int *face, double *r);
+void adjust_face(struct Spacecraft *lpf, int *face, double *r, gsl_rng *seed);
 
 void wrap_face(struct Spacecraft *lpf, int dir, int *iface, double *r);
 
