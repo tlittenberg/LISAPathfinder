@@ -17,9 +17,32 @@
 
 void parse(int argc, char **argv, struct Data *data, struct Flags *flags);
 
+static void print_usage() {
+  printf("\n");
+  printf("Usage: \n");
+  printf("REQUIRED:\n");
+  printf("  -d | --dof     : degrees of freedom (3 or 6) \n");
+  printf("  -n | --nseed   : seed for noise simulation \n");
+  printf("  -s | --seed    : seed for MCMC \n");
+  printf("OPTIONAL:\n");
+  printf("  -i | --iseed   : seed for injection/data RNG (def. same as noise) \n");
+  printf("  -f | --fixd    : fixed dimension (no RJ)  \n");
+  printf("  -h | --help    : usage information        \n");
+  printf("  -p | --prior   : sample prior             \n");
+  printf("  -v | --verbose : enable verbose output    \n");
+  printf("  -j | --johns   : turn off John's LPF model\n");
+  printf("EXAMPLE:\n");
+  printf("./mcmc --dof 6 --seed 1234 --nseed 1234\n");
+  printf("\n");
+  exit(EXIT_FAILURE);
+}
+
 
 int main(int argc, char **argv)
 {
+
+  /* bail gracefully if no arguments given */
+  if(argc==0)print_usage();
 
   /* declare variables */
   int i,ic,n,mc;
@@ -176,7 +199,7 @@ int main(int argc, char **argv)
     else while(source->face ==-1) draw_impact_point_sc(data, lpf, source, ir);
     draw_impactor(data, source, r);
     source->P = 40;
-    //source->P = 0;//    ***************************************           hack to test the prior without signal
+    //source->P = 1;//    ***************************************           hack to test the prior without signal
     printf("hit on face %i\n",source->face);
   }
 
@@ -425,27 +448,6 @@ int main(int argc, char **argv)
 
 
 
-static void print_usage() {
-   printf("\n");
-   printf("Usage: \n");
-   printf("REQUIRED:\n");
-   printf("  -d | --dof     : degrees of freedom (3 or 6) \n");
-   printf("  -n | --nseed   : seed for noise simulation \n");
-   printf("  -s | --seed    : seed for MCMC \n");
-   printf("OPTIONAL:\n");
-   printf("  -i | --iseed   : seed for injection/data RNG (def. same as noise) \n");
-   printf("  -f | --fixd    : fixed dimension (no RJ)  \n");
-   printf("  -h | --help    : usage information        \n");
-   printf("  -p | --prior   : sample prior             \n");
-   printf("  -v | --verbose : enable verbose output    \n");
-   printf("EXAMPLE:\n");
-   printf("./mcmc --dof 6 --seed 1234 --nseed 1234\n");
-   printf("\n");
-   exit(EXIT_FAILURE);
-}
-
-
-
 void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
 {
    data->DOF = 6;
@@ -455,7 +457,7 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
    flags->verbose = 0;
    flags->prior = 0;
    flags->rj = 1;
-   flags->use_spacecraft = 0;  //set to 1 for John's treatment of spacecraft surface structure  
+   flags->use_spacecraft = 1;  //set to 1 for John's treatment of spacecraft surface structure
 
    if(argc==1) print_usage();
 
@@ -498,7 +500,7 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
             break;
          case 'v' : flags->verbose = 1;
 	    break;
-         case 'j' : flags->use_spacecraft = 1;
+         case 'j' : flags->use_spacecraft = 0;
             break;
          default: print_usage();
             exit(EXIT_FAILURE);
