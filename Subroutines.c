@@ -490,7 +490,7 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     rface[0] += stepx;
     rface[1] += stepy;
 
-    adjust_face(lpf,&iface,rface,seed);
+    adjust_face(lpf,&iface,rface,r);
     face2body(lpf,iface,rface,trial->r);
     trial->face=iface;
     
