@@ -1,5 +1,5 @@
 // LPF.c Routines for defining basic LISA Pathfinder structural properties
-// Written by John Baker 2015
+// Written by John Baker 2016
 #include "LPF.h"
 #include "Spacecraft.h"
 #include <stdlib.h>
@@ -223,14 +223,14 @@ void MomentOfInertia(double ***I)
 //   Routines handling Spacecraft faces
 //***********************************************
 
-void adjust_face(struct Spacecraft *lpf, int *iface, double *r)
+void adjust_face(struct Spacecraft *lpf, int *iface, double *r, gsl_rng *seed)
 {
   if(*iface<0)return;
   int i;
   //spacecraft dimensions
   int last=-1;
   int nextlast=-1;
-  int ixy=0;//would be better to randomly choose 0/1 to avoid a tiny asymmetry in jumps that wrap around 2 edges near a cut.
+  int ixy=gsl_rng_uniform(seed)*2;//randomly choose 0/1 to avoid asymmetry in jumps that wrap around 2 edges near a cut.
 
   //First we must check if the face coordinate point falls in (or beyond) one of the cut regions.
   struct FaceData *fd=lpf->faces[*iface];

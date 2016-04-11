@@ -287,7 +287,7 @@ void draw_impact_point_sc(struct Data *data, struct Spacecraft *lpf, struct Sour
     //printf(" drew (%g,%g) on face %i\n",x,y,iface);
     rface[0]=x;
     rface[1]=y;  
-    adjust_face(lpf,&iface,rface);
+    adjust_face(lpf,&iface,rface,seed);
   }
   face2body(lpf,iface,rface,source->r);
   
@@ -490,7 +490,7 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     rface[0] += stepx;
     rface[1] += stepy;
 
-    adjust_face(lpf,&iface,rface);
+    adjust_face(lpf,&iface,rface,seed);
     face2body(lpf,iface,rface,trial->r);
     trial->face=iface;
     
