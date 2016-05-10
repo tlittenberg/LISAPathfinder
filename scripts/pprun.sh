@@ -17,6 +17,7 @@ BASEDIR=$(dirname "$0")
 
 for i in `seq 1 $nproc`;
 do
-    $BASEDIR/pprun1.sh $ncount $i &
+    echo launching child on proc $i
+    $BASEDIR/pprun1.sh $ncount $i > pp_proc${i}.out 2>&1 &
 done
 wait
