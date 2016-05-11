@@ -9,6 +9,7 @@
 #include <gsl/gsl_linalg.h>
 
 
+#include "BayesLine.h"
 #include "Subroutines.h"
 #include "LISAPathfinder.h"
 #include "TimePhaseMaximization.h"
@@ -32,6 +33,43 @@
 //  printf("Press Any Key to Continue\n");
 //  getchar();
 //}
+
+void bayesline_mcmc(struct Data *data, struct Model **model, struct BayesLineParams ***bayesline, int *index, double beta, int ic)
+{
+  int ifo,i;
+
+  int N  = data->N;
+  int NI = data->DOF;
+
+
+  //pointers to structures
+  struct Model *model_x = model[index[ic]];
+  struct BayesLineParams **bl_x = bayesline[index[ic]];
+
+  double *r = malloc(2*N*sizeof(double));
+
+  //update PSD for each interferometer
+  for(ifo=0; ifo<NI; ifo++)
+  {
+    //copy over current multi-template & current residual
+    for(i=0; i<2*N; i++)
+    {
+      r[i] = data->d[ifo][i]-model_x->s[ifo][i];
+    }
+
+    //re-run Markovian, full spectrum, full model part of BayesLine
+    BayesLineRJMCMC(bl_x[ifo], r, model_x->Snf[ifo], model_x->invSnf[ifo], model_x->SnS[ifo], N*2, 100, beta, 1);
+
+    for(i=0; i<N; i++)
+    {
+      model_x->Snf[ifo][i]*=2.0;
+      model_x->SnS[ifo][i] = model_x->Snf[ifo][i];
+      model_x->invSnf[ifo][i] = 1./model_x->Snf[ifo][i];
+    }
+  }
+
+  free(r);
+}
 
 void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, int mc)
 {
@@ -159,8 +197,8 @@ void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source 
 
   //momentum and impact time
   //printf("fudge\n");
-  source->P  = gsl_ran_exponential(seed,20);
-  source->t0 = gsl_rng_uniform(seed)*data->T;
+//  source->P  = gsl_ran_exponential(seed,20);
+//  source->t0 = gsl_rng_uniform(seed)*data->T;
 
 }
 
@@ -344,6 +382,13 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
   if(gsl_rng_uniform(r)<0.5)
   {
     draw_impact_point(data,lpf,trial,r);
+
+    //10% of time also draw time & amplitude from prior
+    if(gsl_rng_uniform(r)<0.1)
+    {
+      draw_impactor(data, trial, r);
+    }
+
   }
   //gaussian
   else
@@ -919,8 +964,10 @@ double loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *mo
   double **Snf = malloc(data->DOF*sizeof(double *));
   for(i=0; i<data->DOF; i++) Snf[i] = malloc(data->N*sizeof(double));
   for(i=0; i<data->N; i++)data->f[i] = (double)i*data->df;
-  Sn(data, lpf, model, Snf);
-  
+  //Sn(data, lpf, model, Snf);
+  for(k=0; k<data->DOF; k++) for(i=0; i<data->N; i++) Snf[k][i] = model->Snf[k][i];
+
+
   double **r = malloc(data->DOF*sizeof(double *));
   for(k=0; k<data->DOF; k++) r[k] = malloc(data->N*2*sizeof(double));
   
@@ -1414,6 +1461,18 @@ void copy_model(struct Model *model, struct Model *copy, int N, int DOF)
       copy->s[k][i] = model->s[k][i];
     }
   }
+
+
+  for(k=0; k<DOF; k++)
+  {
+    for(i=0; i<N; i++)
+    {
+      copy->Snf[k][i]    = model->Snf[k][i];
+      copy->SnS[k][i]    = model->SnS[k][i];
+      copy->invSnf[k][i] = model->invSnf[k][i];
+    }
+  }
+
 }
 
 void initialize_source(struct Source *source)
@@ -1429,8 +1488,17 @@ void initialize_source(struct Source *source)
 void initialize_model(struct Model *model, int N, int D, int DOF)
 {
   int i;
-  model->s    = malloc(DOF*sizeof(double *));
-  for(i=0; i<DOF; i++) model->s[i] = malloc(N*2*sizeof(double));
+  model->s      = malloc(DOF*sizeof(double *));
+  model->Snf    = malloc(DOF*sizeof(double *));
+  model->invSnf = malloc(DOF*sizeof(double *));
+  model->SnS    = malloc(DOF*sizeof(double *));
+  for(i=0; i<DOF; i++)
+  {
+    model->s[i]      = malloc(N*2*sizeof(double));
+    model->Snf[i]    = malloc(N*sizeof(double));
+    model->invSnf[i] = malloc(N*sizeof(double));
+    model->SnS[i]    = malloc(N*sizeof(double));
+  }
   
   model->Ais  = malloc(3*sizeof(double));
   model->Ath  = malloc(3*sizeof(double));
@@ -1450,6 +1518,50 @@ void initialize_model(struct Model *model, int N, int D, int DOF)
 //  for(j=0; j<2; j++) model->invI[j] = malloc(3*sizeof(double *));
 //  for(j=0; j<2; j++) for(i=0; i<3; i++) model->I[j][i]    = malloc(N*sizeof(double));
 //  for(j=0; j<2; j++) for(i=0; i<3; i++) model->invI[j][i] = malloc(N*sizeof(double));
+}
+
+void initialize_bayesline(struct BayesLineParams **bayesline, struct Data *data, double **psd)
+{
+  int i,ifo;
+
+  int N    = (int)(data->T*(data->fmax-data->fmin))+1;
+  int imin = (int)(data->T*data->fmin);
+
+  for(ifo=0; ifo<data->DOF; ifo++)
+  {
+    bayesline[ifo] = malloc(sizeof(struct BayesLineParams));
+    bayesline[ifo]->priors = malloc(sizeof(BayesLinePriors));
+    //bayesline[ifo]->priors->invsigma = malloc((int)(Tobs*(fmax-fmin))*sizeof(double));
+    bayesline[ifo]->priors->upper = malloc(N*sizeof(double));
+    bayesline[ifo]->priors->lower = malloc(N*sizeof(double));
+    bayesline[ifo]->priors->mean  = malloc(N*sizeof(double));
+    bayesline[ifo]->priors->sigma = malloc(N*sizeof(double));
+
+    //Set BayesLine priors based on the data channel being used
+    bayesline[ifo]->priors->SAmin = 1.0e-18;
+    bayesline[ifo]->priors->SAmax = 1.0e-5;
+    bayesline[ifo]->priors->LQmin = 1.0e2;
+    bayesline[ifo]->priors->LQmax = 1.0e8;
+    bayesline[ifo]->priors->LAmin = 1.0e-18;
+    bayesline[ifo]->priors->LAmax = 1.0e-5;
+
+    // set default flags
+    //bayesline[ifo]->constantLogLFlag = data->constantLogLFlag;
+
+    //Use initial estimate of PSD to set priors
+    for(i=0; i<N; i++)
+    {
+      //bayesline[ifo]->priors->invsigma[i] = 1./(psd[ifo][i+(int)(Tobs*fmin)]*1.0);
+      bayesline[ifo]->priors->sigma[i] = psd[ifo][i+imin];
+      bayesline[ifo]->priors->mean[i]  = psd[ifo][i+imin];
+      bayesline[ifo]->priors->lower[i] = psd[ifo][i+imin]/10.;
+      bayesline[ifo]->priors->upper[i] = psd[ifo][i+imin]*10.;
+
+    }
+
+    //Allocates arrays and sets constants for for BayesLine
+    BayesLineSetup(bayesline[ifo], data->s[ifo], data->fmin, data->fmax, data->dt, data->T);
+  }
 }
 
 void free_source(struct Source *source)

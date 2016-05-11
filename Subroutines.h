@@ -53,6 +53,9 @@ struct Model
   double *Ais; //inertial sensing noise
   double *Ath; //thruster noise
   double *Ars; //rotational sensing noise
+  double **Snf;
+  double **invSnf;
+  double **SnS;
   double logL; //likelihod
   double logP; //prior
 
@@ -113,6 +116,8 @@ struct Flags
 /*                                    MCMC tools                                      */
 /*                                                                                    */
 /* ********************************************************************************** */
+
+void bayesline_mcmc(struct Data *data, struct Model **model, struct BayesLineParams ***bayesline, int *index, double beta, int ic);
 
 void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, int mc);
 
@@ -220,6 +225,8 @@ void copy_model(struct Model *model, struct Model *copy, int N, int DOF);
 void initialize_source(struct Source *source);
 
 void initialize_model(struct Model *model, int N, int D, int DOF);
+
+void initialize_bayesline(struct BayesLineParams **bayesline, struct Data *data, double **psd);
 
 void free_source(struct Source *source);
 

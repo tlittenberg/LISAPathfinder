@@ -12,6 +12,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
+#include "BayesLine.h"
 #include "Subroutines.h"
 #include "LISAPathfinder.h"
 #include "TimePhaseMaximization.h"

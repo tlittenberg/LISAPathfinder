@@ -3,13 +3,16 @@ INCDIR = /opt/local/include
 LIBDIR = /opt/local/lib
 
 LIBS  = gsl gslcblas m
-CCFLAGS = -g -Wall -O3 -std=gnu99
+CCFLAGS = -g -Wall -std=gnu99
 
 CC = gcc
 
-OBJS = Subroutines.o TimePhaseMaximization.o LISAPathfinder.o Spacecraft.o
+OBJS = BayesLine.o Subroutines.o TimePhaseMaximization.o LISAPathfinder.o Spacecraft.o
 
 all: $(OBJS) mcmc test
+
+BayesLine.o : BayesLine.c BayesLine.h
+	$(CC) $(CCFLAGS) -c BayesLine.c 
 
 LISAPathfinder.o: LISAPathfinder.c LISAPathfinder.h
 	$(CC) $(CCFLAGS) -c LISAPathfinder.c $(INCDIR:%=-I%) $(LIBDIR:%=-L%)

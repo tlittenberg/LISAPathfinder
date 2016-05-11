@@ -9,6 +9,7 @@
 #include <gsl/gsl_randist.h>
 
 #include "LPF.h"
+#include "BayesLine.h"
 #include "Subroutines.h"
 #include "LISAPathfinder.h"
 #include "TimePhaseMaximization.h"
@@ -133,14 +134,14 @@ int main(int argc, char **argv)
   /* Initialize data structure */
   struct Data  *data = malloc(sizeof(struct Data));
 
-  data->T  = 1024.;
-  data->dt = 0.5;
+  data->T  = 8192;
+  data->dt = 2.0;
   data->df = 1.0/data->T;
   data->N  = (int)(data->T/data->dt)/2;
   
   parse(argc, argv, data, flags);
 
-  data->fmin = 1.0e-4; //Hz
+  data->fmin = 0;//1.0e-4; //Hz
   data->fmax = (double)data->N/data->T;  //Hz
 
   data->imin = (int)floor(data->fmin*data->T);
@@ -208,6 +209,7 @@ int main(int argc, char **argv)
 
   simulate_data(data);
   simulate_injection(data,lpf,injection);
+  Sn(data, lpf, injection, injection->Snf);
   injection->logL = loglikelihood(data, lpf, injection, flags);
 
   printf("Injected parameters:   \n");
@@ -259,10 +261,83 @@ int main(int argc, char **argv)
     for(i=0;i<nmax;i++)drew_prior[i]=1;
     if(flags->use_spacecraft==0)logprior(data, model[ic], injection);
     else logprior_sc(data, lpf, model[ic], injection,drew_prior);
+    Sn(data, lpf, model[ic], model[ic]->Snf);
     model[ic]->logL = loglikelihood(data, lpf, model[ic], flags);
 
     free(drew_prior);
   }
+
+  /* Set up BayesLine model */
+  struct BayesLineParams ***bayesline = malloc(NC*sizeof(struct BayesLineParams **));
+  fprintf(stdout,"\n ============ BayesLine ==============\n");
+
+  /*
+   Setup BayesLine structure
+   */
+  for(ic=0; ic<NC; ic++)
+  {
+    bayesline[ic] = malloc(data->DOF*sizeof(struct BayesLineParams *));
+    initialize_bayesline(bayesline[ic], data, model[ic]->Snf);
+  }
+
+  int ifo;
+  int imin=data->imin;
+  int imax=data->imax;
+  int N=data->N;
+  int NI=data->DOF;
+  for(ifo=0; ifo<NI; ifo++)
+  {
+
+    for(i=0; i<N; i++)
+    {
+      bayesline[0][ifo]->power[i] = (data->d[ifo][2*i]*data->d[ifo][2*i]+data->d[ifo][2*i+1]*data->d[ifo][2*i+1]);
+    }
+
+    //TODO: Is passing d(f) to BayesLineSearch etc. redundant?
+    fprintf(stdout,"BayesLine search phase for IFO %i\n", ifo);
+    BayesLineSearch(bayesline[0][ifo], data->d[ifo], data->fmin, data->fmax, data->dt, data->T);
+
+    fprintf(stdout,"BayesLine characterization phase for IFO %i\n", ifo);
+    BayesLineRJMCMC(bayesline[0][ifo], data->d[ifo], model[0]->Snf[ifo], model[0]->invSnf[ifo], model[0]->SnS[ifo], 2*N, 10000, 1.0, 0);
+
+    for(i=0; i<N; i++)
+    {
+      model[0]->Snf[ifo][i]*=2.0;
+      model[0]->SnS[ifo][i] = model[0]->Snf[ifo][i];
+      model[0]->invSnf[ifo][i] = 1./model[0]->Snf[ifo][i];
+    }
+  }
+
+  model[0]->logL = loglikelihood(data, lpf, model[0], flags);
+
+  for(ic=1; ic<NC; ic++)
+  {
+    for(ifo=0; ifo<NI; ifo++)
+    {
+      for(i=0; i<N; i++)
+      {
+        model[ic]->Snf[ifo][i]    = model[0]->Snf[ifo][i];
+        model[ic]->SnS[ifo][i]    = model[0]->SnS[ifo][i];
+        model[ic]->invSnf[ifo][i] = model[0]->invSnf[ifo][i];
+      }
+      copy_bayesline_params(bayesline[0][ifo], bayesline[ic][ifo]);
+    }
+    model[ic]->logL = loglikelihood(data, lpf, model[ic], flags);
+
+  }
+
+  FILE *fptr=fopen("temp.dat","w");
+  for(i=imin; i<imax; i++)
+  {
+    fprintf(fptr,"%lg ",(double)i/data->T);
+    for(ifo=0; ifo<NI; ifo++)
+    {
+      fprintf(fptr,"%lg %lg ", bayesline[0][ifo]->power[i], model[0]->Snf[ifo][i]);
+    }
+    fprintf(fptr,"\n");
+  }
+  fclose(fptr);
+
 
   /* set up distribution */
   //struct PSDposterior *psd = NULL;
@@ -270,7 +345,7 @@ int main(int argc, char **argv)
 
   /* set up MCMC run */
   accept    = 0;
-  MCMCSTEPS = 1000000;
+  MCMCSTEPS = 100000;
   BURNIN    = MCMCSTEPS/100;//1000;
 
   char filename[128];
@@ -293,16 +368,18 @@ int main(int argc, char **argv)
   int reject;
 
   /* Here is the MCMC loop */
+  int step=MCMCSTEPS/100;
+  FILE *psdfile=NULL;
   for(mc=0;mc<MCMCSTEPS;mc++)
   {
-    //printf("\nmc=%i: ",mc);
+//    printf("\nmc=%i: ",mc);
     for(ic=0; ic<NC; ic++)
     {
       int nmax=10;
       int *drew_impact_from_prior=malloc(nmax*sizeof(int));
 
       //debugging
-      //printf("ic,index= %i, %i (model):\n",ic,index[ic]);
+//      printf("ic,index= %i, %i (model):\n",ic,index[ic]);
       //check_incidence(lpf,model[index[ic]]);
 
       for(n=0; n<10; n++)
@@ -313,7 +390,7 @@ int main(int argc, char **argv)
         copy_model(model[index[ic]], trial, data->N, data->DOF);
 	
 	//debug
-	//printf("pre-proposal:\n");
+//	printf("pre-proposal:\n");
 	//double rloc[2];
 	//body2face(lpf,model[index[ic]]->source[0]->face,model[index[ic]]->source[0]->r,rloc);
 
@@ -336,15 +413,15 @@ int main(int argc, char **argv)
 	    logprior(data, trial, injection);
 	  else {
 	    logprior_sc(data, lpf, trial, injection, drew_impact_from_prior);
-	    //printf("trial->logP=%g\n",trial->logP);
+//	    printf("trial->logP=%g\n",trial->logP);
 	    //This is hacky, but we have to do this for the model again knowing if we need to include the impact prior.
 	    logprior_sc(data, lpf, model[index[ic]], injection, drew_impact_from_prior);
 	    //printf("model->logP=%g\n",model[index[ic]]->logP);
 	  }
 	  
           //compute Hastings ratio
-          H     = (trial->logL - model[index[ic]]->logL)/temp[index[ic]] + trial->logP - model[index[ic]]->logP;
-	  //printf("H = %g + %g - %g -> %g\n",(trial->logL - model[index[ic]]->logL)/temp[index[ic]],trial->logP, model[index[ic]]->logP,H);
+          H     = (trial->logL - model[index[ic]]->logL)/temp[ic] + trial->logP - model[index[ic]]->logP;
+//	  printf("H = %g + %g - %g -> %g\n",(trial->logL - model[index[ic]]->logL)/temp[index[ic]],trial->logP, model[index[ic]]->logP,H);
           alpha = log(gsl_rng_uniform(r));
 
 //          if(ic==0 && trial->source[0]->face==1)printf("H=%g, logLy=%g, logLx=%g\n",H,trial->logL,model[index[ic]]->logL);
@@ -373,7 +450,11 @@ int main(int argc, char **argv)
 
     }//Loop over chains
 
-
+    for(ic=0; ic<NC; ic++)
+    {
+      bayesline_mcmc(data, model, bayesline, index, 1./temp[ic], ic);
+      model[index[ic]]->logL = loglikelihood(data, lpf, model[index[ic]], flags);
+    }
     ptmcmc(model, temp, index, r, NC, mc);
 
     //cute PSD histogram
@@ -426,9 +507,23 @@ int main(int argc, char **argv)
     fprintf(logLchain,"\n");
 
 
+    if(mc%step==0)
+    {
+      sprintf(filename,"waveforms/psd.dat.%i",mc/step);
+      psdfile=fopen(filename,"w");
+      for(i=0; i<N; i++)
+      {
+        fprintf(psdfile,"%lg ",(double)i/data->T);
+        for(ifo=0; ifo<data->DOF; ifo++)
+        {
+          fprintf(psdfile,"%lg ",model[index[0]]->Snf[ifo][i]);
+        }
+        fprintf(psdfile,"\n");
+      }
+      fclose(psdfile);
+    }
 
-
-
+    printf("finished round %i\n",mc);
   }//MCMC
   printf("acceptance rate = %g\n",(double)accept/(double)MCMCSTEPS);
 

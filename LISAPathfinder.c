@@ -12,6 +12,7 @@
 #include <gsl/gsl_randist.h>
 
 #include "LPF.h"
+#include "BayesLine.h"
 #include "Subroutines.h"
 #include "LISAPathfinder.h"
 
