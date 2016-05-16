@@ -27,6 +27,12 @@
 /*                                                                                    */
 /* ********************************************************************************** */
 
+//static void system_pause()
+//{
+//  printf("Press Any Key to Continue\n");
+//  getchar();
+//}
+
 void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, int mc)
 {
   /*
@@ -368,13 +374,13 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
     {
       trial->map[0] = model->map[0] + gsl_ran_ugaussian(r)*0.01;
       trial->map[1] = model->map[1] + gsl_ran_ugaussian(r)*0.01;
-      printf("gaussian small\n");
+      //printf("gaussian small\n");
     }
     else
     {
       trial->map[0] = model->map[0] + gsl_ran_ugaussian(r)*0.05;
       trial->map[1] = model->map[1] + gsl_ran_ugaussian(r)*0.05;
-      printf("gaussian big\n");
+      //printf("gaussian big\n");
     }
     
     //map back to 3D
@@ -661,8 +667,24 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, s
     //get vector from proof mass to impact location
     for(i=0; i<3; i++) d[i] = r[i] - lpf->R[0][i];
 
+//    printf("vectors:\n");
+//    for(i=0; i<3; i++)
+//    {
+//      printf("%1.1e = %1.1e - %1.1e\n",d[i],r[i],lpf->R[0][i]);
+//    }
+//    printf("\n");
+
     //get torque direction about proof mass t = (r-R) x e
-    crossproduct(t,d,e);
+    crossproduct(d,e,t);
+
+
+//    printf("cross product:\n");
+//    for(i=0; i<3; i++)
+//    {
+//      if(i==1) printf("%1.1e = %1.1e x %1.1e\n",t[i],d[i],e[i]);
+//      else     printf("%1.1e   %1.1e   %1.1e\n",t[i],d[i],e[i]);
+//    }
+//    printf("\n");
 
     //get angular acceleration omega = (I^-1)t
     for(i=0; i<3; i++)
@@ -672,7 +694,21 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, s
     }
 
   }
-  
+
+//  printf("response:\n");
+//  for(i=0; i<3; i++)
+//  {
+//    for(j=0; j<3; j++)
+//    {
+//      if(lpf->invI[0][i][j]>=0)printf("+");
+//      printf("%1.1e ",lpf->invI[0][i][j]);
+//
+//    }
+//    if(i==1) printf(" x %1.1e = %1.1e\n",t[i], P[i+3]);
+//    else printf("   %1.1e   %1.1e\n",t[i], P[i+3]);
+//  }
+//  system_pause();
+
   for(i=0; i<data->DOF; i++)
   {
     //SineGaussianFourier(h[i], source->t0, P[i], data->N, 0, data->T);
@@ -1336,7 +1372,7 @@ void copy_source(struct Source *source, struct Source *copy, int DOF)
   }
 }
 
-void copy_model(struct Model *model, struct Model *copy, int N, int DOF)
+void copy_model(struct Model *model, struct Model *copy, int Ndata, int DOF)
 {
 
   //copy->mass = model->mass;
@@ -1373,7 +1409,7 @@ void copy_model(struct Model *model, struct Model *copy, int N, int DOF)
   
   for(k=0; k<DOF; k++)
   {
-    for(i=0; i<N*2; i++)
+    for(i=0; i<Ndata*2; i++)
     {
       copy->s[k][i] = model->s[k][i];
     }
@@ -1390,11 +1426,11 @@ void initialize_source(struct Source *source)
 }
 
 
-void initialize_model(struct Model *model, int N, int D, int DOF)
+void initialize_model(struct Model *model, int Ndata, int D, int DOF)
 {
   int i;
   model->s    = malloc(DOF*sizeof(double *));
-  for(i=0; i<DOF; i++) model->s[i] = malloc(N*2*sizeof(double));
+  for(i=0; i<DOF; i++) model->s[i] = malloc(Ndata*2*sizeof(double));
   
   model->Ais  = malloc(3*sizeof(double));
   model->Ath  = malloc(3*sizeof(double));
@@ -1402,7 +1438,7 @@ void initialize_model(struct Model *model, int N, int D, int DOF)
   
   model->N = D;
   model->source = malloc(model->N*sizeof(struct Source*));
-  for(i=0; i<N; i++)
+  for(i=0; i<model->N; i++)
   {
     model->source[i] = malloc(sizeof(struct Source));
     initialize_source(model->source[i]);
