@@ -58,7 +58,7 @@ void bayesline_mcmc(struct Data *data, struct Model **model, struct BayesLinePar
     }
 
     //re-run Markovian, full spectrum, full model part of BayesLine
-    BayesLineRJMCMC(bl_x[ifo], r, model_x->Snf[ifo], model_x->invSnf[ifo], model_x->SnS[ifo], N*2, 100, beta, 1);
+    BayesLineRJMCMC(bl_x[ifo], r, model_x->Snf[ifo], model_x->invSnf[ifo], model_x->SnS[ifo], N*2, 10, beta, 1);
 
     for(i=0; i<N; i++)
     {
@@ -1560,7 +1560,7 @@ void initialize_bayesline(struct BayesLineParams **bayesline, struct Data *data,
     }
 
     //Allocates arrays and sets constants for for BayesLine
-    BayesLineSetup(bayesline[ifo], data->s[ifo], data->fmin, data->fmax, data->dt, data->T);
+    BayesLineSetup(bayesline[ifo], data->d[ifo], data->fmin, data->fmax, data->dt, data->T);
   }
 }
 

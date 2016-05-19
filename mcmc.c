@@ -134,10 +134,10 @@ int main(int argc, char **argv)
   /* Initialize data structure */
   struct Data  *data = malloc(sizeof(struct Data));
 
-  data->T  = 8192;
-  data->dt = 2.0;
+  data->T  = 16384.0;
+  data->dt = 0.4;
   data->df = 1.0/data->T;
-  data->N  = (int)(data->T/data->dt)/2;
+  data->N  = 3276;//(int)(data->T/data->dt)/2;
   
   parse(argc, argv, data, flags);
 
@@ -199,17 +199,73 @@ int main(int argc, char **argv)
     if(flags->use_spacecraft==0)while(source->face ==-1) draw_impact_point(data, lpf, source, ir);
     else while(source->face ==-1) draw_impact_point_sc(data, lpf, source, ir);
     draw_impactor(data, source, r);
-    source->P = 40;
+    source->P = 1;
     //source->P = 1;//    ***************************************           hack to test the prior without signal
     printf("hit on face %i\n",source->face);
   }
 
-  simulate_noise(data, lpf, injection, nr);
+  //simulate_noise(data, lpf, injection, nr);
   //int k;for(i=0; i<2*data->N; i++)for(k=0; k<data->DOF; k++)data->n[k][i]=0;//    ************* hack to test the prior without noise
+
+
+  //Read in LPF data
+  int k,im,re;
+  int N=data->N;
+  FILE **dfptr = malloc(data->DOF*sizeof(FILE *));
+  dfptr[0] = fopen("/Users/tyson/Research/LISAPathfinder/data/data_20160429/g1_x_01.txt","r");
+  dfptr[1] = fopen("/Users/tyson/Research/LISAPathfinder/data/data_20160429/g1_y_01.txt","r");
+  dfptr[2] = fopen("/Users/tyson/Research/LISAPathfinder/data/data_20160429/g1_z_01.txt","r");
+  dfptr[3] = fopen("/Users/tyson/Research/LISAPathfinder/data/data_20160429/g1_theta_01.txt","r");
+  dfptr[4] = fopen("/Users/tyson/Research/LISAPathfinder/data/data_20160429/g1_eta_01.txt","r");
+  dfptr[5] = fopen("/Users/tyson/Research/LISAPathfinder/data/data_20160429/g1_phi_01.txt","r");
+  for(k=0; k<data->DOF; k++)
+  {
+    for(i=0; i<N; i++)
+    {
+      re = 2*i;
+      im = re+1;
+      fscanf(dfptr[k],"%lg %lg %lg",&data->f[i], &data->n[k][re], &data->n[k][im]);
+      data->f[i] -= 1./data->T;
+    }
+    fclose(dfptr[k]);
+  }
+
 
   simulate_data(data);
   simulate_injection(data,lpf,injection);
-  Sn(data, lpf, injection, injection->Snf);
+
+  //Start PSD off at reference from BayesLine
+  //Sn(data, lpf, injection, injection->Snf);
+  dfptr[0] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/x/fullspectrum_pdf.dat","r");
+  dfptr[1] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/y/fullspectrum_pdf.dat","r");
+  dfptr[2] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/z/fullspectrum_pdf.dat","r");
+  dfptr[3] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/theta/fullspectrum_pdf.dat","r");
+  dfptr[4] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/eta/fullspectrum_pdf.dat","r");
+  dfptr[5] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/phi/fullspectrum_pdf.dat","r");
+  int count;
+  double junk;
+  for(k=0; k<data->DOF; k++)
+  {
+    count=0;
+    while(!feof(dfptr[k]))
+    {
+      re = count*i;
+      im = re+1;
+      fscanf(dfptr[k],"%lg %lg %lg %lg %lg %lg %lg",&junk,&junk,&junk,&junk,&junk,&junk,&injection->Snf[k][count]);
+      count++;
+    }
+    count--;
+    for(i=count; i<N; i++)
+    {
+      injection->Snf[k][i] = injection->Snf[k][count-1];
+    }
+    fclose(dfptr[k]);
+  }
+  free(dfptr);
+
+
+  
+
   injection->logL = loglikelihood(data, lpf, injection, flags);
 
   printf("Injected parameters:   \n");
@@ -261,7 +317,16 @@ int main(int argc, char **argv)
     for(i=0;i<nmax;i++)drew_prior[i]=1;
     if(flags->use_spacecraft==0)logprior(data, model[ic], injection);
     else logprior_sc(data, lpf, model[ic], injection,drew_prior);
-    Sn(data, lpf, model[ic], model[ic]->Snf);
+    //Sn(data, lpf, model[ic], model[ic]->Snf);
+
+    for(i=0; i<N; i++)
+    {
+      for(k=0; k<data->DOF; k++)
+      {
+      model[ic]->Snf[k][i] = injection->Snf[k][i];
+      }
+    }
+
     model[ic]->logL = loglikelihood(data, lpf, model[ic], flags);
 
     free(drew_prior);
@@ -283,7 +348,6 @@ int main(int argc, char **argv)
   int ifo;
   int imin=data->imin;
   int imax=data->imax;
-  int N=data->N;
   int NI=data->DOF;
   for(ifo=0; ifo<NI; ifo++)
   {
@@ -298,7 +362,7 @@ int main(int argc, char **argv)
     BayesLineSearch(bayesline[0][ifo], data->d[ifo], data->fmin, data->fmax, data->dt, data->T);
 
     fprintf(stdout,"BayesLine characterization phase for IFO %i\n", ifo);
-    BayesLineRJMCMC(bayesline[0][ifo], data->d[ifo], model[0]->Snf[ifo], model[0]->invSnf[ifo], model[0]->SnS[ifo], 2*N, 10000, 1.0, 0);
+    BayesLineRJMCMC(bayesline[0][ifo], data->d[ifo], model[0]->Snf[ifo], model[0]->invSnf[ifo], model[0]->SnS[ifo], 2*N, 1000, 1.0, 0);
 
     for(i=0; i<N; i++)
     {
