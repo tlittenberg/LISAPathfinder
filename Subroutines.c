@@ -1465,7 +1465,7 @@ void copy_model(struct Model *model, struct Model *copy, int Ndata, int DOF)
 
   for(k=0; k<DOF; k++)
   {
-    for(i=0; i<N; i++)
+    for(i=0; i<Ndata; i++)
     {
       copy->Snf[k][i]    = model->Snf[k][i];
       copy->SnS[k][i]    = model->SnS[k][i];
@@ -1493,10 +1493,9 @@ void initialize_model(struct Model *model, int Ndata, int D, int DOF)
   model->SnS    = malloc(DOF*sizeof(double *));
   for(i=0; i<DOF; i++)
   {
-    model->s[i]      = malloc(N*2*sizeof(double));
-    model->Snf[i]    = malloc(N*sizeof(double));
-    model->invSnf[i] = malloc(N*sizeof(double));
-    model->SnS[i]    = malloc(N*sizeof(double));
+    model->Snf[i]    = malloc(Ndata*sizeof(double));
+    model->invSnf[i] = malloc(Ndata*sizeof(double));
+    model->SnS[i]    = malloc(Ndata*sizeof(double));
   }
   model->s    = malloc(DOF*sizeof(double *));
   for(i=0; i<DOF; i++) model->s[i] = malloc(Ndata*2*sizeof(double));
