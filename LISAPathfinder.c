@@ -1175,7 +1175,7 @@ void map2face(struct Spacecraft *lpf, double *r, double *x)
     xi[1] = mx*xi[0];
     
     //get norm to surface
-    double *n = malloc(2*sizeof(double));
+    double *n = malloc(3*sizeof(double));
     get_normal(n, face);
     
     //find |z|

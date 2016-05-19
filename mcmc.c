@@ -51,6 +51,8 @@ int main(int argc, char **argv)
   int MCMCSTEPS;
   int BURNIN;
   int NC;
+  int nmax=12;
+  int n_hidden_steps=10;
 
   double H;
   double alpha;
@@ -238,13 +240,13 @@ int main(int argc, char **argv)
   struct Model **model = malloc(NC*sizeof(struct Model*));
 
   struct Model *trial  = malloc(sizeof(struct Model));
-  initialize_model(trial, data->N, 10, data->DOF);
+  initialize_model(trial, data->N, nmax, data->DOF);
 
 
   for(ic=0; ic<NC; ic++)
   {
     model[ic] = malloc(sizeof(struct Model));
-    initialize_model(model[ic],data->N,10, data->DOF);
+    initialize_model(model[ic],data->N,nmax, data->DOF);
 
     copy_model(injection, model[ic], data->N, data->DOF);
 
@@ -256,7 +258,6 @@ int main(int argc, char **argv)
       model[ic]->source[n]->t0 = gsl_rng_uniform(r)*data->T;
 
     }
-    int nmax=10;
     int *drew_prior=malloc(nmax*sizeof(int));    
     for(i=0;i<nmax;i++)drew_prior[i]=1;
     if(flags->use_spacecraft==0)logprior(data, model[ic], injection);
@@ -374,16 +375,17 @@ int main(int argc, char **argv)
   {
 //    printf("\nmc=%i: ",mc);
     for(ic=0; ic<NC; ic++)
-    {
-      int nmax=10;
+      {
+	//printf("ic=%i\n",ic);
       int *drew_impact_from_prior=malloc(nmax*sizeof(int));
 
       //debugging
 //      printf("ic,index= %i, %i (model):\n",ic,index[ic]);
       //check_incidence(lpf,model[index[ic]]);
 
-      for(n=0; n<10; n++)
+      for(n=0; n<n_hidden_steps; n++)
       {
+	//printf("  n=%i\n",n);
         reject=0;
 
         //copy x to y

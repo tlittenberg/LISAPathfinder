@@ -1419,7 +1419,7 @@ void copy_source(struct Source *source, struct Source *copy, int DOF)
   }
 }
 
-void copy_model(struct Model *model, struct Model *copy, int N, int DOF)
+void copy_model(struct Model *model, struct Model *copy, int Ndata, int DOF)
 {
 
   //copy->mass = model->mass;
@@ -1456,7 +1456,7 @@ void copy_model(struct Model *model, struct Model *copy, int N, int DOF)
   
   for(k=0; k<DOF; k++)
   {
-    for(i=0; i<N*2; i++)
+    for(i=0; i<Ndata*2; i++)
     {
       copy->s[k][i] = model->s[k][i];
     }
@@ -1485,10 +1485,9 @@ void initialize_source(struct Source *source)
 }
 
 
-void initialize_model(struct Model *model, int N, int D, int DOF)
+void initialize_model(struct Model *model, int Ndata, int D, int DOF)
 {
   int i;
-  model->s      = malloc(DOF*sizeof(double *));
   model->Snf    = malloc(DOF*sizeof(double *));
   model->invSnf = malloc(DOF*sizeof(double *));
   model->SnS    = malloc(DOF*sizeof(double *));
@@ -1499,6 +1498,8 @@ void initialize_model(struct Model *model, int N, int D, int DOF)
     model->invSnf[i] = malloc(N*sizeof(double));
     model->SnS[i]    = malloc(N*sizeof(double));
   }
+  model->s    = malloc(DOF*sizeof(double *));
+  for(i=0; i<DOF; i++) model->s[i] = malloc(Ndata*2*sizeof(double));
   
   model->Ais  = malloc(3*sizeof(double));
   model->Ath  = malloc(3*sizeof(double));
@@ -1506,7 +1507,7 @@ void initialize_model(struct Model *model, int N, int D, int DOF)
   
   model->N = D;
   model->source = malloc(model->N*sizeof(struct Source*));
-  for(i=0; i<N; i++)
+  for(i=0; i<model->N; i++)
   {
     model->source[i] = malloc(sizeof(struct Source));
     initialize_source(model->source[i]);
