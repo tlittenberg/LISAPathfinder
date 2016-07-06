@@ -58,6 +58,7 @@ struct Model
   double **SnS;
   double logL; //likelihod
   double logP; //prior
+  double logQ; //proposal
 
   /* Impact parameters */
 
@@ -87,6 +88,10 @@ struct Data
   double **n;
   double **s;
   double *f;
+
+    char path[128];
+    char gps[16];
+    char duration[8];
 };
 
 struct PSDposterior
@@ -107,7 +112,10 @@ struct Flags
   int verbose;
   int prior;
   int rj;
-  int use_spacecraft;
+    int use_spacecraft;
+    int simdata;
+    int realdata;
+
 };
 
 
@@ -181,6 +189,8 @@ void setup_psd_histogram(struct Data *data, struct Spacecraft *lpf, struct Model
 
 void populate_psd_histogram(struct Data *data, struct Spacecraft *lpf, struct Model *model, int MCMCSTEPS, struct PSDposterior *psd);
 
+void print_time_domain_waveforms(char filename[], double *h, int N, double *Snf, double eta, double Tobs, int imin, int imax, double tmin, double tmax);
+
 /* ********************************************************************************** */
 /*                                                                                    */
 /*                                    Math tools                                      */
@@ -199,6 +209,9 @@ void matrix_invert(double **A, double **invA, int N);
 
 void check_incidence(struct Spacecraft *lpf,struct Model * model);
 
+void dfour1(double data[], unsigned long nn, int isign);
+
+void drealft(double data[], unsigned long n, int isign);
 
 /* ********************************************************************************** */
 /*                                                                                    */

@@ -15,6 +15,23 @@
 #include "TimePhaseMaximization.h"
 #include "LPF.h"
 
+#define IM1 2147483563
+#define IM2 2147483399
+#define AM (1.0/IM1)
+#define IMM1 (IM1-1)
+#define IA1 40014
+#define IA2 40692
+#define IQ1 53668
+#define IQ2 52774
+#define IR1 12211
+#define IR2 3791
+#define NTAB 32
+#define NDIV (1+IMM1/NTAB)
+#define eps 1.2e-7
+#define RNMX (1.0-eps)
+double swap, tempr;
+#define SWAP(a,b) {swap=(a);(a)=(b);(b)=swap;}
+
 /* ********************************************************************************** */
 /*                                                                                    */
 /*                                  Data structures                                   */
@@ -205,24 +222,27 @@ void draw_impact_point(struct Data *data, struct Spacecraft *lpf, struct Source 
 void proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int *reject, int nmax, int *drew_prior)
 {
   int n;
-  
+
+    //model->logQ = 0.0;
+    //trial->logQ = 0.0;
+
   //Always update spacecraft parameters
   detector_proposal(data, model, trial, r);
   
-  //MCMC proposal
-  if(gsl_rng_uniform(r)<0.99 || !flags->rj)
-  {
-    for(n=0; n<model->N; n++){
-      //printf("(source=%i) ",n);
-      //printf("in-proposal: n=%i\n",n);
-      if(flags->use_spacecraft==0)
-	impact_proposal(data, lpf, model->source[n], trial->source[n], r);
-      else
-	impact_proposal_sc(data, lpf, model->source[n], trial->source[n], r, &drew_prior[n]);
+    //MCMC proposal
+    if(gsl_rng_uniform(r)<0.99 || !flags->rj)
+    {
+        for(n=0; n<model->N; n++){
+            //printf("(source=%i) ",n);
+            //printf("in-proposal: n=%i\n",n);
+            if(flags->use_spacecraft==0)
+                impact_proposal(data, lpf, model->source[n], trial->source[n], r);
+            else
+                impact_proposal_sc(data, lpf, model->source[n], trial->source[n], r, &drew_prior[n]);
+        }
     }
-  }
-  //RJ proposal
-  else dimension_proposal(flags, data, lpf, model, trial, r, nmax, reject);
+    //RJ proposal
+    else dimension_proposal(flags, data, lpf, model, trial, r, nmax, reject);
   
 }
 
@@ -357,7 +377,7 @@ void draw_impact_point_sc(struct Data *data, struct Spacecraft *lpf, struct Sour
 void draw_impactor(struct Data *data, struct Source *source, gsl_rng *seed)
 {
   //momentum and impact time
-  source->P  = gsl_ran_exponential(seed,20);
+  source->P  = gsl_ran_exponential(seed,10000);
   source->t0 = gsl_rng_uniform(seed)*data->T;
 }
 
@@ -377,14 +397,13 @@ void detector_proposal(struct Data *data, struct Model *model, struct Model *tri
 
 void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *model, struct Source *trial, gsl_rng *r)
 {
-  
   //uniform
   if(gsl_rng_uniform(r)<0.5)
   {
     draw_impact_point(data,lpf,trial,r);
 
     //10% of time also draw time & amplitude from prior
-    if(gsl_rng_uniform(r)<0.1)
+    if(gsl_rng_uniform(r)<0.0)
     {
       draw_impactor(data, trial, r);
     }
@@ -393,7 +412,7 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
   //gaussian
   else
   {
-    trial->P  = model->P  + gsl_ran_ugaussian(r)*1.0;
+    trial->P  = model->P  + gsl_ran_ugaussian(r)*10.0;
     trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.25;
     
     trial->phi      = model->phi + gsl_ran_ugaussian(r)*0.01;
@@ -497,7 +516,7 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     draw_impact_point_sc(data,lpf,trial,r);
 
     //10% of time also draw time & amplitude from prior
-    if(gsl_rng_uniform(r)<0.1)
+    if(gsl_rng_uniform(r)<0.0) //TODO: Fix within-model prior-draw proposal
     {
       draw_impactor(data, trial, r);
     }
@@ -511,7 +530,7 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     double *rface=malloc(2*sizeof(double));
 
     //printf("gauss\n");
-    trial->P  = model->P  + gsl_ran_ugaussian(r)*1.0;
+    trial->P  = model->P  + gsl_ran_ugaussian(r)*10.0;
     trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.25;
     
     trial->phi      = model->phi + gsl_ran_ugaussian(r)*0.01;
@@ -571,7 +590,7 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     *drew_prior=0;
     //printf("returning from proposal trial->face=%i\n",trial->face);
   }
-  
+
 }
 
 void dimension_proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *trial, gsl_rng *r, int Nmax, int *test)
@@ -587,6 +606,7 @@ void dimension_proposal(struct Flags *flags, struct Data *data, struct Spacecraf
       if(flags->use_spacecraft==0)draw_impact_point(data,lpf,trial->source[trial->N],r);
       else draw_impact_point_sc(data,lpf,trial->source[trial->N],r);
       draw_impactor(data, trial->source[trial->N], r);
+      //trial->logQ += log(gsl_ran_exponential_pdf(trial->source[trial->N]->P,1000));
       trial->N = model->N+1;
     }
   }
@@ -598,6 +618,7 @@ void dimension_proposal(struct Flags *flags, struct Data *data, struct Spacecraf
     {
       //choose which to kill
       kill = (int)floor(gsl_rng_uniform(r)*(double)model->N);
+      //model->logQ += log(gsl_ran_exponential_pdf(model->source[kill]->P,1000));
       for(n=kill; n<model->N-1; n++) copy_source(model->source[n+1], trial->source[n], data->DOF);
       trial->N = model->N-1;
     }
@@ -620,34 +641,33 @@ void logprior(struct Data *data, struct Model *model, struct Model *injection)
 
 void logprior_sc(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct Model *injection, int *drew_prior)
 {
-  //model->logP = log_mass_prior(injection->mass,model->mass);
-  ///JGB:Seems that the prior was not initialized.  How did this work?
-  model->logP=0;
+    //model->logP = log_mass_prior(injection->mass,model->mass);
+    ///JGB:Seems that the prior was not initialized.  How did this work?
+    model->logP=0;
 
-  int n;
-  for(n=0; n<model->N; n++)
-  {
-    
-    if(model->source[n]->t0 < 0.0 || model->source[n]->t0 > data->T) model->logP = -1.0e60;
-    
-    if(model->source[n]->P < 0.0) model->logP = -1.0e60;
+    int n;
+    for(n=0; n<model->N; n++)
+    {
 
-    ///JGB:Prior on the face/impact-dir, but not if the trial was drawn from prior/
-    if(drew_prior[n]==0){
-      int iface=model->source[n]->face;
-      if(iface>=0){
-	model->logP+=log(lpf->faces[iface]->area/lpf->lpf_area);
-	double inc_cos=incidence(lpf,iface,model->source[n]->costheta,model->source[n]->phi);
-	if(inc_cos>0)
-	  model->logP+=log(inc_cos);
-	else
-	  model->logP=-1e60;
-      } else model->logP=-1e60;
-      
-      //printf("prior on face %i for source[%i]=%g\n",iface,n,model->logP);
+        if(model->source[n]->t0 < 0.0 || model->source[n]->t0 > data->T) model->logP = -1.0e60;
+
+        if(model->source[n]->P < 0.0) model->logP = -1.0e60;
+        //else model->logP += log(gsl_ran_exponential_pdf(model->source[n]->P,1000));
+
+        ///JGB:Prior on the face/impact-dir, but not if the trial was drawn from prior/
+        if(drew_prior[n]==0){
+            int iface=model->source[n]->face;
+            if(iface>=0){
+                model->logP+=log(lpf->faces[iface]->area/lpf->lpf_area);
+                double inc_cos=incidence(lpf,iface,model->source[n]->costheta,model->source[n]->phi);
+                if(inc_cos>0)
+                    model->logP+=log(inc_cos);
+                else
+                    model->logP=-1e60;
+            } else model->logP=-1e60;
+            
+        }
     }
-    //printf("cum prior %i = %g\n",n,model->logP);
-  }
 }
 
 //just for debugging
@@ -705,7 +725,7 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, s
   P = malloc(data->DOF*sizeof(double));
   
 
-  for(i=0; i<3; i++) P[i] = e[i]*source->P;
+  for(i=0; i<3; i++) P[i] = e[i]*source->P*PC/lpf->M;
 
   if(data->DOF>3)
   {
@@ -735,7 +755,7 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, s
     for(i=0; i<3; i++)
     {
       P[i+3] = 0.0;
-      for(j=0; j<3; j++) P[i+3] += t[j]*lpf->invI[0][i][j]*lpf->M*source->P;
+      for(j=0; j<3; j++) P[i+3] += t[j]*lpf->invI[0][i][j]*source->P*PC;
     }
 
   }
@@ -787,7 +807,7 @@ void SineGaussianFourier(double *hs, double t0, double P, int N, int flag, doubl
   //t0  = sigpar[0];
   f0  = (double)N/2.0/Tobs;//sigpar[1];
   Q   = 0.0;//sigpar[2];
-  Amp = P*PC;//sigpar[3];
+    Amp = 1.0;//P*PC;//sigpar[3];
   phi = 0.0;//sigpar[4];
   
   tau = Q/(TPI*f0);
@@ -837,8 +857,8 @@ void SineGaussianFourier(double *hs, double t0, double P, int N, int flag, doubl
     
     sf = amplitude*expf(-pi2tau2*(f-f0)*(f-f0));
     sx = expf(-Q2*f);
-    re = sf*(cosPhase_m+sx*cosPhase_p);//cos(phi-TPI*f*(t0-Tobs));
-    im = sf*(sinPhase_m+sx*sinPhase_p);//sin(phi-TPI*f*(t0-Tobs));
+    re =  sf*(cosPhase_m+sx*cosPhase_p);//cos(phi-TPI*f*(t0-Tobs));
+    im = -sf*(sinPhase_m+sx*sinPhase_p);//sin(phi-TPI*f*(t0-Tobs));
     
     switch(flag)
     {
@@ -1023,6 +1043,7 @@ double loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *mo
   if(!flags->prior)
   {
     for(k=0; k<data->DOF; k++)
+    //for(k=0; k<3; k++)
     {
       logL += -0.5*fourier_nwip(data->imin, data->imax, r[k], r[k], Snf[k]) + loglike_normalization(data->imin, data->imax, Snf[k]);
     }
@@ -1166,6 +1187,56 @@ void populate_psd_histogram(struct Data *data, struct Spacecraft *lpf, struct Mo
   }
 }
 
+void print_time_domain_waveforms(char filename[], double *h, int N, double *Snf, double eta, double Tobs, int imin, int imax, double tmin, double tmax)
+{
+  /*
+   TODO: invFFT comes out time-reversed.
+   LAL uses exp(-i2pift) for their Fourier transforms
+   Why doesn't drealft(ty-1,N,1) work for inverse FFT?
+   In the meantime, hacked invFFT by changing sign of imaginary part
+   */
+  int i;
+  double x,t;
+  FILE *waveout = fopen(filename,"w");
+
+  double *ht = malloc(8192*sizeof(double));
+  for(i=0; i<N; i++)ht[i]=h[i];
+  for(i=N; i<8192; i++)ht[i]=0.0;
+
+  ht[0] = 0.0;
+  ht[1] = 0.0;
+  for(i=1; i< N/2; i++)
+  {
+    if(i>imin && i<imax)
+    {
+      x = sqrt(Snf[i]*eta);
+      ht[2*i] /= x;
+      ht[2*i+1] /= x;
+      //printf("x=%g, ht[%i/%i] = %g + i%g\n",x,i,4096,ht[2*i],ht[2*i+1]);
+    }
+    else
+    {
+      ht[2*i]=ht[2*i+1]=0.0;
+    }
+  }
+
+  drealft(ht-1,8192,-1);
+  double norm = 0.5*sqrt((double)8192);
+
+  double t0 = 0.0;//Tobs-2.0;
+
+  for(i=0; i<8192; i++)
+  {
+    t = (double)(i)/(double)(8192)*Tobs;
+    if(t>=tmin && t<tmax)fprintf(waveout,"%e %e\n", t, ht[i]/norm);
+  }
+
+  free(ht);
+
+  fclose(waveout);
+}
+
+
 /* ********************************************************************************** */
 /*                                                                                    */
 /*                                    Math tools                                      */
@@ -1284,6 +1355,96 @@ void matrix_invert(double **A, double **invA, int N)
 //  for(i=0; i<N; i++) free(I[i]);
 //  free(I);
 
+}
+
+void dfour1(double data[], unsigned long nn, int isign)
+{
+  unsigned long n,mmax,m,j,istep,i;
+  double wtemp,wr,wpr,wpi,wi,theta;
+  double tempr,tempi, swap;
+
+  n=nn << 1;
+  j=1;
+  for (i=1;i<n;i+=2) {
+    if (j > i) {
+      SWAP(data[j],data[i]);
+      SWAP(data[j+1],data[i+1]);
+    }
+    m=n >> 1;
+    while (m > 1 && j > m) {
+      j -= m;
+      m >>= 1;
+    }
+    j += m;
+  }
+  mmax=2;
+  while (n > mmax) {
+    istep=mmax << 1;
+    theta=isign*(6.28318530717959/mmax);
+    wtemp=sin(0.5*theta);
+    wpr = -2.0*wtemp*wtemp;
+    wpi=sin(theta);
+    wr=1.0;
+    wi=0.0;
+    for (m=1;m<mmax;m+=2) {
+      for (i=m;i<=n;i+=istep) {
+        j=i+mmax;
+        tempr=wr*data[j]-wi*data[j+1];
+        tempi=wr*data[j+1]+wi*data[j];
+        data[j]=data[i]-tempr;
+        data[j+1]=data[i+1]-tempi;
+        data[i] += tempr;
+        data[i+1] += tempi;
+      }
+      wr=(wtemp=wr)*wpr-wi*wpi+wr;
+      wi=wi*wpr+wtemp*wpi+wi;
+    }
+    mmax=istep;
+  }
+}
+
+void drealft(double data[], unsigned long n, int isign)
+{
+  void dfour1(double data[], unsigned long nn, int isign);
+  unsigned long i,i1,i2,i3,i4,np3;
+  double c1=0.5,c2,h1r,h1i,h2r,h2i;
+  double wr,wi,wpr,wpi,wtemp,theta;
+
+  theta=3.141592653589793/(double) (n>>1);
+  if (isign == 1) {
+    c2 = -0.5;
+    dfour1(data,n>>1,1);
+  } else {
+    c2=0.5;
+    theta = -theta;
+  }
+  wtemp=sin(0.5*theta);
+  wpr = -2.0*wtemp*wtemp;
+  wpi=sin(theta);
+  wr=1.0+wpr;
+  wi=wpi;
+  np3=n+3;
+  for (i=2;i<=(n>>2);i++) {
+    i4=1+(i3=np3-(i2=1+(i1=i+i-1)));
+    h1r=c1*(data[i1]+data[i3]);
+    h1i=c1*(data[i2]-data[i4]);
+    h2r = -c2*(data[i2]+data[i4]);
+    h2i=c2*(data[i1]-data[i3]);
+    data[i1]=h1r+wr*h2r-wi*h2i;
+    data[i2]=h1i+wr*h2i+wi*h2r;
+    data[i3]=h1r-wr*h2r+wi*h2i;
+    data[i4] = -h1i+wr*h2i+wi*h2r;
+    wr=(wtemp=wr)*wpr-wi*wpi+wr;
+    wi=wi*wpr+wtemp*wpi+wi;
+  }
+  if (isign == 1) {
+    data[1] = (h1r=data[1])+data[2];
+    data[2] = h1r-data[2];
+  } else {
+    data[1]=c1*((h1r=data[1])+data[2]);
+    data[2]=c1*(h1r-data[2]);
+    dfour1(data,n>>1,-1);
+  }
 }
 
 /* ********************************************************************************** */
