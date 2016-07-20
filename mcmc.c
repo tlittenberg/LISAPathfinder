@@ -71,13 +71,18 @@ int main(int argc, char **argv)
     lpf->M = EOM_SC_M;
 
     // Housing 1 Geometry
-    lpf->R[0][0] = EOM_H1SC_X;
-    lpf->R[0][1] = EOM_H1SC_Y;
-    lpf->R[0][2] = EOM_H1SC_Z;
+    lpf->RTM[0][0] = EOM_H1SC_X;
+    lpf->RTM[0][1] = EOM_H1SC_Y;
+    lpf->RTM[0][2] = EOM_H1SC_Z;
     // Housing 2 Geometry
-    lpf->R[1][0] = EOM_H2SC_X;
-    lpf->R[1][1] = EOM_H2SC_Y;
-    lpf->R[1][2] = EOM_H2SC_Z;
+    lpf->RTM[1][0] = EOM_H2SC_X;
+    lpf->RTM[1][1] = EOM_H2SC_Y;
+    lpf->RTM[1][2] = EOM_H2SC_Z;
+    
+    // COM Geometry
+    lpf->RB[0] = EOM_RB_X;
+    lpf->RB[1] = EOM_RB_Y;
+    lpf->RB[2] = EOM_RB_Z;
 
     // Spacecraft Geometry
     lpf->x[0][0] = SC_BOT_CORNER_6_X;

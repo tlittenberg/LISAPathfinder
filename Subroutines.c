@@ -730,26 +730,11 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, s
   if(data->DOF>3)
   {
     //get vector from proof mass to impact location
-    for(i=0; i<3; i++) d[i] = r[i] - lpf->R[0][i];
-
-//    printf("vectors:\n");
-//    for(i=0; i<3; i++)
-//    {
-//      printf("%1.1e = %1.1e - %1.1e\n",d[i],r[i],lpf->R[0][i]);
-//    }
-//    printf("\n");
+    for(i=0; i<3; i++) d[i] = r[i] - lpf->RB[i];
 
     //get torque direction about proof mass t = (r-R) x e
     crossproduct(d,e,t);
 
-
-//    printf("cross product:\n");
-//    for(i=0; i<3; i++)
-//    {
-//      if(i==1) printf("%1.1e = %1.1e x %1.1e\n",t[i],d[i],e[i]);
-//      else     printf("%1.1e   %1.1e   %1.1e\n",t[i],d[i],e[i]);
-//    }
-//    printf("\n");
 
     //get angular acceleration omega = (I^-1)t
     for(i=0; i<3; i++)
@@ -758,21 +743,15 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, s
       for(j=0; j<3; j++) P[i+3] += t[j]*lpf->invI[0][i][j]*source->P*PC;
     }
 
+    //add linear momentum at test mass
+    for(i=0; i<3; i++) d[i] = lpf->RTM[0][i] - lpf->RB[i];
+
+    //t = (rTB - rB) x h_theta
+    crossproduct(d,P+3,t);
+    for(i=0; i<3; i++) P[i] += t[i];
+
   }
 
-//  printf("response:\n");
-//  for(i=0; i<3; i++)
-//  {
-//    for(j=0; j<3; j++)
-//    {
-//      if(lpf->invI[0][i][j]>=0)printf("+");
-//      printf("%1.1e ",lpf->invI[0][i][j]);
-//
-//    }
-//    if(i==1) printf(" x %1.1e = %1.1e\n",t[i], P[i+3]);
-//    else printf("   %1.1e   %1.1e\n",t[i], P[i+3]);
-//  }
-//  system_pause();
 
   for(i=0; i<data->DOF; i++)
   {
