@@ -25,8 +25,11 @@ void initialize_spacecraft(struct Spacecraft *spacecraft)
   for(j=0; j<2; j++) for(i=0; i<3; i++) spacecraft->invI[j][i] = malloc(3*sizeof(double));
 
   /* Position of proof masses */
-  spacecraft->R = malloc(2*sizeof(double *));
-  for(i=0; i<2; i++) spacecraft->R[i] = malloc(3*sizeof(double));
+  spacecraft->RTM = malloc(2*sizeof(double *));
+  for(i=0; i<2; i++) spacecraft->RTM[i] = malloc(3*sizeof(double));
+
+  /* Position of center of mass */
+  spacecraft->RB = malloc(3*sizeof(double *));
 
   /* Spacecraft M-frame corners */  //disused?
   spacecraft->x = malloc(9*sizeof(double *));

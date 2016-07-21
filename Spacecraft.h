@@ -51,7 +51,8 @@ struct FaceData
 struct Spacecraft
 {
   /* Spacecraft parameters */
-  double **R;        //position of proof masses
+  double **RTM;      //position of proof masses
+  double *RB;        //position of center of mass
   double **x;        //position of spacecraft corners
   double ***I;       //moment of inertia (ultimately a tensor)
   double ***invI;    //inverse moment of inertia (ultimately a tensor)

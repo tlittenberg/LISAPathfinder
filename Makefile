@@ -19,9 +19,12 @@ LIBS  = gsl gslcblas m
 CCFLAGS = -g -Wall -O3 -std=gnu99 
 
 
-OBJS = Subroutines.o TimePhaseMaximization.o LISAPathfinder.o Spacecraft.o
+OBJS = BayesLine.o Subroutines.o TimePhaseMaximization.o LISAPathfinder.o Spacecraft.o
 
 all: $(OBJS) mcmc test
+
+BayesLine.o : BayesLine.c BayesLine.h
+	$(CC) $(CCFLAGS) -c BayesLine.c 
 
 LISAPathfinder.o: LISAPathfinder.c LISAPathfinder.h
 	$(CC) $(CCFLAGS) -c LISAPathfinder.c $(INCDIR:%=-I%) $(LIBDIR:%=-L%)
