@@ -7,16 +7,18 @@ ifneq ($(findstring discover,$(shell hostname)),)
   CC = icc
   INCDIR = $(GSLROOT)/include
   LIBDIR = $(GSLROOT)/lib
+  CCFLAGS = -fopenmp	
 else 
   #OSX build
   CC = gcc
   INCDIR = /opt/local/include
   LIBDIR = /opt/local/lib
+  CCFLAGS = 	
 endif
 
 
 LIBS  = gsl gslcblas m
-CCFLAGS = -g -Wall -O3 -std=gnu99 
+CCFLAGS += -g -Wall -O3 -std=gnu99 
 
 
 OBJS = BayesLine.o Subroutines.o TimePhaseMaximization.o LISAPathfinder.o Spacecraft.o
@@ -24,7 +26,7 @@ OBJS = BayesLine.o Subroutines.o TimePhaseMaximization.o LISAPathfinder.o Spacec
 all: $(OBJS) mcmc test
 
 BayesLine.o : BayesLine.c BayesLine.h
-	$(CC) $(CCFLAGS) -c BayesLine.c 
+	$(CC) $(CCFLAGS) -c BayesLine.c  $(INCDIR:%=-I%) $(LIBDIR:%=-L%)
 
 LISAPathfinder.o: LISAPathfinder.c LISAPathfinder.h
 	$(CC) $(CCFLAGS) -c LISAPathfinder.c $(INCDIR:%=-I%) $(LIBDIR:%=-L%)

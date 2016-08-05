@@ -389,6 +389,7 @@ int main(int argc, char **argv)
 
     model[0]->logL = loglikelihood(data, lpf, model[0], flags);
 
+#pragma omp parallel for schedule (dynamic, 1)
     for(ic=1; ic<NC; ic++)
     {
         for(ifo=0; ifo<NI; ifo++)
@@ -457,6 +458,7 @@ int main(int argc, char **argv)
     FILE *psdfile=NULL;
     for(mc=0;mc<MCMCSTEPS;mc++)
     {
+#pragma omp parallel for schedule (dynamic, 1)
         for(ic=0; ic<NC; ic++)
         {
             int *drew_impact_from_prior=malloc(nmax*sizeof(int));
