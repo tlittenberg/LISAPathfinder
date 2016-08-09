@@ -54,17 +54,17 @@ double swap, tempr;
 void bayesline_mcmc(struct Data *data, struct Model **model, struct BayesLineParams ***bayesline, int *index, double beta, int ic)
 {
   int ifo,i;
-
+  
   int N  = data->N;
   int NI = data->DOF;
-
-
+  
+  
   //pointers to structures
   struct Model *model_x = model[index[ic]];
   struct BayesLineParams **bl_x = bayesline[index[ic]];
-
+  
   double *r = malloc(2*N*sizeof(double));
-
+  
   //update PSD for each interferometer
   for(ifo=0; ifo<NI; ifo++)
   {
@@ -73,10 +73,16 @@ void bayesline_mcmc(struct Data *data, struct Model **model, struct BayesLinePar
     {
       r[i] = data->d[ifo][i]-model_x->s[ifo][i];
     }
-
+    
+    
+    for(i=0; i<N; i++)
+    {
+      bl_x[ifo]->power[i] = (r[2*i]*r[2*i]+r[2*i+1]*r[2*i+1]);
+    }
+    
     //re-run Markovian, full spectrum, full model part of BayesLine
-    BayesLineRJMCMC(bl_x[ifo], r, model_x->Snf[ifo], model_x->invSnf[ifo], model_x->SnS[ifo], N*2, 10, beta, 1);
-
+    BayesLineRJMCMC(bl_x[ifo], r, model_x->Snf[ifo], model_x->invSnf[ifo], model_x->SnS[ifo], N*2, 10, 1.0, 0);
+    
     for(i=0; i<N; i++)
     {
       model_x->Snf[ifo][i]*=2.0;
@@ -1003,7 +1009,7 @@ double loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *mo
     }
     
     
-    LPFImpulseResponse(data->s, data, lpf, model->source[n]);
+    LPFImpulseResponse(model->s, data, lpf, model->source[n]);
     
     for(i=0; i<data->N; i++)
     {
@@ -1012,8 +1018,8 @@ double loglikelihood(struct Data *data, struct Spacecraft *lpf, struct Model *mo
       
       for(k=0; k<data->DOF; k++)
       {
-        r[k][re] -= data->s[k][re];
-        r[k][im] -= data->s[k][im];
+        r[k][re] -= model->s[k][re];
+        r[k][im] -= model->s[k][im];
       }
     }
     
@@ -1200,8 +1206,6 @@ void print_time_domain_waveforms(char filename[], double *h, int N, double *Snf,
 
   drealft(ht-1,N,-1);
   double norm = 0.5*sqrt((double)N);
-
-  double t0 = 0.0;//Tobs-2.0;
 
   for(i=0; i<N; i++)
   {
@@ -1439,7 +1443,7 @@ void simulate_injection(struct Data *data, struct Spacecraft *lpf, struct Model 
   for(n=0; n<injection->N; n++)
   {
     
-    LPFImpulseResponse(data->s, data, lpf, injection->source[n]);
+    LPFImpulseResponse(injection->s, data, lpf, injection->source[n]);
     
     for(i=0; i<data->N; i++)
     {
@@ -1448,8 +1452,8 @@ void simulate_injection(struct Data *data, struct Spacecraft *lpf, struct Model 
       
       for(k=0; k<data->DOF; k++)
       {
-        data->d[k][re] += data->s[k][re];
-        data->d[k][im] += data->s[k][im];
+        data->d[k][re] += injection->s[k][re];
+        data->d[k][im] += injection->s[k][im];
       }
     }
   }

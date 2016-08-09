@@ -156,7 +156,7 @@ int main(int argc, char **argv)
   data->df = 1.0/data->T;
   data->N  = (int)(data->T/data->dt)/2;
 
-  data->fmin = 0;//1.0e-4; //Hz
+  data->fmin = data->df; //Hz
   data->fmax = (double)data->N/data->T;  //Hz
 
   data->imin = (int)floor(data->fmin*data->T);
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
   fclose(facefile);
 
   /* Initialize parallel chains */
-  NC = 15;
+  NC = 10;
   int *index = malloc(NC*sizeof(double));
   double *temp = malloc(NC*sizeof(double));
   double dT = 1.5;
@@ -286,6 +286,43 @@ int main(int argc, char **argv)
       }
       fclose(dfptr[k]);
     }
+    
+    /* Read in spacecraft mass properties */
+    sprintf(filename,"%s/g1_mass_props_%s_%s.txt",data->path,data->gps,data->duration);
+    FILE *mfptr = fopen(filename,"r");
+    char line[1024];
+    
+    // S/C Mass Properties used for g1 segment with t0 = 1140854817
+    fgets(line,1024,mfptr);
+    
+    // SC mass (kg)
+    fgets(line,1024,mfptr);
+    fscanf(mfptr,"%lg",&lpf->M);
+    
+    // SC center of mass in mechanical frame (x,y,z) in meters
+    fgets(line,1024,mfptr);
+    fscanf(mfptr,"%lg %lg %lg",&lpf->RB[0],&lpf->RB[1],&lpf->RB[2]);
+
+    // SC moment of inertia in body frame in kg-m^2
+    fgets(line,1024,mfptr);
+    fgets(line,1024,mfptr);//unused
+    fgets(line,1024,mfptr);//unused
+    fgets(line,1024,mfptr);//unused
+    
+    // SC moment of inertia in H1 frame in kg-m^2
+    fgets(line,1024,mfptr);
+    fscanf(mfptr,"%lg %lg %lg",&lpf->I[0][0][0],&lpf->I[0][0][1],&lpf->I[0][0][2]);
+    fscanf(mfptr,"%lg %lg %lg",&lpf->I[0][1][0],&lpf->I[0][1][1],&lpf->I[0][1][2]);
+    fscanf(mfptr,"%lg %lg %lg",&lpf->I[0][2][0],&lpf->I[0][2][1],&lpf->I[0][2][2]);
+    
+    // SC moment of inertia in H2 frame in kg-m^2
+    fgets(line,1024,mfptr);
+    fscanf(mfptr,"%lg %lg %lg",&lpf->I[1][0][0],&lpf->I[1][0][1],&lpf->I[1][0][2]);
+    fscanf(mfptr,"%lg %lg %lg",&lpf->I[1][1][0],&lpf->I[1][1][1],&lpf->I[1][1][2]);
+    fscanf(mfptr,"%lg %lg %lg",&lpf->I[1][2][0],&lpf->I[1][2][1],&lpf->I[1][2][2]);
+
+    
+    fclose(mfptr);
 
     /* Set up BayesLine model */
     fprintf(stdout,"\n ============ BayesLine ==============\n");
@@ -467,7 +504,7 @@ int main(int argc, char **argv)
       for(i=0; i<N; i++)
       {
         model[ic]->Snf[k][i]    = model[0]->Snf[k][i];
-        model[ic]->SnS[k][i]    = model[0]->SnS[k][i];
+        model[ic]->SnS[k][i]    = model[0]->Snf[k][i];
         model[ic]->invSnf[k][i] = model[0]->invSnf[k][i];
       }
       copy_bayesline_params(bayesline[0][k], bayesline[ic][k]);
@@ -568,7 +605,7 @@ int main(int argc, char **argv)
           }
           else
           {
-            //TODO: HACK priors in RJ Hasting's ratio--only OK because we birth move exclusively draws from prior
+            //TODO: HACK priors in RJ Hasting's ratio--only OK because the birth move exclusively draws from prior
             model[index[ic]]->logP = trial->logP = 0.0;
           }
 
@@ -592,13 +629,13 @@ int main(int argc, char **argv)
       free(drew_impact_from_prior);
 
     }//Loop over chains
-    /*
-     for(ic=0; ic<NC; ic++)
-     {
-     bayesline_mcmc(data, model, bayesline, index, 1./temp[ic], ic);
-     model[index[ic]]->logL = loglikelihood(data, lpf, model[index[ic]], flags);
-     }
-     */
+    
+    for(ic=0; ic<NC; ic++)
+    {
+      bayesline_mcmc(data, model, bayesline, index, 1., ic);
+      model[index[ic]]->logL = loglikelihood(data, lpf, model[index[ic]], flags);
+    }
+    
     ptmcmc(model, temp, index, r, NC, mc);
 
     //cute PSD histogram
@@ -681,10 +718,10 @@ int main(int argc, char **argv)
 
       for(i=0; i<model[index[0]]->N; i++)
       {
-        LPFImpulseResponse(data->s, data, lpf, model[index[0]]->source[i]);
+        LPFImpulseResponse(model[index[0]]->s, data, lpf, model[index[0]]->source[i]);
         for(j=0; j<data->DOF; j++)
         {
-          for(k=0; k<data->N*2; k++) h[j][k]+=data->s[j][k];
+          for(k=0; k<data->N*2; k++) h[j][k]+=model[index[0]]->s[j][k];
         }
       }
       for(i=0; i<data->DOF; i++)
@@ -761,6 +798,13 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
 
   int opt=0;
   int long_index =0;
+
+  //Print command line
+  FILE *out = fopen("mcmc.sh","w");
+  fprintf(out,"#!/bin/sh\n\n");
+  for(opt=0; opt<argc; opt++) fprintf(out,"%s ",argv[opt]);
+  fprintf(out,"\n\n");
+  fclose(out);
 
   //Loop through argv string and pluck out arguments
   while ((opt = getopt_long_only(argc, argv,"apl:b:",

@@ -3,7 +3,7 @@ INCDIR = /opt/local/include
 LIBDIR = /opt/local/lib
 
 LIBS  = gsl gslcblas m
-CCFLAGS = -g -Wall -std=gnu99
+CCFLAGS = -O3 -Wall -std=gnu99
 
 CC = gcc
 
