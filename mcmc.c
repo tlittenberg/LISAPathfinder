@@ -14,6 +14,7 @@
 #include "LISAPathfinder.h"
 #include "TimePhaseMaximization.h"
 
+#include "omp.h"
 /* ============================  MAIN PROGRAM  ============================ */
 
 void parse(int argc, char **argv, struct Data *data, struct Flags *flags);
@@ -53,6 +54,7 @@ int main(int argc, char **argv)
 
   /* declare variables */
   int i,j,k,ic,n,mc;
+  int accept0;
   int accept;
   int MCMCSTEPS;
   int BURNIN;
@@ -148,8 +150,10 @@ int main(int argc, char **argv)
   /* Initialize data structure */
   struct Data  *data = malloc(sizeof(struct Data));
 
-
   parse(argc, argv, data, flags);
+
+  //omp_set_num_threads(8);
+  printf("Running on %i OpenMP threads.\n",omp_get_max_threads());
 
   data->T  = 16384.0;
   data->dt = 1.0;//0.4;
@@ -209,8 +213,7 @@ int main(int argc, char **argv)
   /* Simulate noise data */
   struct Model *injection = malloc(sizeof(struct Model));
   struct Model **model = malloc(NC*sizeof(struct Model*));
-  struct Model *trial  = malloc(sizeof(struct Model));
-  initialize_model(trial, data->N, nmax, data->DOF);
+  struct Model **trial  = malloc(NC*sizeof(struct Model*));
   initialize_model(injection,data->N,6, data->DOF);
 
   struct BayesLineParams ***bayesline = malloc(NC*sizeof(struct BayesLineParams **));
@@ -220,6 +223,9 @@ int main(int argc, char **argv)
   {
     model[ic] = malloc(sizeof(struct Model));
     initialize_model(model[ic],data->N,nmax, data->DOF);
+    /* we reserve a separate space for the trials of each chain so that the chains can step in parallel */
+    trial[ic]  = malloc(sizeof(struct Model));
+    initialize_model(trial[ic], data->N, nmax, data->DOF);
   }
 
 
@@ -266,27 +272,35 @@ int main(int argc, char **argv)
     sprintf(filename,"%s/g1_x_%s_%s.txt",    data->path,data->gps,data->duration);
     dfptr[0] = fopen(filename,"r");
     sprintf(filename,"%s/g1_y_%s_%s.txt",    data->path,data->gps,data->duration);
+    if(!dfptr[0])printf("Failed to open file '%s'\n",filename);
     dfptr[1] = fopen(filename,"r");
     sprintf(filename,"%s/g1_z_%s_%s.txt",    data->path,data->gps,data->duration);
+    if(!dfptr[1])printf("Failed to open file '%s'\n",filename);
     dfptr[2] = fopen(filename,"r");
-    sprintf(filename,"%s/g1_theta_%s_%s.txt",data->path,data->gps,data->duration);
-    dfptr[3] = fopen(filename,"r");
-    sprintf(filename,"%s/g1_eta_%s_%s.txt",  data->path,data->gps,data->duration);
-    dfptr[4] = fopen(filename,"r");
-    sprintf(filename,"%s/g1_phi_%s_%s.txt",  data->path,data->gps,data->duration);
-    dfptr[5] = fopen(filename,"r");
+    if(!dfptr[2])printf("Failed to open file '%s'\n",filename);
+    if(data->DOF>3){
+      sprintf(filename,"%s/g1_theta_%s_%s.txt",data->path,data->gps,data->duration);
+      dfptr[3] = fopen(filename,"r");
+      if(!dfptr[3])printf("Failed to open file '%s'\n",filename);
+      sprintf(filename,"%s/g1_eta_%s_%s.txt",  data->path,data->gps,data->duration);
+      dfptr[4] = fopen(filename,"r");
+      if(!dfptr[4])printf("Failed to open file '%s'\n",filename);
+      sprintf(filename,"%s/g1_phi_%s_%s.txt",  data->path,data->gps,data->duration);
+      dfptr[5] = fopen(filename,"r");
+      if(!dfptr[5])printf("Failed to open file '%s'\n",filename);
+    }
     for(k=0; k<data->DOF; k++)
     {
       for(i=0; i<N; i++)
-      {
-        re = 2*i;
-        im = re+1;
-        fscanf(dfptr[k],"%lg %lg %lg",&data->f[i], &data->d[k][re], &data->d[k][im]);
-        data->f[i] -= 1./data->T;
-      }
+	{
+	  re = 2*i;
+	  im = re+1;
+	  fscanf(dfptr[k],"%lg %lg %lg",&data->f[i], &data->d[k][re], &data->d[k][im]);
+	  data->f[i] -= 1./data->T;
+	}
       fclose(dfptr[k]);
     }
-
+    
     /* Set up BayesLine model */
     fprintf(stdout,"\n ============ BayesLine ==============\n");
 
@@ -300,6 +314,7 @@ int main(int argc, char **argv)
     }
 
     int NI=data->DOF;
+#pragma omp parallel for num_threads(NI)  //This screws up if OMP_NUM_THREADS is large.
     for(k=0; k<NI; k++)
     {
 
@@ -502,6 +517,7 @@ int main(int argc, char **argv)
   //setup_psd_histogram(data, injection, psd);
 
   /* set up MCMC run */
+  accept0    = 0;
   accept    = 0;
   MCMCSTEPS = 100000;
   BURNIN    = MCMCSTEPS/100;//1000;
@@ -536,58 +552,59 @@ int main(int argc, char **argv)
 
       for(n=0; n<n_hidden_steps; n++)
       {
-        trial->logQ = model[index[ic]]->logQ = 0.0;
+        trial[ic]->logQ = model[index[ic]]->logQ = 0.0;
         reject=0;
 
         //copy x to y
-        copy_model(model[index[ic]], trial, data->N, data->DOF);
+        copy_model(model[index[ic]], trial[ic], data->N, data->DOF);
 
         //choose new parameters for y
-        proposal(flags, data, lpf, model[index[ic]], trial, r, &reject, nmax, drew_impact_from_prior);
+        proposal(flags, data, lpf, model[index[ic]], trial[ic], r, &reject, nmax, drew_impact_from_prior);
 
         //compute maximized likelihood
-        //if(mc<BURNIN) max_loglikelihood(data, trial);
+        //if(mc<BURNIN) max_loglikelihood(data, trial[ic]);
         if(reject) continue;
         else
         {
           //compute new likelihood
-          trial->logL = loglikelihood(data, lpf, trial, flags);
+          trial[ic]->logL = loglikelihood(data, lpf, trial[ic], flags);
 
           //compute new prior
           if(flags->use_spacecraft==0)
-            logprior(data, trial, injection);
+            logprior(data, trial[ic], injection);
           else
           {
-            logprior_sc(data, lpf, trial, injection, drew_impact_from_prior);
+            logprior_sc(data, lpf, trial[ic], injection, drew_impact_from_prior);
             logprior_sc(data, lpf, model[index[ic]], injection, drew_impact_from_prior);
           }
-          if(model[index[ic]]->N==trial->N)
+          if(model[index[ic]]->N==trial[ic]->N)
           {
             for(i=0; i<model[index[ic]]->N; i++)
               model[index[ic]]->logP += log(gsl_ran_exponential_pdf(model[index[ic]]->source[i]->P,10000));
-            for(i=0; i<trial->N; i++)
-              trial->logP += log(gsl_ran_exponential_pdf(trial->source[i]->P,10000));
+            for(i=0; i<trial[ic]->N; i++)
+              trial[ic]->logP += log(gsl_ran_exponential_pdf(trial[ic]->source[i]->P,10000));
           }
           else
           {
             //TODO: HACK priors in RJ Hasting's ratio--only OK because we birth move exclusively draws from prior
-            model[index[ic]]->logP = trial->logP = 0.0;
+            model[index[ic]]->logP = trial[ic]->logP = 0.0;
           }
 
           //compute Hastings ratio
           //if(model[index[ic]]->logP<-1e59) continue;
           //else
-          H     = (trial->logL - model[index[ic]]->logL)/temp[ic] + trial->logP - model[index[ic]]->logP;// - trial->logQ + model[index[ic]]->logQ;
-          //if(model[index[ic]]->N!=trial->N)printf("%i->%i:  H = %g + %g - %g - %g + %g-> %g\n",model[index[ic]]->N,trial->N,(trial->logL - model[index[ic]]->logL)/temp[index[ic]],trial->logP, model[index[ic]]->logP,trial->logQ , model[index[ic]]->logQ,H);
+          H     = (trial[ic]->logL - model[index[ic]]->logL)/temp[ic] + trial[ic]->logP - model[index[ic]]->logP;// - trial[ic]->logQ + model[index[ic]]->logQ;
+          //if(model[index[ic]]->N!=trial[ic]->N)printf("%i->%i:  H = %g + %g - %g - %g + %g-> %g\n",model[index[ic]]->N,trial[ic]->N,(trial[ic]->logL - model[index[ic]]->logL)/temp[index[ic]],trial[ic]->logP, model[index[ic]]->logP,trial[ic]->logQ , model[index[ic]]->logQ,H);
           alpha = log(gsl_rng_uniform(r));
 
-          //          if(ic==0 && trial->source[0]->face==1)printf("H=%g, logLy=%g, logLx=%g\n",H,trial->logL,model[index[ic]]->logL);
+          //          if(ic==0 && trial[ic]->source[0]->face==1)printf("H=%g, logLy=%g, logLx=%g\n",H,trial[ic]->logL,model[index[ic]]->logL);
 
           //adopt new position w/ probability H
           if(H>alpha)
           {
-            copy_model(trial, model[index[ic]], data->N, data->DOF);
+            copy_model(trial[ic], model[index[ic]], data->N, data->DOF);
             accept++;
+            if(ic==0)accept0++;
           }
         }//Metropolis-Hastings
       }//Loop over inter-model updates
@@ -653,6 +670,9 @@ int main(int argc, char **argv)
     for(ic=0; ic<NC; ic++) fprintf(logLchain,"%lg ",temp[ic]);
     fprintf(logLchain,"\n");
 
+    if(mc%1000==0){
+      printf("mc=%i  acceptance rates = %g (%g all temps)\n",mc,(double)accept0/(double)((mc+1)*n_hidden_steps),(double)accept/(double)((mc+1)*n_hidden_steps*NC));
+    }
 
     if(mc%step==0)
     {
@@ -705,7 +725,7 @@ int main(int argc, char **argv)
 
     //if(mc%100)printf("finished round %i/%i\n",mc,MCMCSTEPS);
   }//MCMC
-  printf("acceptance rate = %g\n",(double)accept/(double)MCMCSTEPS);
+	printf("acceptance rate = %g\n",(double)accept0/(double)(MCMCSTEPS*n_hidden_steps));
 
 
   //  FILE *PSDfile = fopen("psdhistogram.dat","w");
@@ -720,6 +740,7 @@ int main(int argc, char **argv)
 
   return 0;
 }
+
 
 
 

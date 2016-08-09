@@ -7,7 +7,7 @@ ifneq ($(findstring discover,$(shell hostname)),)
   CC = icc
   INCDIR = $(GSLROOT)/include
   LIBDIR = $(GSLROOT)/lib
-  CCFLAGS = -fopenmp	
+  CCFLAGS = -fopenmp -qopenmp-report2	
 else 
   #OSX build
   CC = gcc

@@ -320,6 +320,8 @@ void draw_impact_point_sc(struct Data *data, struct Spacecraft *lpf, struct Sour
   static double total_area;
   static int have_cum_area=0;
   //compute and store the cumulative area
+
+#pragma omp critical 
   if(have_cum_area==0){
     have_cum_area=1;
     double sum=0;
@@ -366,7 +368,7 @@ void draw_impact_point_sc(struct Data *data, struct Spacecraft *lpf, struct Sour
   //flag if face is not exposed to sky location
   static int count=0;
   if(incidence(lpf,source->face,source->costheta, source->phi)<0){
-    //printf("face=%i, cth=%g, phi=%g, inc=%g\n",source->face,source->costheta,source->phi,incidence(lpf,source->costheta, source->phi, source->face));
+    printf("face=%i, cth=%g, phi=%g, inc=%g\n",source->face,source->costheta,source->phi,incidence(lpf,source->costheta, source->phi, source->face));
     if(source->face>-1)printf("This should (almost?) never fail. (count=%i),costhetaF=%g\n",count,costhetaF);
     source->face = -1;
   }
