@@ -18,7 +18,7 @@ endif
 
 
 LIBS  = gsl gslcblas m
-CCFLAGS += -g -Wall -O3 -std=gnu99 
+CCFLAGS += -g -O3 -Wall -std=gnu99
 
 
 OBJS = BayesLine.o Subroutines.o TimePhaseMaximization.o LISAPathfinder.o Spacecraft.o

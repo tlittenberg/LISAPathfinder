@@ -48,10 +48,13 @@ double sample(double *fprop, double pmax, dataParams *data, gsl_rng *r)
     alpha = pmax*gsl_rng_uniform(r);
     if(counter>10000)
     {
+      printf("BayesLine.c:51\n");
+      printf("can not propose valid spline frequency\n");
       printf("sample() counter=%i, lap=%i\n",counter,lap);
       printf("   f/flow=%g/%g\n",f,flow);
       printf("   alpha=%g/%g\n",alpha,pmax);
       printf("   fprop[%i]=%g\n",i,fprop[i]);
+      abort();
       counter=0;
       lap++;
     }
@@ -1590,7 +1593,7 @@ void BayesLineLorentzSplineMCMC(struct BayesLineParams *bayesline, double heat, 
   pmax = -1.0;
   for(i=0; i< ncut; i++)
 	{
-    x = power[i]/Sbase[i];
+    x = power[i]/Sn[i];
     if(x > pmax)
     {
       pmax = x;
