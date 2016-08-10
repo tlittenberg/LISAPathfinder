@@ -252,7 +252,7 @@ int main(int argc, char **argv)
     if(flags->use_spacecraft==0)while(source->face ==-1) draw_impact_point(data, lpf, source, ir);
     else while(source->face ==-1) draw_impact_point_sc(data, lpf, source, ir);
     draw_impactor(data, source, r);
-    source->P = 10000;
+    //source->P = 10000;
     //source->P = 1;//    ***************************************           hack to test the prior without signal
     printf("hit on face %i\n",source->face);
   }
@@ -292,12 +292,12 @@ int main(int argc, char **argv)
     for(k=0; k<data->DOF; k++)
     {
       for(i=0; i<N; i++)
-	{
-	  re = 2*i;
-	  im = re+1;
-	  fscanf(dfptr[k],"%lg %lg %lg",&data->f[i], &data->d[k][re], &data->d[k][im]);
-	  data->f[i] -= 1./data->T;
-	}
+      {
+	re = 2*i;
+	im = re+1;
+	fscanf(dfptr[k],"%lg %lg %lg",&data->f[i], &data->d[k][re], &data->d[k][im]);
+	data->f[i] -= 1./data->T;
+      }
       fclose(dfptr[k]);
     }
     
@@ -522,7 +522,8 @@ int main(int argc, char **argv)
         model[ic]->SnS[k][i]    = model[0]->Snf[k][i];
         model[ic]->invSnf[k][i] = model[0]->invSnf[k][i];
       }
-      copy_bayesline_params(bayesline[0][k], bayesline[ic][k]);
+      if(!flags->simdata)
+	copy_bayesline_params(bayesline[0][k], bayesline[ic][k]);
     }
     model[ic]->logL = loglikelihood(data, lpf, model[ic], flags);
 
@@ -534,7 +535,9 @@ int main(int argc, char **argv)
     fprintf(fptr,"%lg ",(double)i/data->T);
     for(k=0; k<data->DOF; k++)
     {
-      fprintf(fptr,"%lg %lg ", bayesline[0][k]->power[i], model[0]->Snf[k][i]);
+      double power=0;
+      if(!flags->simdata)power=bayesline[0][k]->power[i];
+      fprintf(fptr,"%lg %lg ", power, model[0]->Snf[k][i]);
     }
     fprintf(fptr,"\n");
   }
@@ -651,7 +654,7 @@ int main(int argc, char **argv)
     
     for(ic=0; ic<NC; ic++)
     {
-      bayesline_mcmc(data, model, bayesline, index, 1., ic);
+      if(!flags->simdata)bayesline_mcmc(data, model, bayesline, index, 1., ic);
       model[index[ic]]->logL = loglikelihood(data, lpf, model[index[ic]], flags);
     }
     
