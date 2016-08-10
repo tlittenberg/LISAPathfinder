@@ -155,13 +155,44 @@ int main(int argc, char **argv)
   //omp_set_num_threads(8);
   printf("Running on %i OpenMP threads.\n",omp_get_max_threads());
 
-  data->T  = 16384.0;
-  data->dt = 1.0;//0.4;
-  data->df = 1.0/data->T;
-  data->N  = (int)(data->T/data->dt)/2;
+  if(flags->simdata)
+  {
+    data->T  = 16384.0;
+    data->dt = 1.0;//0.4;
+    data->df = 1.0/data->T;
+    data->N  = (int)(data->T/data->dt)/2;
+  }
+  //Read in LPF data
+  else
+  {
+    sprintf(filename,"%s/g1_x_%s_%s.txt",    data->path,data->gps,data->duration);
+    FILE *temp = fopen(filename,"r");
+    double junk;
+
+    //scan through data file to figure out time-frequency volume for arrays
+    data->N = 0; //number of frequency bins
+    while(!feof(temp))
+    {
+      fscanf(temp,"%lg %lg %lg",&junk,&junk,&junk);
+      data->N++;
+    }
+    fclose(temp);
+
+    data->N--;
+    data->T  = (double)atof(data->duration);
+    data->dt = data->T/(2*data->N);
+    data->df = 1.0/data->T;
+  }
 
   data->fmin = data->df; //Hz
   data->fmax = (double)data->N/data->T;  //Hz
+
+  fprintf(stdout,"******* DATA INFO ******\n");
+  fprintf(stdout,"Number of samples ......... %i\n",data->N);
+  fprintf(stdout,"Data duration ............. %g\n",data->T);
+  fprintf(stdout,"Sampling rate ............. %g\n",1./data->dt);
+  fprintf(stdout,"Maximum frequency  ........ %g\n",data->fmax);
+  fprintf(stdout,"\n");
 
   data->imin = (int)floor(data->fmin*data->T);
   data->imax = (int)floor(data->fmax*data->T);
@@ -910,6 +941,7 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
   fprintf(stdout,"Number of data channles ... %i\n",data->DOF);
   fprintf(stdout,"Random number seed ........ %li\n",data->seed);
   fprintf(stdout,"Injection random number seed ........ %li\n",data->iseed);
+  fprintf(stdout,"\n");
   fprintf(stdout,"******* RUN FLAGS ******\n");
   if(flags->verbose)fprintf(stdout,"Verbose flag ........ ENABLED \n");
   else              fprintf(stdout,"Verbose flag ........ DISABLED\n");
