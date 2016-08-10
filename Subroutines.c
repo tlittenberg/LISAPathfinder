@@ -1184,12 +1184,15 @@ void print_time_domain_waveforms(char filename[], double *h, int N, double *Snf,
   double x,t;
   FILE *waveout = fopen(filename,"w");
 
-  double *ht = malloc(N*sizeof(double));
+  int NFFT = 2;
+  while(NFFT<N) NFFT*=2;
+
+  double *ht = malloc(NFFT*sizeof(double));
   for(i=0; i<N; i++)ht[i]=h[i];
 
   ht[0] = 0.0;
   ht[1] = 0.0;
-  for(i=1; i< N/2; i++)
+  for(i=1; i< NFFT/2; i++)
   {
     if(i>imin && i<imax)
     {
@@ -1204,12 +1207,12 @@ void print_time_domain_waveforms(char filename[], double *h, int N, double *Snf,
     }
   }
 
-  drealft(ht-1,N,-1);
-  double norm = 0.5*sqrt((double)N);
+  drealft(ht-1,NFFT,-1);
+  double norm = 0.5*sqrt((double)NFFT);
 
-  for(i=0; i<N; i++)
+  for(i=0; i<NFFT; i++)
   {
-    t = (double)(i)/(double)(N)*Tobs;
+    t = (double)(i)/(double)(NFFT)*Tobs;
     if(t>=tmin && t<tmax)fprintf(waveout,"%e %e\n", t, ht[i]/norm);
   }
 
@@ -1681,11 +1684,11 @@ void initialize_bayesline(struct BayesLineParams **bayesline, struct Data *data,
     bayesline[ifo]->priors->sigma = malloc(N*sizeof(double));
 
     //Set BayesLine priors based on the data channel being used
-    bayesline[ifo]->priors->SAmin = 1.0e-18;
+    bayesline[ifo]->priors->SAmin = 1.0e-20;
     bayesline[ifo]->priors->SAmax = 1.0;
     bayesline[ifo]->priors->LQmin = 1.0e2;
     bayesline[ifo]->priors->LQmax = 1.0e8;
-    bayesline[ifo]->priors->LAmin = 1.0e-18;
+    bayesline[ifo]->priors->LAmin = 1.0e-20;
     bayesline[ifo]->priors->LAmax = 1.0;
 
     // set default flags
