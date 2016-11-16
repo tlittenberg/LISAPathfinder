@@ -14,7 +14,7 @@
 #include "LISAPathfinder.h"
 #include "TimePhaseMaximization.h"
 
-#include "omp.h"
+//#include "omp.h"
 /* ============================  MAIN PROGRAM  ============================ */
 
 void parse(int argc, char **argv, struct Data *data, struct Flags *flags);
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
   int BURNIN;
   int NC;
   int nmax=12;
-  int n_hidden_steps=10;
+  int n_hidden_steps=1;
 
   double H;
   double alpha;
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
   parse(argc, argv, data, flags);
 
   //omp_set_num_threads(8);
-  printf("Running on %i OpenMP threads.\n",omp_get_max_threads());
+  //printf("Running on %i OpenMP threads.\n",omp_get_max_threads());
 
   if(flags->simdata)
   {
@@ -161,6 +161,7 @@ int main(int argc, char **argv)
     data->dt = 1.0;//0.4;
     data->df = 1.0/data->T;
     data->N  = (int)(data->T/data->dt)/2;
+    data->NFFT = 2*data->N;
   }
   //Read in LPF data
   else
@@ -180,8 +181,11 @@ int main(int argc, char **argv)
 
     data->N--;
     data->T  = (double)atof(data->duration);
-    data->dt = data->T/(2*data->N);
     data->df = 1.0/data->T;
+    data->NFFT = 2;
+    while(data->NFFT<data->N*2) data->NFFT*=2;
+    data->dt = data->T/(data->NFFT);
+
   }
 
   data->fmin = data->df; //Hz
@@ -201,11 +205,19 @@ int main(int argc, char **argv)
   data->s = malloc(data->DOF*sizeof(double *));
   data->n = malloc(data->DOF*sizeof(double *));
 
+  data->t_density = malloc(data->DOF*sizeof(double *));
+  data->t_density_max=malloc(data->DOF*sizeof(double));
+
+  data->NFFT = 2;
+  while(data->NFFT<data->N*2) data->NFFT*=2;
+
   for(i=0; i<data->DOF; i++)
   {
     data->d[i] = malloc(data->N*2*sizeof(double));
     data->s[i] = malloc(data->N*2*sizeof(double));
     data->n[i] = malloc(data->N*2*sizeof(double));
+
+    data->t_density[i] = malloc(data->NFFT*sizeof(double));
   }
 
   data->f = malloc(data->N*sizeof(double));
@@ -580,7 +592,14 @@ int main(int argc, char **argv)
     //void print_time_domain_waveforms(char filename[], double *h, int N, double *Snf, double eta, double Tobs, int imin, int imax, double tmin, double tmax)
     printf("T=%g, imin=%i, imax=%i, N=%i\n", data->T, data->imin, data->imax, data->N);
     print_time_domain_waveforms(filename, data->d[i], data->N*2, model[0]->Snf[i], 1.0, data->T, data->imin, data->imax, 0.0, data->T);
-
+    find_impacts(data->d[i], data->N*2, model[0]->Snf[i], 1.0, data->T, data->imin, data->imax, 0.0, data->T, data->t_density[i]);
+    data->t_density_max[i]=0.0;
+    for(n=0; n<data->NFFT; n++)
+    {
+      if(data->t_density[i][n]>data->t_density_max[i]) data->t_density_max[i]=data->t_density[i][n];
+    }
+    printf("max in channel %i=%g\n",i,data->t_density[i][n]);
+    
   }
 
   /* set up distribution */
@@ -590,7 +609,7 @@ int main(int argc, char **argv)
   /* set up MCMC run */
   accept0    = 0;
   accept    = 0;
-  MCMCSTEPS = 100000;
+  MCMCSTEPS = 50000;
   BURNIN    = MCMCSTEPS/100;//1000;
 
   FILE *noisechain;
@@ -782,8 +801,15 @@ int main(int argc, char **argv)
       }
       for(i=0; i<data->DOF; i++)
       {
+        sprintf(filename,"TD_data_%i.dat",i);
+        print_time_domain_waveforms(filename, data->d[i], data->N*2, model[index[0]]->Snf[i], 1.0, data->T, data->imin, data->imax, 0.0, data->T);
+        
         sprintf(filename,"TD_model_%i.dat",i);
         print_time_domain_waveforms(filename, h[i], data->N*2, model[index[0]]->Snf[i], 1.0, data->T, data->imin, data->imax, 0.0, data->T);
+        
+        sprintf(filename,"FD_model_%i.dat",i);
+        print_power_spectra(filename, data->d[i], h[i], data->N*2, model[index[0]]->Snf[i], data->T, data->imin, data->imax);
+
       }
       for(i=0; i<data->DOF; i++)
       {

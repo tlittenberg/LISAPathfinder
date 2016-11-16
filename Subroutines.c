@@ -249,7 +249,8 @@ void proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, st
     }
     //RJ proposal
     else dimension_proposal(flags, data, lpf, model, trial, r, nmax, reject);
-  
+
+
 }
 
 /*  John's version of this with some fixes especially to make draw consistent with a meanaingful prior.
@@ -387,6 +388,12 @@ void draw_impactor(struct Data *data, struct Source *source, gsl_rng *seed)
   //momentum and impact time
   source->P  = gsl_ran_exponential(seed,10000);
   source->t0 = gsl_rng_uniform(seed)*data->T;
+
+  //pick a DOF
+  int d = (int)floor(gsl_rng_uniform(seed)*data->DOF);
+  while(gsl_rng_uniform(seed)>data->t_density[d][(int)(source->t0/data->dt)]/data->t_density_max[d])
+    source->t0 = gsl_rng_uniform(seed)*data->T;
+
 }
 
 
@@ -524,7 +531,7 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     draw_impact_point_sc(data,lpf,trial,r);
 
     //10% of time also draw time & amplitude from prior
-    if(gsl_rng_uniform(r)<0.0) //TODO: Fix within-model prior-draw proposal
+    if(gsl_rng_uniform(r)<0.1) //TODO: Fix within-model prior-draw proposal
     {
       draw_impactor(data, trial, r);
     }
@@ -538,7 +545,7 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     double *rface=malloc(2*sizeof(double));
 
     //printf("gauss\n");
-    trial->P  = model->P  + gsl_ran_ugaussian(r)*10.0;
+    trial->P  = model->P  + gsl_ran_ugaussian(r)*500.0;
     trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.25;
     
     trial->phi      = model->phi + gsl_ran_ugaussian(r)*0.01;
@@ -640,8 +647,8 @@ void logprior(struct Data *data, struct Model *model, struct Model *injection)
   int n;
   for(n=0; n<model->N; n++)
   {
-    
-    if(model->source[n]->t0 < 0.0 || model->source[n]->t0 > data->T) model->logP = -1.0e60;
+    //30 second buffer at ends of segment to avoid edge effects
+    if(model->source[n]->t0 < 30.0 || model->source[n]->t0 > data->T-30.0) model->logP = -1.0e60;
     
     if(model->source[n]->P < 0.0) model->logP = -1.0e60;
   }
@@ -1222,6 +1229,82 @@ void print_time_domain_waveforms(char filename[], double *h, int N, double *Snf,
 
   fclose(waveout);
 }
+
+void print_power_spectra(char filename[], double *d, double *h, int N, double *Snf, double Tobs, int imin, int imax)
+{
+  /*
+   TODO: invFFT comes out time-reversed.
+   LAL uses exp(-i2pift) for their Fourier transforms
+   Why doesn't drealft(ty-1,N,1) work for inverse FFT?
+   In the meantime, hacked invFFT by changing sign of imaginary part
+   */
+  int i;
+  FILE *waveout = fopen(filename,"w");
+  
+  int re;
+  int im;
+  for(i=imin; i<imax; i++)
+  {
+    re=2*i;
+    im=re+1;
+    fprintf(waveout,"%lg %lg %lg %lg\n", (double)i/Tobs, d[re]*d[re]+d[im]*d[im],h[re]*h[re]+h[im]*h[im],Snf[i]);
+  }
+  
+  
+  fclose(waveout);
+}
+
+void find_impacts(double *h, int N, double *Snf, double eta, double Tobs, int imin, int imax, double tmin, double tmax, double *t_density)
+{
+  /*
+   TODO: invFFT comes out time-reversed.
+   LAL uses exp(-i2pift) for their Fourier transforms
+   Why doesn't drealft(ty-1,N,1) work for inverse FFT?
+   In the meantime, hacked invFFT by changing sign of imaginary part
+   */
+  int i;
+  double x,t;
+
+  int NFFT = 2;
+  while(NFFT<N) NFFT*=2;
+
+  double *ht = malloc(NFFT*sizeof(double));
+  for(i=0; i<N; i++)ht[i]=h[i];
+
+  ht[0] = 0.0;
+  ht[1] = 0.0;
+  for(i=1; i< NFFT/2; i++)
+  {
+    if(i>imin && i<imax)
+    {
+      x = sqrt(Snf[i]*eta);
+      ht[2*i] /= x;
+      ht[2*i+1] /= x;
+      //printf("x=%g, ht[%i/%i] = %g + i%g\n",x,i,4096,ht[2*i],ht[2*i+1]);
+    }
+    else
+    {
+      ht[2*i]=ht[2*i+1]=0.0;
+    }
+  }
+
+  drealft(ht-1,NFFT,-1);
+  double norm = 0.5*sqrt((double)NFFT);
+
+  double norm2=0.0;
+  for(i=0; i<NFFT; i++)
+  {
+    t = (double)(i)/(double)(NFFT)*Tobs;
+    if(ht[i]/norm>6.) printf("potential impact at t=%g, h(t)=%g\n",t,ht[i]);
+    t_density[i] = (ht[i]/norm)*(ht[i]/norm);
+    norm2 += t_density[i];
+  }
+
+  for(i=0; i<NFFT; i++) t_density[i]/=norm2;
+
+  free(ht);
+}
+
 
 
 /* ********************************************************************************** */

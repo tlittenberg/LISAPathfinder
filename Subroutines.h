@@ -73,6 +73,7 @@ struct Model
 struct Data
 {
   int N;
+  int NFFT;
    int DOF;
   int imin;
   int imax;
@@ -88,6 +89,9 @@ struct Data
   double **n;
   double **s;
   double *f;
+
+  double **t_density;
+  double *t_density_max;
 
     char path[128];
     char gps[16];
@@ -147,6 +151,8 @@ void logprior_sc(struct Data *data,struct Spacecraft *lpf,  struct Model *model,
 
 double log_mass_prior(double m0, double m);
 
+void find_impacts(double *h, int N, double *Snf, double eta, double Tobs, int imin, int imax, double tmin, double tmax, double *t_density);
+
 /* ********************************************************************************** */
 /*                                                                                    */
 /*                            Waveform basis functions                                */
@@ -188,6 +194,8 @@ void Sn(struct Data *data, struct Spacecraft *lpf, struct Model *model, double *
 void setup_psd_histogram(struct Data *data, struct Spacecraft *lpf, struct Model *model, struct PSDposterior *psd);
 
 void populate_psd_histogram(struct Data *data, struct Spacecraft *lpf, struct Model *model, int MCMCSTEPS, struct PSDposterior *psd);
+
+void print_power_spectra(char filename[], double *d, double *h, int N, double *Snf, double Tobs, int imin, int imax);
 
 void print_time_domain_waveforms(char filename[], double *h, int N, double *Snf, double eta, double Tobs, int imin, int imax, double tmin, double tmax);
 

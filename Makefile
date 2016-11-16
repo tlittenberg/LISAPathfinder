@@ -13,7 +13,7 @@ else
   CC = gcc
   INCDIR = /opt/local/include
   LIBDIR = /opt/local/lib
-  CCFLAGS = 	
+  #CCFLAGS = -fopenmp	
 endif
 
 
