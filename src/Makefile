@@ -10,10 +10,10 @@ ifneq ($(findstring discover,$(shell hostname)),)
   CCFLAGS = -fopenmp -qopenmp-report2	
 else 
   #OSX build
-  CC = gcc
+  CC = gcc-mp-5
   INCDIR = /opt/local/include
   LIBDIR = /opt/local/lib
-  #CCFLAGS = -fopenmp	
+  CCFLAGS = -fopenmp
 endif
 
 

@@ -14,7 +14,7 @@
 #include "LISAPathfinder.h"
 #include "TimePhaseMaximization.h"
 
-//#include "omp.h"
+#include "omp.h"
 /* ============================  MAIN PROGRAM  ============================ */
 
 void parse(int argc, char **argv, struct Data *data, struct Flags *flags);
