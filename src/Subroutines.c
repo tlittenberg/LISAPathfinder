@@ -146,8 +146,8 @@ void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, 
     }
   }
   
-  double nu=30;
-  double t0=100;
+  double nu=100;
+  double t0=1000;
   
   for(ic=1; ic<NC-1; ic++)
   {
@@ -386,14 +386,18 @@ void draw_impact_point_sc(struct Data *data, struct Spacecraft *lpf, struct Sour
 void draw_impactor(struct Data *data, struct Source *source, gsl_rng *seed)
 {
   //momentum and impact time
-  source->P  = gsl_ran_exponential(seed,10000);
-  source->t0 = gsl_rng_uniform(seed)*data->T;
+  //source->P  = gsl_ran_exponential(seed,10);
+  source->P  = gsl_rng_uniform(seed)*13.0;
+  source->t0 = 60. + (gsl_rng_uniform(seed)*(data->T-120.0));
 
   //pick a DOF
   int d = (int)floor(gsl_rng_uniform(seed)*data->DOF);
-  while(gsl_rng_uniform(seed)>data->t_density[d][(int)(source->t0/data->dt)]/data->t_density_max[d])
-    source->t0 = gsl_rng_uniform(seed)*data->T;
-
+  do
+  {
+    source->t0 = 60. + (gsl_rng_uniform(seed)*(data->T-120.0));
+  }while(gsl_rng_uniform(seed) > data->t_density[d][(int)(source->t0/data->dt)]/data->t_density_max[d]);
+    
+  //printf("drew source t at %g (%g/%g for channel %i)\n",source->t0,data->t_density[d][(int)(source->t0/data->dt)],data->t_density_max[d],d);
 }
 
 
@@ -418,7 +422,7 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
     draw_impact_point(data,lpf,trial,r);
 
     //10% of time also draw time & amplitude from prior
-    if(gsl_rng_uniform(r)<0.0)
+    if(gsl_rng_uniform(r)<0.1)
     {
       draw_impactor(data, trial, r);
     }
@@ -427,7 +431,7 @@ void impact_proposal(struct Data *data, struct Spacecraft *lpf, struct Source *m
   //gaussian
   else
   {
-    trial->P  = model->P  + gsl_ran_ugaussian(r)*10.0;
+    trial->P  = model->P  + gsl_ran_ugaussian(r)*0.01;
     trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.25;
     
     trial->phi      = model->phi + gsl_ran_ugaussian(r)*0.01;
@@ -543,13 +547,18 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
   else
   {
     double *rface=malloc(2*sizeof(double));
-
-    //printf("gauss\n");
-    trial->P  = model->P  + gsl_ran_ugaussian(r)*500.0;
-    trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.25;
+    double scale = .1;
+    double draw = gsl_rng_uniform(r);
+    if(draw<0.2)       scale = 0.01; //10% of time, do a tiny jump
+    else if (draw>0.8) scale = 1;   //10% of time, do a big jump
     
-    trial->phi      = model->phi + gsl_ran_ugaussian(r)*0.01;
-    trial->costheta = model->costheta + gsl_ran_ugaussian(r)*0.01;
+    
+    //printf("gauss\n");
+    trial->P  = model->P  + gsl_ran_ugaussian(r)*scale;
+    trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.01*scale;
+    
+    trial->phi      = model->phi + gsl_ran_ugaussian(r)*scale;
+    trial->costheta = model->costheta + gsl_ran_ugaussian(r)*scale;
     
     trial->r[0] = model->r[0];
     trial->r[1] = model->r[1];
@@ -567,7 +576,7 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     //debug check
     //face2body(lpf,iface,rface,trial->r);
     
-    double scale=0.05;
+    scale=0.05;
     if(gsl_ran_ugaussian(r)<0.5)scale=0.01;
     double stepx=gsl_ran_ugaussian(r)*scale;
     double stepy=gsl_ran_ugaussian(r)*scale;
@@ -650,7 +659,7 @@ void logprior(struct Data *data, struct Model *model, struct Model *injection)
     //30 second buffer at ends of segment to avoid edge effects
     if(model->source[n]->t0 < 30.0 || model->source[n]->t0 > data->T-30.0) model->logP = -1.0e60;
     
-    if(model->source[n]->P < 0.0) model->logP = -1.0e60;
+    if(model->source[n]->P < 0.0 || model->source[n]->P > 13.0) model->logP = -1.0e60;
   }
 }
 
@@ -664,9 +673,9 @@ void logprior_sc(struct Data *data, struct Spacecraft *lpf, struct Model *model,
     for(n=0; n<model->N; n++)
     {
 
-        if(model->source[n]->t0 < 0.0 || model->source[n]->t0 > data->T) model->logP = -1.0e60;
+        if(model->source[n]->t0 < 60.0 || model->source[n]->t0 > data->T-60) model->logP = -1.0e60;
 
-        if(model->source[n]->P < 0.0) model->logP = -1.0e60;
+        if(model->source[n]->P < 0.0 || model->source[n]->P > 13.0) model->logP = -1.0e60;
         //else model->logP += log(gsl_ran_exponential_pdf(model->source[n]->P,1000));
 
         ///JGB:Prior on the face/impact-dir, but not if the trial was drawn from prior/
@@ -738,9 +747,9 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, s
   SineGaussianFourier(h_norm, source->t0, 1.0, data->N, 0, data->T);
 
   P = malloc(data->DOF*sizeof(double));
+  double Pamp=expf(source->P)*PC;
   
-
-  for(i=0; i<3; i++) P[i] = e[i]*source->P*PC/lpf->M;
+  for(i=0; i<3; i++) P[i] = e[i]*Pamp/lpf->M;
 
   if(data->DOF>3)
   {
@@ -755,7 +764,7 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, s
     for(i=0; i<3; i++)
     {
       P[i+3] = 0.0;
-      for(j=0; j<3; j++) P[i+3] += t[j]*lpf->invI[0][i][j]*source->P*PC;
+      for(j=0; j<3; j++) P[i+3] += t[j]*lpf->invI[0][i][j]*Pamp;
     }
 
     //add linear momentum at test mass
@@ -849,10 +858,10 @@ void SineGaussianFourier(double *hs, double t0, double P, int N, int flag, doubl
     
     if(flag==0) hs[even] = hs[odd] = 0.0;
     
-    sf = amplitude*expf(-pi2tau2*(f-f0)*(f-f0));
-    sx = expf(-Q2*f);
-    re =  sf*(cosPhase_m+sx*cosPhase_p);//cos(phi-TPI*f*(t0-Tobs));
-    im = -sf*(sinPhase_m+sx*sinPhase_p);//sin(phi-TPI*f*(t0-Tobs));
+    sf = amplitude;//*expf(-pi2tau2*(f-f0)*(f-f0));
+                   //sx = expf(-Q2*f);
+    re =  sf*(cosPhase_m);//+sx*cosPhase_p);//cos(phi-TPI*f*(t0-Tobs));
+    im = -sf*(sinPhase_m);//+sx*sinPhase_p);//sin(phi-TPI*f*(t0-Tobs));
     
     switch(flag)
     {
@@ -876,7 +885,7 @@ void SineGaussianFourier(double *hs, double t0, double P, int N, int flag, doubl
     
     /* Now update re and im for the next iteration. */
     recursive_phase_evolution(dre, dim, &cosPhase_m, &sinPhase_m);
-    recursive_phase_evolution(dre, dim, &cosPhase_p, &sinPhase_p);
+    //recursive_phase_evolution(dre, dim, &cosPhase_p, &sinPhase_p);
   }
   
   for(i = iend; i < istop; i++)

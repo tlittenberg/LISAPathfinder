@@ -14,7 +14,7 @@
 #include "LISAPathfinder.h"
 #include "TimePhaseMaximization.h"
 
-#include "omp.h"
+//#include "omp.h"
 /* ============================  MAIN PROGRAM  ============================ */
 
 void parse(int argc, char **argv, struct Data *data, struct Flags *flags);
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
   double H;
   double alpha;
 
-  char filename[128];
+  char filename[256];
 
   /* Structure for run flags */
   struct Flags *flags = malloc(sizeof(struct Flags));
@@ -168,6 +168,11 @@ int main(int argc, char **argv)
   {
     sprintf(filename,"%s/g1_x_%s_%s.txt",    data->path,data->gps,data->duration);
     FILE *temp = fopen(filename,"r");
+    if(!temp)
+    { printf("Failed to open file '%s'\n",filename);
+      printf("Check your GPS time and path to data files\n");
+      exit(1);
+    }
     double junk;
 
     //scan through data file to figure out time-frequency volume for arrays
@@ -343,7 +348,6 @@ int main(int argc, char **argv)
       }
       fclose(dfptr[k]);
     }
-    
     /* Read in spacecraft mass properties */
     sprintf(filename,"%s/g1_mass_props_%s_%s.txt",data->path,data->gps,data->duration);
     FILE *mfptr = fopen(filename,"r");
@@ -419,32 +423,6 @@ int main(int argc, char **argv)
       }
     }
 
-    //        //Start PSD off at reference from BayesLine
-    //        dfptr[0] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/x/fullspectrum_pdf.dat","r");
-    //        dfptr[1] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/y/fullspectrum_pdf.dat","r");
-    //        dfptr[2] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/z/fullspectrum_pdf.dat","r");
-    //        dfptr[3] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/theta/fullspectrum_pdf.dat","r");
-    //        dfptr[4] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/eta/fullspectrum_pdf.dat","r");
-    //        dfptr[5] = fopen("/Users/tyson/Research/LISAPathfinder/run_20160429/01/phi/fullspectrum_pdf.dat","r");
-    //        int count;
-    //        double junk;
-    //        for(k=0; k<data->DOF; k++)
-    //        {
-    //            count=0;
-    //            while(!feof(dfptr[k]))
-    //            {
-    //                re = count*i;
-    //                im = re+1;
-    //                fscanf(dfptr[k],"%lg %lg %lg %lg %lg %lg %lg",&junk,&junk,&junk,&junk,&junk,&junk,&injection->Snf[k][count]);
-    //                count++;
-    //            }
-    //            count--;
-    //            for(i=count; i<N; i++)
-    //            {
-    //                injection->Snf[k][i] = injection->Snf[k][count-1];
-    //            }
-    //            fclose(dfptr[k]);
-    //        }
     free(dfptr);
   }
 
@@ -458,31 +436,9 @@ int main(int argc, char **argv)
   fclose(injfile);
   printf("SNR of injection = %g\n",snr(data, lpf, injection));
 
-  //    /* Initialize parallel chains */
-  //    NC = 15;
-  //    int *index = malloc(NC*sizeof(double));
-  //    double *temp = malloc(NC*sizeof(double));
-  //    double dT = 1.5;
-  //    temp[0] = 1.0;
-  //    index[0]=0;
-  //    for(ic=1; ic<NC; ic++)
-  //    {
-  //        temp[ic]=temp[ic-1]*dT;
-  //        index[ic]=ic;
-  //    }
-  //    temp[NC-1]=1.e6;
-
-  //    /* Initialize model */
-  //    struct Model **model = malloc(NC*sizeof(struct Model*));
-  //
-  //    struct Model *trial  = malloc(sizeof(struct Model));
-  //    initialize_model(trial, data->N, nmax, data->DOF);
-
 
   for(ic=0; ic<NC; ic++)
   {
-    //        model[ic] = malloc(sizeof(struct Model));
-    //        initialize_model(model[ic],data->N,nmax, data->DOF);
 
     copy_model(injection, model[ic], data->N, data->DOF);
 
@@ -490,7 +446,8 @@ int main(int argc, char **argv)
 
     for(n=0; n<model[ic]->N; n++)
     {
-      model[ic]->source[n]->P  = gsl_ran_exponential(r,10000.);
+      //model[ic]->source[n]->P  = gsl_ran_exponential(r,10);
+      model[ic]->source[n]->P  = gsl_rng_uniform(r)*10.0;
       model[ic]->source[n]->t0 = gsl_rng_uniform(r)*data->T;
 
     }
@@ -512,46 +469,6 @@ int main(int argc, char **argv)
 
     free(drew_prior);
   }
-
-  //    /* Set up BayesLine model */
-  //    struct BayesLineParams ***bayesline = malloc(NC*sizeof(struct BayesLineParams **));
-  //    fprintf(stdout,"\n ============ BayesLine ==============\n");
-  //
-  //    /*
-  //     Setup BayesLine structure
-  //     */
-  //    for(ic=0; ic<NC; ic++)
-  //    {
-  //        bayesline[ic] = malloc(data->DOF*sizeof(struct BayesLineParams *));
-  //        initialize_bayesline(bayesline[ic], data, model[ic]->Snf);
-  //    }
-  //
-  //    int ifo;
-  //    int imin=data->imin;
-  //    int imax=data->imax;
-  //    int NI=data->DOF;
-  //      for(ifo=0; ifo<NI; ifo++)
-  //      {
-  //
-  //        for(i=0; i<N; i++)
-  //        {
-  //          bayesline[0][ifo]->power[i] = (data->d[ifo][2*i]*data->d[ifo][2*i]+data->d[ifo][2*i+1]*data->d[ifo][2*i+1]);
-  //        }
-  //
-  //        //TODO: Is passing d(f) to BayesLineSearch etc. redundant?
-  //        fprintf(stdout,"BayesLine search phase for IFO %i\n", ifo);
-  //        BayesLineSearch(bayesline[0][ifo], data->d[ifo], data->fmin, data->fmax, data->dt, data->T);
-  //
-  //        fprintf(stdout,"BayesLine characterization phase for IFO %i\n", ifo);
-  //        BayesLineRJMCMC(bayesline[0][ifo], data->d[ifo], model[0]->Snf[ifo], model[0]->invSnf[ifo], model[0]->SnS[ifo], 2*N, 1000, 1.0, 0);
-  //
-  //        for(i=0; i<N; i++)
-  //        {
-  //          model[0]->Snf[ifo][i]*=2.0;
-  //          model[0]->SnS[ifo][i] = model[0]->Snf[ifo][i];
-  //          model[0]->invSnf[ifo][i] = 1./model[0]->Snf[ifo][i];
-  //        }
-  //      }
 
   model[0]->logL = loglikelihood(data, lpf, model[0], flags);
 
@@ -598,7 +515,13 @@ int main(int argc, char **argv)
     {
       if(data->t_density[i][n]>data->t_density_max[i]) data->t_density_max[i]=data->t_density[i][n];
     }
-    printf("max in channel %i=%g\n",i,data->t_density[i][n]);
+    printf("max in channel %i=%g\n",i,data->t_density_max[i]);
+    
+    
+    sprintf(filename,"density_%i.dat",i);
+    FILE *temp=fopen(filename,"w");
+    for(n=0; n<data->NFFT; n++) fprintf(temp,"%i %lg\n",n,data->t_density[i][n]);
+    fclose(temp);
     
   }
 
@@ -669,10 +592,11 @@ int main(int argc, char **argv)
           }
           if(model[index[ic]]->N==trial[ic]->N)
           {
-            for(i=0; i<model[index[ic]]->N; i++)
-              model[index[ic]]->logP += log(gsl_ran_exponential_pdf(model[index[ic]]->source[i]->P,10000));
-            for(i=0; i<trial[ic]->N; i++)
-              trial[ic]->logP += log(gsl_ran_exponential_pdf(trial[ic]->source[i]->P,10000));
+//            for(i=0; i<model[index[ic]]->N; i++)
+//              model[index[ic]]->logP += log(gsl_ran_exponential_pdf(model[index[ic]]->source[i]->P,10));
+//            for(i=0; i<trial[ic]->N; i++)
+//              trial[ic]->logP += log(gsl_ran_exponential_pdf(trial[ic]->source[i]->P,10));
+            model[index[ic]]->logP = trial[ic]->logP = 0.0;
           }
           else
           {
@@ -737,7 +661,7 @@ int main(int argc, char **argv)
         int iface=source->face;
         body2face(lpf, iface, source->r,source->map);
       }
-      fprintf(impactchain,"%lg ",model[ic]->logL-injection->logL);
+      fprintf(impactchain,"%lg ",model[ic]->logL);//-injection->logL);
       fprintf(impactchain,"%i ",model[ic]->N);
       fprintf(impactchain,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", source->t0,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
     }fflush(impactchain);
