@@ -59,7 +59,7 @@ int main(int argc, char **argv)
   int MCMCSTEPS;
   int BURNIN;
   int NC;
-  int nmax=12;
+  int nmax=2;
   int n_hidden_steps=1;
 
   double H;
