@@ -59,7 +59,7 @@ int main(int argc, char **argv)
   int MCMCSTEPS;
   int BURNIN;
   int NC;
-  int nmax=2;
+  int nmax=1;
   int n_hidden_steps=1;
 
   double H;
@@ -173,19 +173,22 @@ int main(int argc, char **argv)
       printf("Check your GPS time and path to data files\n");
       exit(1);
     }
-    double junk;
+    double f,junk;
 
+    double f0,f1;
     //scan through data file to figure out time-frequency volume for arrays
     data->N = 0; //number of frequency bins
     while(!feof(temp))
     {
-      fscanf(temp,"%lg %lg %lg",&junk,&junk,&junk);
+      fscanf(temp,"%lg %lg %lg",&f,&junk,&junk);
+      if(data->N==0)f0=f;
+      if(data->N==1)f1=f;
       data->N++;
     }
     fclose(temp);
-
+    printf("f1=%g,f0=%g\n",f0,f1);
     data->N--;
-    data->T  = (double)atof(data->duration);
+    data->T  = 1./(f1-f0);//(double)atof(data->duration);
     data->df = 1.0/data->T;
     data->NFFT = 2;
     while(data->NFFT<data->N*2) data->NFFT*=2;
