@@ -666,7 +666,7 @@ int main(int argc, char **argv)
       }
       fprintf(impactchain,"%lg ",model[ic]->logL);//-injection->logL);
       fprintf(impactchain,"%i ",model[ic]->N);
-      fprintf(impactchain,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", source->t0,source->P,source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
+      fprintf(impactchain,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", source->t0,exp(source->P)*PC/sqrt(data->T),source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
     }fflush(impactchain);
 
     if(flags->verbose)
