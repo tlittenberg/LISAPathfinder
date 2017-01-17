@@ -146,6 +146,7 @@ void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, 
     }
   }
   
+  /*
   double nu=100;
   double t0=1000;
   
@@ -162,6 +163,7 @@ void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, 
     temp[ic] = temp[ic-1] + exp(S[ic]);
     
   }//end loop over ic
+   */
   //  for(ic=0; ic<NC; ic++)printf("%.2g ",temp[ic]);
   //  printf("\n");
   
@@ -236,7 +238,7 @@ void proposal(struct Flags *flags, struct Data *data, struct Spacecraft *lpf, st
   detector_proposal(data, model, trial, r);
   
     //MCMC proposal
-    if(gsl_rng_uniform(r)<0.99 || !flags->rj)
+    if(gsl_rng_uniform(r)<0.5 || !flags->rj)
     {
         for(n=0; n<model->N; n++){
             //printf("(source=%i) ",n);
@@ -387,15 +389,15 @@ void draw_impactor(struct Data *data, struct Source *source, gsl_rng *seed)
 {
   //momentum and impact time
   //source->P  = gsl_ran_exponential(seed,10);
-  source->P  = gsl_rng_uniform(seed)*13.0;
+  source->P  = 5.0 + gsl_rng_uniform(seed)*(13.0-5.0);
   source->t0 = 60. + (gsl_rng_uniform(seed)*(data->T-120.0));
 
   //pick a DOF
   int d = (int)floor(gsl_rng_uniform(seed)*data->DOF);
-  do
+  while(gsl_rng_uniform(seed) > data->t_density[d][(int)(source->t0/data->dt)]/data->t_density_max[d])
   {
     source->t0 = 60. + (gsl_rng_uniform(seed)*(data->T-120.0));
-  }while(gsl_rng_uniform(seed) > data->t_density[d][(int)(source->t0/data->dt)]/data->t_density_max[d]);
+  };
     
   //printf("drew source t at %g (%g/%g for channel %i)\n",source->t0,data->t_density[d][(int)(source->t0/data->dt)],data->t_density_max[d],d);
 }
@@ -550,11 +552,11 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     double scale = .1;
     double draw = gsl_rng_uniform(r);
     if(draw<0.2)       scale = 0.01; //10% of time, do a tiny jump
-    else if (draw>0.8) scale = 1;   //10% of time, do a big jump
+    else if (draw>0.8) scale = 1.0;   //10% of time, do a big jump
     
     
     //printf("gauss\n");
-    trial->P  = model->P  + gsl_ran_ugaussian(r)*scale;
+    trial->P  = model->P  + gsl_ran_ugaussian(r)*0.5*scale;
     trial->t0 = model->t0 + gsl_ran_ugaussian(r)*0.01*scale;
     
     trial->phi      = model->phi + gsl_ran_ugaussian(r)*scale;
@@ -576,7 +578,7 @@ void impact_proposal_sc(struct Data *data, struct Spacecraft *lpf, struct Source
     //debug check
     //face2body(lpf,iface,rface,trial->r);
     
-    scale=0.05;
+    scale/=10.;
     if(gsl_ran_ugaussian(r)<0.5)scale=0.01;
     double stepx=gsl_ran_ugaussian(r)*scale;
     double stepy=gsl_ran_ugaussian(r)*scale;
@@ -657,7 +659,7 @@ void logprior(struct Data *data, struct Model *model, struct Model *injection)
   for(n=0; n<model->N; n++)
   {
     //30 second buffer at ends of segment to avoid edge effects
-    if(model->source[n]->t0 < 30.0 || model->source[n]->t0 > data->T-30.0) model->logP = -1.0e60;
+    if(model->source[n]->t0 < data->tmin || model->source[n]->t0 > data->tmax) model->logP = -1.0e60;
     
     if(model->source[n]->P < 0.0 || model->source[n]->P > 13.0) model->logP = -1.0e60;
   }
@@ -673,9 +675,9 @@ void logprior_sc(struct Data *data, struct Spacecraft *lpf, struct Model *model,
     for(n=0; n<model->N; n++)
     {
 
-        if(model->source[n]->t0 < 60.0 || model->source[n]->t0 > data->T-60) model->logP = -1.0e60;
+        if(model->source[n]->t0 < data->tmin || model->source[n]->t0 > data->tmax) model->logP = -1.0e60;
 
-        if(model->source[n]->P < 0.0 || model->source[n]->P > 13.0) model->logP = -1.0e60;
+        if(model->source[n]->P < 5.0 || model->source[n]->P > 13.0) model->logP = -1.0e60;
         //else model->logP += log(gsl_ran_exponential_pdf(model->source[n]->P,1000));
 
         ///JGB:Prior on the face/impact-dir, but not if the trial was drawn from prior/

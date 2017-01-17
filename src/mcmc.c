@@ -162,6 +162,8 @@ int main(int argc, char **argv)
     data->df = 1.0/data->T;
     data->N  = (int)(data->T/data->dt)/2;
     data->NFFT = 2*data->N;
+    data->tmin=0.0;
+    data->tmax = data->T;
   }
   //Read in LPF data
   else
@@ -193,6 +195,8 @@ int main(int argc, char **argv)
     data->NFFT = 2;
     while(data->NFFT<data->N*2) data->NFFT*=2;
     data->dt = data->T/(data->NFFT);
+    data->tmin=30.0;
+    data->tmax = data->T-data->tmin;
 
   }
 
@@ -248,10 +252,10 @@ int main(int argc, char **argv)
   fclose(facefile);
 
   /* Initialize parallel chains */
-  NC = 10;
+  NC = 15;
   int *index = malloc(NC*sizeof(double));
   double *temp = malloc(NC*sizeof(double));
-  double dT = 1.5;
+  double dT = 1.3;
   temp[0] = 1.0;
   index[0]=0;
   for(ic=1; ic<NC; ic++)
@@ -428,6 +432,31 @@ int main(int argc, char **argv)
 
     free(dfptr);
   }
+  
+  double supermax=0;
+  for(i=0; i<data->DOF; i++)
+  {
+    sprintf(filename,"TD_data_%i.dat",i);
+    //void print_time_domain_waveforms(char filename[], double *h, int N, double *Snf, double eta, double Tobs, int imin, int imax, double tmin, double tmax)
+    printf("T=%g, imin=%i, imax=%i, N=%i\n", data->T, data->imin, data->imax, data->N);
+    print_time_domain_waveforms(filename, data->d[i], data->N*2, model[0]->Snf[i], 1.0, data->T, data->imin, data->imax, 0.0, data->T);
+    find_impacts(data->d[i], data->N*2, model[0]->Snf[i], 1.0, data->T, data->imin, data->imax, 0.0, data->T, data->t_density[i]);
+    data->t_density_max[i]=0.0;
+    for(n=0; n<data->NFFT; n++)
+    {
+      if(data->t_density[i][n]>data->t_density_max[i]) data->t_density_max[i]=data->t_density[i][n];
+    }
+    printf("max in channel %i=%g\n",i,data->t_density_max[i]);
+    if(data->t_density_max[i]>supermax) supermax=data->t_density_max[i];
+    
+    sprintf(filename,"density_%i.dat",i);
+    FILE *temp=fopen(filename,"w");
+    for(n=0; n<data->NFFT; n++) fprintf(temp,"%i %lg\n",n,data->t_density[i][n]);
+    fclose(temp);
+    
+  }
+  for(i=0; i<data->DOF; i++)data->t_density_max[i]=supermax;
+
 
   injection->logL = loglikelihood(data, lpf, injection, flags);
 
@@ -450,9 +479,11 @@ int main(int argc, char **argv)
     for(n=0; n<model[ic]->N; n++)
     {
       //model[ic]->source[n]->P  = gsl_ran_exponential(r,10);
-      model[ic]->source[n]->P  = gsl_rng_uniform(r)*10.0;
-      model[ic]->source[n]->t0 = gsl_rng_uniform(r)*data->T;
-
+      //model[ic]->source[n]->P  = gsl_rng_uniform(r)*10.0;
+      //model[ic]->source[n]->t0 = gsl_rng_uniform(r)*data->T;
+      
+      draw_impact_point_sc(data,lpf,model[ic]->source[n],r);
+      draw_impactor(data, model[ic]->source[n], r);
     }
     int *drew_prior=malloc(nmax*sizeof(int));
     for(i=0;i<nmax;i++)drew_prior[i]=1;
@@ -506,28 +537,6 @@ int main(int argc, char **argv)
   }
   fclose(fptr);
 
-  for(i=0; i<data->DOF; i++)
-  {
-    sprintf(filename,"TD_data_%i.dat",i);
-    //void print_time_domain_waveforms(char filename[], double *h, int N, double *Snf, double eta, double Tobs, int imin, int imax, double tmin, double tmax)
-    printf("T=%g, imin=%i, imax=%i, N=%i\n", data->T, data->imin, data->imax, data->N);
-    print_time_domain_waveforms(filename, data->d[i], data->N*2, model[0]->Snf[i], 1.0, data->T, data->imin, data->imax, 0.0, data->T);
-    find_impacts(data->d[i], data->N*2, model[0]->Snf[i], 1.0, data->T, data->imin, data->imax, 0.0, data->T, data->t_density[i]);
-    data->t_density_max[i]=0.0;
-    for(n=0; n<data->NFFT; n++)
-    {
-      if(data->t_density[i][n]>data->t_density_max[i]) data->t_density_max[i]=data->t_density[i][n];
-    }
-    printf("max in channel %i=%g\n",i,data->t_density_max[i]);
-    
-    
-    sprintf(filename,"density_%i.dat",i);
-    FILE *temp=fopen(filename,"w");
-    for(n=0; n<data->NFFT; n++) fprintf(temp,"%i %lg\n",n,data->t_density[i][n]);
-    fclose(temp);
-    
-  }
-
   /* set up distribution */
   //struct PSDposterior *psd = NULL;
   //setup_psd_histogram(data, injection, psd);
@@ -535,7 +544,7 @@ int main(int argc, char **argv)
   /* set up MCMC run */
   accept0    = 0;
   accept    = 0;
-  MCMCSTEPS = 50000;
+  MCMCSTEPS = 100000;
   BURNIN    = MCMCSTEPS/100;//1000;
 
   FILE *noisechain;
@@ -558,9 +567,9 @@ int main(int argc, char **argv)
   /* Here is the MCMC loop */
   int step=MCMCSTEPS/100;
   FILE *psdfile=NULL;
+  FILE *tempfile=fopen("proposals.dat","w");
   for(mc=0;mc<MCMCSTEPS;mc++)
   {
-
 #pragma omp parallel for schedule (dynamic, 1)
     for(ic=0; ic<NC; ic++)
     {
@@ -599,12 +608,12 @@ int main(int argc, char **argv)
 //              model[index[ic]]->logP += log(gsl_ran_exponential_pdf(model[index[ic]]->source[i]->P,10));
 //            for(i=0; i<trial[ic]->N; i++)
 //              trial[ic]->logP += log(gsl_ran_exponential_pdf(trial[ic]->source[i]->P,10));
-            model[index[ic]]->logP = trial[ic]->logP = 0.0;
+//            model[index[ic]]->logP = trial[ic]->logP = 0.0;
           }
           else
           {
             //TODO: HACK priors in RJ Hasting's ratio--only OK because the birth move exclusively draws from prior
-            model[index[ic]]->logP = trial[ic]->logP = 0.0;
+//            model[index[ic]]->logP = trial[ic]->logP = 0.0;
           }
 
           //compute Hastings ratio
@@ -614,7 +623,7 @@ int main(int argc, char **argv)
           //if(model[index[ic]]->N!=trial[ic]->N)printf("%i->%i:  H = %g + %g - %g - %g + %g-> %g\n",model[index[ic]]->N,trial[ic]->N,(trial[ic]->logL - model[index[ic]]->logL)/temp[index[ic]],trial[ic]->logP, model[index[ic]]->logP,trial[ic]->logQ , model[index[ic]]->logQ,H);
           alpha = log(gsl_rng_uniform(r));
 
-          //          if(ic==0 && trial[ic]->source[0]->face==1)printf("H=%g, logLy=%g, logLx=%g\n",H,trial[ic]->logL,model[index[ic]]->logL);
+          if(ic==0)fprintf(tempfile,"%lg %lg %lg %lg %lg %lg\n",trial[ic]->source[0]->t0,trial[ic]->source[0]->P,trial[ic]->logL,model[index[ic]]->logL,trial[ic]->logP, model[index[ic]]->logP);
 
           //adopt new position w/ probability H
           if(H>alpha)

@@ -85,6 +85,8 @@ struct Data
   double df;
   double fmax;
   double fmin;
+  double tmin;
+  double tmax;
   double **d;
   double **n;
   double **s;

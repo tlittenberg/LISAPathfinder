@@ -46,7 +46,7 @@ double sample(double *fprop, double pmax, dataParams *data, gsl_rng *r)
     if(i < 0) i=0;
     if(i > ssize-1) i=ssize-1;
     alpha = pmax*gsl_rng_uniform(r);
-    if(counter>10000)
+    if(counter>100000)
     {
       printf("BayesLine.c:51\n");
       printf("can not propose valid spline frequency\n");
