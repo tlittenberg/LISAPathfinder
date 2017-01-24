@@ -405,7 +405,7 @@ int main(int argc, char **argv)
     }
 
     int NI=data->DOF;
-#pragma omp parallel for num_threads(NI)  //This screws up if OMP_NUM_THREADS is large.
+    //#pragma omp parallel for num_threads(NI)  //This screws up if OMP_NUM_THREADS is large.
     for(k=0; k<NI; k++)
     {
 
