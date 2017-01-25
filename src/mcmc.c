@@ -255,7 +255,7 @@ int main(int argc, char **argv)
   NC = 15;
   int *index = malloc(NC*sizeof(double));
   double *temp = malloc(NC*sizeof(double));
-  double dT = 1.3;
+  double dT = 1.2;
   temp[0] = 1.0;
   index[0]=0;
   for(ic=1; ic<NC; ic++)
@@ -544,7 +544,7 @@ int main(int argc, char **argv)
   /* set up MCMC run */
   accept0    = 0;
   accept    = 0;
-  MCMCSTEPS = 100000;
+  MCMCSTEPS = 1000000;
   BURNIN    = MCMCSTEPS/100;//1000;
 
   FILE *noisechain;
