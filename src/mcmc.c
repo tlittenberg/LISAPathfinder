@@ -26,6 +26,7 @@ static void print_usage() {
   printf("  -d | --dof     : degrees of freedom (3 or 6) \n");
   printf("  -n | --nseed   : seed for noise simulation \n");
   printf("  -s | --seed    : seed for MCMC \n");
+  printf("  -g | --grs     : which proof mass (1 or 2) \n");
   printf("DATA HANDLING:\n");
   printf("       --simdata : use simulated data (default)\n");
   printf("       --datapath: path to directory with data files\n");
@@ -38,9 +39,10 @@ static void print_usage() {
   printf("  -p | --prior   : sample prior             \n");
   printf("  -v | --verbose : enable verbose output    \n");
   printf("  -j | --johns   : turn off John's LPF model\n");
+  printf("  -j | --johns   : turn off John's LPF model\n");
 
   printf("EXAMPLE:\n");
-  printf("./mcmc --dof 6 --seed 1234 --nseed 1234\n");
+  printf("./mcmc --dof 6 --grs 1 --seed 1234 --nseed 1234\n");
   printf("\n");
   exit(EXIT_FAILURE);
 }
@@ -168,7 +170,7 @@ int main(int argc, char **argv)
   //Read in LPF data
   else
   {
-    sprintf(filename,"%s/g1_x_%s_%s.txt",    data->path,data->gps,data->duration);
+    sprintf(filename,"%s/g%i_x_%s_%s.txt",    data->path,data->grs,data->gps,data->duration);
     FILE *temp = fopen(filename,"r");
     if(!temp)
     { printf("Failed to open file '%s'\n",filename);
@@ -324,23 +326,23 @@ int main(int argc, char **argv)
   else
   {
     FILE **dfptr = malloc(data->DOF*sizeof(FILE *));
-    sprintf(filename,"%s/g1_x_%s_%s.txt",    data->path,data->gps,data->duration);
+    sprintf(filename,"%s/g%i_x_%s_%s.txt",    data->path,data->grs,data->gps,data->duration);
     dfptr[0] = fopen(filename,"r");
-    sprintf(filename,"%s/g1_y_%s_%s.txt",    data->path,data->gps,data->duration);
+    sprintf(filename,"%s/g%i_y_%s_%s.txt",    data->path,data->grs,data->gps,data->duration);
     if(!dfptr[0])printf("Failed to open file '%s'\n",filename);
     dfptr[1] = fopen(filename,"r");
-    sprintf(filename,"%s/g1_z_%s_%s.txt",    data->path,data->gps,data->duration);
+    sprintf(filename,"%s/g%i_z_%s_%s.txt",    data->path,data->grs,data->gps,data->duration);
     if(!dfptr[1])printf("Failed to open file '%s'\n",filename);
     dfptr[2] = fopen(filename,"r");
     if(!dfptr[2])printf("Failed to open file '%s'\n",filename);
     if(data->DOF>3){
-      sprintf(filename,"%s/g1_theta_%s_%s.txt",data->path,data->gps,data->duration);
+      sprintf(filename,"%s/g%i_theta_%s_%s.txt",data->path,data->grs,data->gps,data->duration);
       dfptr[3] = fopen(filename,"r");
       if(!dfptr[3])printf("Failed to open file '%s'\n",filename);
-      sprintf(filename,"%s/g1_eta_%s_%s.txt",  data->path,data->gps,data->duration);
+      sprintf(filename,"%s/g%i_eta_%s_%s.txt",  data->path,data->grs,data->gps,data->duration);
       dfptr[4] = fopen(filename,"r");
       if(!dfptr[4])printf("Failed to open file '%s'\n",filename);
-      sprintf(filename,"%s/g1_phi_%s_%s.txt",  data->path,data->gps,data->duration);
+      sprintf(filename,"%s/g%i_phi_%s_%s.txt",  data->path,data->grs,data->gps,data->duration);
       dfptr[5] = fopen(filename,"r");
       if(!dfptr[5])printf("Failed to open file '%s'\n",filename);
     }
@@ -356,7 +358,7 @@ int main(int argc, char **argv)
       fclose(dfptr[k]);
     }
     /* Read in spacecraft mass properties */
-    sprintf(filename,"%s/g1_mass_props_%s_%s.txt",data->path,data->gps,data->duration);
+    sprintf(filename,"%s/g%i_mass_props_%s_%s.txt",data->path,data->grs,data->gps,data->duration);
     FILE *mfptr = fopen(filename,"r");
     char line[1024];
     
@@ -804,6 +806,7 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
     /* These options don’t set a flag.
      We distinguish them by their indices. */
     {"dof",     required_argument, 0,  'd' },
+    {"grs",     required_argument, 0,  'g' },
     {"fixd",    no_argument,       0,  'f' },
     {"help",    no_argument,       0,  'h' },
     {"nseed",   required_argument, 0,  'n' },
@@ -856,6 +859,8 @@ void parse(int argc, char **argv, struct Data *data, struct Flags *flags)
         exit(EXIT_FAILURE);
         break;
       case 'p' : flags->prior = 1;
+        break;
+      case 'g' : data->grs = atoi(optarg); 
         break;
       case 'n' : data->nseed = atoi(optarg);
         break;

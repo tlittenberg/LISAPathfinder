@@ -13,7 +13,7 @@ else
   #CC = gcc-mp-5
   CC = gcc
   INCDIR = /opt/local/include
-  LIBDIR = /opt/local/lib
+  LIBDIR = #/opt/local/lib
 #CCFLAGS = -fopenmp
 endif
 

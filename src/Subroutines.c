@@ -101,7 +101,7 @@ void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, 
    can reduce the number of chains based on the temperature
    of the hottest chain
    */
-  int a, b, ic;
+  int a, b;//, ic;
   int olda, oldb;
   
   double heat1, heat2;
@@ -111,7 +111,7 @@ void ptmcmc(struct Model **model, double *temp, int *index, gsl_rng *r, int NC, 
   double alpha;
   double beta;
   
-  double A[NC],S[NC];
+  double A[NC];//,S[NC];
   
   //b = (int)(ran2(seed)*((double)(chain->NC-1)));
   for(b=NC-1; b>0; b--)
@@ -766,11 +766,13 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, s
     for(i=0; i<3; i++)
     {
       P[i+3] = 0.0;
-      for(j=0; j<3; j++) P[i+3] += t[j]*lpf->invI[0][i][j]*Pamp;
+      //grs=1 ==> data->grs=0, grs=1 ==> data->grs=1
+      for(j=0; j<3; j++) P[i+3] += t[j]*lpf->invI[data->grs-1][i][j]*Pamp;
     }
 
     //add linear momentum at test mass
-    for(i=0; i<3; i++) d[i] = lpf->RTM[0][i] - lpf->RB[i];
+    //grs=1 ==> data->grs=0, grs=1 ==> data->grs=1
+    for(i=0; i<3; i++) d[i] = lpf->RTM[data->grs-1][i] - lpf->RB[i];
 
     //t = (rTB - rB) x h_theta
     crossproduct(d,P+3,t);
@@ -797,7 +799,7 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, s
 
 void SineGaussianFourier(double *hs, double t0, double P, int N, int flag, double Tobs)
 {
-  double f0, Q, sf, sx, Amp;
+  double f0, Q, sf, Amp;//sx, Amp;
   double phi, f;
   double tau;
   double re,im;
@@ -830,8 +832,8 @@ void SineGaussianFourier(double *hs, double t0, double P, int N, int flag, doubl
   double phase = TPI*fmin*t0;
   double cosPhase_m  = cos(phase-phi);
   double sinPhase_m  = sin(phase-phi);
-  double cosPhase_p  = cos(phase+phi);
-  double sinPhase_p  = sin(phase+phi);
+  //double cosPhase_p  = cos(phase+phi);
+  //double sinPhase_p  = sin(phase+phi);
   
   //incremental values of exp(iPhase)
   double dim = -sin(TPI*t0*invTobs);
@@ -839,8 +841,8 @@ void SineGaussianFourier(double *hs, double t0, double P, int N, int flag, doubl
   dre = -2.0*dre*dre;
   
   double amplitude = Amp*sqrt(invTobs);
-  double pi2tau2   = M_PI*M_PI*tau*tau;
-  double Q2        = Q*Q/f0;
+  //double pi2tau2   = M_PI*M_PI*tau*tau;
+  //double Q2        = Q*Q/f0;
   
   for(i = istart; i < imin; i++)
   {

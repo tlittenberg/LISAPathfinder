@@ -75,6 +75,7 @@ struct Data
   int N;
   int NFFT;
    int DOF;
+  int grs;
   int imin;
   int imax;
   long seed;
