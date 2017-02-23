@@ -106,6 +106,9 @@ struct BayesLineParams
 
   double TwoDeltaT;
   gsl_rng *r;
+  
+  FILE *splineChainFile;
+  FILE *lineChainFile;
 };
 
 void BayesLineFree(struct BayesLineParams *bptr);

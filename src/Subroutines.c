@@ -53,7 +53,7 @@ double swap, tempr;
 
 void bayesline_mcmc(struct Data *data, struct Model **model, struct BayesLineParams ***bayesline, int *index, double beta, int ic)
 {
-  int ifo,i;
+  int ifo,i,j;
   
   int N  = data->N;
   int NI = data->DOF;
@@ -83,6 +83,19 @@ void bayesline_mcmc(struct Data *data, struct Model **model, struct BayesLinePar
     //re-run Markovian, full spectrum, full model part of BayesLine
     BayesLineRJMCMC(bl_x[ifo], r, model_x->Snf[ifo], model_x->invSnf[ifo], model_x->SnS[ifo], N*2, 10, 1.0, 0);
     
+    //only print cold chain
+    if(ic==0)
+    {
+      fprintf(bayesline[ic][ifo]->splineChainFile,"%i ", bl_x[ifo]->spline_x->n);
+      for(j=0; j<bl_x[ifo]->spline_x->n; j++) fprintf(bayesline[0][ifo]->splineChainFile,"%lg %lg ",bl_x[ifo]->spline_x->points[j],bl_x[ifo]->spline_x->points[j]);
+      fprintf(bayesline[0][ifo]->splineChainFile,"\n");
+      
+      fprintf(bayesline[0][ifo]->lineChainFile,"%i ", bl_x[ifo]->lines_full->n);
+      for(j=0; j<bl_x[ifo]->lines_full->n; j++) fprintf(bayesline[0][ifo]->lineChainFile,"%e %e %e ",bl_x[ifo]->lines_full->f[bl_x[ifo]->lines_full->larray[j]],bl_x[ifo]->lines_full->A[bl_x[ifo]->lines_full->larray[j]],bl_x[ifo]->lines_full->Q[bl_x[ifo]->lines_full->larray[j]]);
+      fprintf(bayesline[0][ifo]->lineChainFile,"\n");
+    }
+    
+
     for(i=0; i<N; i++)
     {
       model_x->Snf[ifo][i]*=2.0;

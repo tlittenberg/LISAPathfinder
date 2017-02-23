@@ -39,7 +39,6 @@ static void print_usage() {
   printf("  -p | --prior   : sample prior             \n");
   printf("  -v | --verbose : enable verbose output    \n");
   printf("  -j | --johns   : turn off John's LPF model\n");
-  printf("  -j | --johns   : turn off John's LPF model\n");
 
   printf("EXAMPLE:\n");
   printf("./mcmc --dof 6 --grs 1 --seed 1234 --nseed 1234\n");
@@ -404,6 +403,20 @@ int main(int argc, char **argv)
     {
       bayesline[ic] = malloc(data->DOF*sizeof(struct BayesLineParams *));
       initialize_bayesline(bayesline[ic], data, model[ic]->Snf);
+      
+      //Parameters for reproducing PSD model (only print cold chain)
+      if(ic==0)
+      {
+      for(k=0; k<data->DOF; k++)
+      {
+        sprintf(filename,"splinechain_channel%i.dat",k);
+        bayesline[ic][k]->splineChainFile = fopen(filename,"w");
+        
+        sprintf(filename,"linechain_channel%i.dat",k);
+        bayesline[ic][k]->lineChainFile = fopen(filename,"w");
+      }
+      }
+
     }
 
     int NI=data->DOF;
