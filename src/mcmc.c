@@ -146,8 +146,59 @@ int main(int argc, char **argv)
 
   matrix_invert(lpf->I[0], lpf->invI[0], 3);
   matrix_invert(lpf->I[1], lpf->invI[1], 3);
+  
+  // Cold gas thruster location/orientation
+  lpf->Nthruster = 6;
+  lpf->thruster[0]->r[0] = COLDGAS_01_RX;
+  lpf->thruster[0]->r[1] = COLDGAS_01_RY;
+  lpf->thruster[0]->r[2] = COLDGAS_01_RZ;
+  lpf->thruster[1]->r[0] = COLDGAS_02_RX;
+  lpf->thruster[1]->r[1] = COLDGAS_02_RY;
+  lpf->thruster[1]->r[2] = COLDGAS_02_RZ;
+  lpf->thruster[2]->r[0] = COLDGAS_03_RX;
+  lpf->thruster[2]->r[1] = COLDGAS_03_RY;
+  lpf->thruster[2]->r[2] = COLDGAS_03_RZ;
+  lpf->thruster[3]->r[0] = COLDGAS_04_RX;
+  lpf->thruster[3]->r[1] = COLDGAS_04_RY;
+  lpf->thruster[3]->r[2] = COLDGAS_04_RZ;
+  lpf->thruster[4]->r[0] = COLDGAS_05_RX;
+  lpf->thruster[4]->r[1] = COLDGAS_05_RY;
+  lpf->thruster[4]->r[2] = COLDGAS_05_RZ;
+  lpf->thruster[5]->r[0] = COLDGAS_06_RX;
+  lpf->thruster[5]->r[1] = COLDGAS_06_RY;
+  lpf->thruster[5]->r[2] = COLDGAS_06_RZ;
 
+  lpf->thruster[0]->k[0] = COLDGAS_01_ELV;
+  lpf->thruster[0]->k[1] = COLDGAS_01_AZM;
+  lpf->thruster[1]->k[0] = COLDGAS_02_ELV;
+  lpf->thruster[1]->k[1] = COLDGAS_02_AZM;
+  lpf->thruster[2]->k[0] = COLDGAS_03_ELV;
+  lpf->thruster[2]->k[1] = COLDGAS_03_AZM;
+  lpf->thruster[3]->k[0] = COLDGAS_04_ELV;
+  lpf->thruster[3]->k[1] = COLDGAS_04_AZM;
+  lpf->thruster[4]->k[0] = COLDGAS_05_ELV;
+  lpf->thruster[4]->k[1] = COLDGAS_05_AZM;
+  lpf->thruster[5]->k[0] = COLDGAS_06_ELV;
+  lpf->thruster[5]->k[1] = COLDGAS_06_AZM;
+  
+  for(i=0; i<lpf->Nthruster; i++)
+  {
+    lpf->thruster[i]->e[0] = cos(lpf->thruster[i]->k[0])*cos(lpf->thruster[i]->k[1]);
+    lpf->thruster[i]->e[1] = cos(lpf->thruster[i]->k[0])*sin(lpf->thruster[i]->k[1]);
+    lpf->thruster[i]->e[2] = sin(lpf->thruster[i]->k[0]);
+  }
 
+  
+  FILE *tempFile = fopen("thursters.dat","w");
+  for(i=0; i<lpf->Nthruster; i++) fprintf(tempFile,"%lg %lg %lg ",lpf->thruster[i]->r[0],lpf->thruster[i]->r[1],lpf->thruster[i]->r[2]);
+  //fprintf(tempFile,"\n");
+  for(i=0; i<lpf->Nthruster; i++) fprintf(tempFile,"%lg %lg %lg ",
+                                          lpf->thruster[i]->r[0]+lpf->thruster[i]->e[0],
+                                          lpf->thruster[i]->r[1]+lpf->thruster[i]->e[1],
+                                          lpf->thruster[i]->r[2]+lpf->thruster[i]->e[2]);
+  fprintf(tempFile,"\n");
+  fclose(tempFile);
+  
   /* Initialize data structure */
   struct Data  *data = malloc(sizeof(struct Data));
 

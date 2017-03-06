@@ -63,6 +63,16 @@ struct Spacecraft
   int nfaces;
   struct FaceData **faces;   //info about the spaces.
   double lpf_area;
+  
+  int Nthruster;
+  struct Thruster **thruster;
+};
+
+struct Thruster
+{
+  double *r; //x-y-z position of thruster
+  double *e; //x-y-z thrust vector
+  double *k; //line-of-sight thrust vector
 };
 
 //*******************************************

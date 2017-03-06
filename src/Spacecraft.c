@@ -113,6 +113,21 @@ void initialize_spacecraft(struct Spacecraft *spacecraft)
   spacecraft->lpf_area=0;
   for(i=0;i<nfaces;i++)spacecraft->lpf_area+=spacecraft->faces[i]->area;
   printf("lpf_area=%g\n",spacecraft->lpf_area);
+  
+  /* Info on the spacecraft thrusters */
+  //Assume cold gas
+  int n;
+  int N = 8;
+  spacecraft->thruster = malloc(N*sizeof(struct Thruster *));
+  for(n=0; n<N; n++)
+  {
+    spacecraft->thruster[n] = malloc(sizeof(struct Thruster));
+    spacecraft->thruster[n]->r = malloc(3*sizeof(double));
+    spacecraft->thruster[n]->e = malloc(3*sizeof(double));
+    spacecraft->thruster[n]->k = malloc(2*sizeof(double));
+  }
+  
+  
 }
 
 void set_basis(double ** basis, double e1x,double e1y,double e1z,double e2x,double e2y,double e2z){
