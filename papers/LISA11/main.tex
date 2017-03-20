@@ -6,7 +6,7 @@
 \usepackage{subfig}
 \usepackage{amssymb}
 \usepackage{amsmath}
-\usepackage[section]{placeins}
+\usepackage{placeins}
 %\usepackage{subfigure}
 %\usepackage[margin=10pt,font=small,labelfont=bf]{caption}
 %\usepackage{subcaption}
@@ -121,7 +121,6 @@ Not surprisingly, the recovered parameter accuracy is highly dependent on the am
 	\includegraphics[width=12 cm]{figures/amplitudes.eps}
 	\caption{\label{fig:amps}Posterior distribution functions of reconstructed amplitudes for the four example impact candidates.}
 \end{figure}
-
 \begin{figure}[h!]
 	\centering
 	\subfloat[2016-04-09\label{fig:sky1}]{\includegraphics[width=7 cm]{figures/sky1.png}}\quad
@@ -130,15 +129,15 @@ Not surprisingly, the recovered parameter accuracy is highly dependent on the am
 	\subfloat[2016-06-21\label{fig:sky4}]{\includegraphics[width=7 cm]{figures/sky4.png}}\\	
 	\caption{Reconstructed sky position histograms for the four example impact candidates. Sky maps are Mollweide projections with zero longitude along the $+x$ axis of the SC and $+90^{\circ}$ latitude along the $+z$ direction.}
 \end{figure}
-
 \begin{figure}[h!]
 	\centering
 	\subfloat[2016-04-09\label{fig:loc1}]{\includegraphics[width=7 cm]{figures/faces1.png}}\quad
 	\subfloat[2016-05-04\label{fig:loc2}]{\includegraphics[width=7 cm]{figures/faces2.png}}\\	
         \subfloat[2016-05-16\label{fig:loc3}]{\includegraphics[width=7 cm]{figures/faces3.png}}\quad
 	\subfloat[2016-06-21\label{fig:loc4}]{\includegraphics[width=7 cm]{figures/faces4.png}}\\	
-	\caption{Reconstructed impact locations for the four example impact candidates. Points are MCMC chain locaitons after burn-in, color coded by log likelihood with warmer colors representing higher likelihood.}
+	\caption{Reconstructed impact locations for the four example impact candidates. Points are MCMC chain locations after burn-in, color coded by log likelihood with warmer colors representing higher likelihood.}
 \end{figure}
+\FloatBarrier
 
 \section{Discussion}
 \label{sec:discuss}
@@ -149,8 +148,6 @@ First, the impact candidates need to be vetted and vetoed against any possible n
 The second kind of transient is an external force on the spacecraft that is not arising from a micrometeoroid impact. The most likely culprit is one of the two micro-propulsion systems, which may occasionally produce a thrust transient which would by definition be common mode in the two test masses. These transients will be vetoed by comparing the recovered location and sky angles of the impacts with the thruster location and directions as well as by examining  thruster diagnostic signals in the time period around an impact. Other non-impact disturbances are not expected to have the short period impulse in acceleration that is characteristic of an impact. 
 \par
 Another avenue of research is to compare the number and type of impacts detected with models of the dust environment in the inner solar system. This will require a more complete catalog of events as well as a model that can predict the flux of impacts near L1 as a function of particle mass and velocity. If a sufficient number of events are detected, a detailed comparison of such a model with data can be made, thus using a gravitational wave technology demonstrator to inform our knowledge of the dust environment in the inner solar system.
-
-
 \section*{References}
 \bibliographystyle{iopart-num}
 \bibliography{Bibliography}
