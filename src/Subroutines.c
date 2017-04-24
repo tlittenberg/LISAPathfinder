@@ -810,6 +810,227 @@ void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, s
   free(t);
 }
 
+void LPFThrusterNoiseResponse(struct Spacecraft *lpf, struct Data *data)
+{
+  int n,i,j;
+  int N = lpf->Nthruster; //Number of thrusters
+  int D = 6;              //Degress of freedom
+  
+  double **M;   //M-matrix: matrix with transfer function from thruster to spacecraft motion
+  double **Px;  //P-x:      linear part of M-matrix from linear part of thrust
+  double **Pr;  //P-r:      linear part of M-matrix from rotational part of thrust
+  double **Q;   //Q-matrix: angular part of M-matrix
+  
+  double *r_g;   //GRS-location
+  double *r_c;   //center of mass
+  double **e;    //unit thrust vectors
+  double **r_th; //location of thrusters
+
+  double *r;     //separation between com and grs
+  double **R;    //separation from com to thruster
+  double **a;    //angular acceleration unit vector from each thruster
+  double **tau;  //torque unit vector from each thruster
+  double **p;    //r x alpha
+  
+  double **invI; //inverse moment of inertia tensor for grs
+  
+  double **C;    //noise correlation matrix
+  double **invC; //inverse noise correlation matrix
+  
+  
+  //M et al are NxD matrices
+  M   = malloc(D*sizeof(double *));
+  Px  = malloc(D*sizeof(double *));
+  Pr  = malloc(D*sizeof(double *));
+  Q   = malloc(D*sizeof(double *));
+
+  //N vectors each with 3 components (x,y,z)
+  e    = malloc(N*sizeof(double *));
+  r_th = malloc(N*sizeof(double *));
+  
+  //work-space vectors
+  r   = malloc(3*sizeof(double));
+  R   = malloc(N*sizeof(double *));
+  a   = malloc(N*sizeof(double *));
+  tau = malloc(N*sizeof(double *));
+  p   = malloc(N*sizeof(double *));
+  
+  //noise correlation matrices -- the object of our desire -- DxD
+  C    = malloc(D*sizeof(double *));
+  invC = malloc(D*sizeof(double *));
+  
+  for(i=0; i<D; i++)
+  {
+    C[i]    = malloc(D*sizeof(double));
+    invC[i] = malloc(D*sizeof(double));
+  }
+
+  for(i=0; i<D; i++)
+  {
+    M[i]  = malloc(N*sizeof(double));
+    Px[i] = malloc(N*sizeof(double));
+    Pr[i] = malloc(N*sizeof(double));
+    Q[i]  = malloc(N*sizeof(double));
+
+    for(n=0; n<N; n++) M[i][n] = Px[i][n] = Pr[i][n] = Q[i][n] = 0.0;
+  }
+  for(n=0; n<N; n++)
+  {
+    
+    R[n]   = malloc(3*sizeof(double));
+    a[n]   = malloc(3*sizeof(double));
+    tau[n] = malloc(3*sizeof(double));
+    p[n]   = malloc(3*sizeof(double));
+  }
+  
+  //copy lpf-structure into pointers
+  r_c  = lpf->RB;
+  r_g  = lpf->RTM[data->grs-1];
+  invI = lpf->invI[data->grs-1];
+  
+  
+  printf("start making vectors\n");
+  for(i=0; i<3; i++) r[i] = r_g[i] - r_c[i];
+  
+  for(n=0; n<N; n++)
+  {
+    e[n]    = lpf->thruster[n]->e;
+    r_th[n] = lpf->thruster[n]->r;
+    
+    for(i=0; i<3; i++) R[n][i] = r_th[n][i] - r_c[i];
+    
+    crossproduct(R[n],e[n],tau[n]); // tau = (r_th - r_c) x e_th
+    
+    for(i=0; i<3; i++)
+    {
+      a[n][i] = 0.0;
+      for(j=0; j<3; j++)
+      {
+        a[n][i] += invI[i][j]*tau[n][j]; // a = tau I^-1
+      }
+    }
+    
+    crossproduct(r,a[n],p[n]);
+    
+  }
+
+  printf("start making matrices\n");
+
+  //Assemble sub-matrices
+  for(i=0; i<3; i++)
+  {
+    j=i+3;
+    
+    for(n=0; n<N; n++)
+    {
+      printf("thruster %i_%i = %g\n",n,i,e[n][i]);
+      Px[i][n] = e[n][i]/lpf->M;
+      Pr[i][n] = p[n][i];
+      Q[j][n]  = a[n][i];
+    }
+  }
+  printf("M=%g\n",lpf->M);
+  printf("Pxij=\n");
+  for(i=0; i<D; i++)
+  {
+    for(n=0; n<N; n++)
+    {
+      if(Px[i][n]>=0.0) printf("+");
+      printf("%.2e ",Px[i][n]);
+    }
+    printf("\n");
+  }
+
+  printf("Prij=\n");
+  for(i=0; i<D; i++)
+  {
+    for(n=0; n<N; n++)
+    {
+      if(Pr[i][n]>=0.0) printf("+");
+      printf("%.2e ",Pr[i][n]);
+    }
+    printf("\n");
+  }
+
+  printf("Qij=\n");
+  for(i=0; i<D; i++)
+  {
+    for(n=0; n<N; n++)
+    {
+      if(Q[i][n]>=0.0) printf("+");
+      printf("%.2e ",Q[i][n]);
+    }
+    printf("\n");
+  }
+
+  //Assemble M-matrix
+  //for(i=0; i<D; i++) for(n=0; n<N; n++) M[i][n] = Px[i][n];// + Pr[i][n] + Q[i][n];
+  for(i=0; i<D; i++) for(n=0; n<N; n++) M[i][n] = Px[i][n] + Q[i][n];
+
+  //Let's see how bad it is...
+  printf("Mij=\n");
+  for(i=0; i<D; i++)
+  {
+    for(n=0; n<N; n++)
+    {
+      if(M[i][n]>=0.0) printf("+");
+      printf("%.2e ",M[i][n]);
+    }
+    printf("\n");
+  }
+
+  //Compute noise correlation matrix
+  /*
+   Cij = (2/T) <M_{i,mu} n^mu  M_{j,nu} n^nu>
+   assuming <n^mu n^nu> = delta_{mu,nu}
+   Cij = (2/T) M_{i,mu}M_{j,mu} S^mu
+  */
+  
+  printf("start making Cijs\n");
+
+  for(i=0; i<D; i++)
+  {
+    for(j=0; j<D; j++)
+    {
+      C[i][j] = 0.0;
+      for(n=0; n<N; n++) C[i][j] += M[i][n]*M[j][n];
+    }
+  }
+
+  //Let's see how bad it is...
+  printf("Cij=\n");
+  for(i=0; i<D; i++)
+  {
+    for(j=0; j<D; j++)
+    {
+      if(C[i][j]>=0.0) printf("+");
+      printf("%.2e ",C[i][j]);
+    }
+    printf("\n");
+  }
+
+  matrix_invert(C,invC,D);
+  
+  //Let's see how bad it is...
+  printf("Cij^-1=\n");
+  for(i=0; i<D; i++)
+  {
+    for(j=0; j<D; j++)
+    {
+      if(invC[i][j]>=0.0) printf("+");
+      printf("%.2e ",invC[i][j]);
+    }
+    printf("\n");
+  }
+  
+  FILE *temp = fopen("corr.dat","w");
+  for(i=0;i<D;i++) for(j=0; j<D; j++) fprintf(temp,"%i %i %lg\n",i,j,invC[i][j]/invC[2][2]);
+  
+  exit(1);
+  
+
+}
+
 void SineGaussianFourier(double *hs, double t0, double P, int N, int flag, double Tobs)
 {
   double f0, Q, sf, Amp;//sx, Amp;
@@ -1428,6 +1649,8 @@ void matrix_invert(double **A, double **invA, int N)
   gsl_linalg_LU_decomp(GSLmatrx, permutation, &i);
   gsl_linalg_LU_invert(GSLmatrx, permutation, GSLinvrs);
 
+  printf("matrix_invert(): det = %g\n",gsl_linalg_LU_det (GSLmatrx, i));
+  
   //unpack arrays from gsl inversion
   for(i=0; i<N; i++)
   {
@@ -1450,6 +1673,10 @@ void matrix_invert(double **A, double **invA, int N)
 //
 //  for(i=0; i<N; i++) free(I[i]);
 //  free(I);
+  
+  gsl_matrix_free(GSLmatrx);
+  gsl_matrix_free(GSLinvrs);
+  gsl_permutation_free(permutation);
 
 }
 

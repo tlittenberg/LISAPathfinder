@@ -163,6 +163,7 @@ void find_impacts(double *h, int N, double *Snf, double eta, double Tobs, int im
 /* ********************************************************************************** */
 
 void LPFImpulseResponse(double **h, struct Data *data, struct Spacecraft *lpf, struct Source *source);
+void LPFThrusterNoiseResponse(struct Spacecraft *lpf, struct Data *data);
 
 void SineGaussianFourier(double *hs, double t0, double P, int N, int flag, double Tobs);
 
