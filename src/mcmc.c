@@ -474,7 +474,8 @@ int main(int argc, char **argv)
 
 
   injection->logL = loglikelihood(data, lpf, injection, flags);
-
+  injection->snr  = snr(data, lpf, injection);
+  
   printf("Injected parameters:   \n");
   FILE *injfile = fopen("injection.dat","w");
   for(n=0; n<injection->N; n++)printf("     {%lg,%lg,%lg,%lg,%lg,%lg,%lg,%lg,%lg}\n"              ,injection->source[n]->t0, injection->source[n]->P, injection->source[n]->costheta, injection->source[n]->phi, injection->source[n]->map[0], injection->source[n]->map[1], injection->source[n]->r[0], injection->source[n]->r[1], injection->source[n]->r[2]);
@@ -515,12 +516,14 @@ int main(int argc, char **argv)
     }
 
     model[ic]->logL = loglikelihood(data, lpf, model[ic], flags);
+    model[ic]->snr  = snr(data, lpf, model[ic]);
 
     free(drew_prior);
   }
 
   model[0]->logL = loglikelihood(data, lpf, model[0], flags);
-
+  model[0]->snr  = snr(data, lpf, model[0]);
+  
   for(ic=1; ic<NC; ic++)
   {
     for(k=0; k<data->DOF; k++)
@@ -535,7 +538,7 @@ int main(int argc, char **argv)
 	copy_bayesline_params(bayesline[0][k], bayesline[ic][k]);
     }
     model[ic]->logL = loglikelihood(data, lpf, model[ic], flags);
-
+    model[ic]->snr  = snr(data, lpf, model[ic]);
   }
 
   FILE *fptr=fopen("temp.dat","w");
@@ -608,6 +611,7 @@ int main(int argc, char **argv)
         {
           //compute new likelihood
           trial[ic]->logL = loglikelihood(data, lpf, trial[ic], flags);
+          trial[ic]->snr  = snr(data, lpf, trial[ic]);
 
           //compute new prior
           if(flags->use_spacecraft==0)
@@ -655,8 +659,10 @@ int main(int argc, char **argv)
     
     for(ic=0; ic<NC; ic++)
     {
-      if(!flags->simdata)bayesline_mcmc(data, model, bayesline, index, 1., ic);
+      if(!flags->simdata && !flags->prior)bayesline_mcmc(data, model, bayesline, index, 1., ic);
       model[index[ic]]->logL = loglikelihood(data, lpf, model[index[ic]], flags);
+      model[index[ic]]->snr  = snr(data, lpf, model[index[ic]]);
+
     }
     
     ptmcmc(model, temp, index, r, NC, mc);
@@ -689,6 +695,7 @@ int main(int argc, char **argv)
         body2face(lpf, iface, source->r,source->map);
       }
       fprintf(impactchain,"%lg ",model[ic]->logL);//-injection->logL);
+      fprintf(impactchain,"%lg ",model[ic]->snr);
       fprintf(impactchain,"%i ",model[ic]->N);
       fprintf(impactchain,"%lg %lg %lg %lg %lg %lg %i %lg %lg %lg\n", source->t0,exp(source->P)*PC/sqrt(data->T),source->map[0], source->map[1], source->costheta,source->phi,source->face, source->r[0], source->r[1], source->r[2]);
     }fflush(impactchain);

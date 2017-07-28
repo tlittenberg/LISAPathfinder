@@ -1322,7 +1322,7 @@ void find_impacts(double *h, int N, double *Snf, double eta, double Tobs, int im
   {
     t = (double)(i)/(double)(NFFT)*Tobs;
     if(ht[i]/norm>6.) printf("potential impact at t=%g, h(t)=%g\n",t,ht[i]);
-    t_density[i] = (ht[i]/norm)*(ht[i]/norm);
+    t_density[i] = 1.0;//(ht[i]/norm)*(ht[i]/norm);
     norm2 += t_density[i];
   }
 
@@ -1682,6 +1682,7 @@ void copy_model(struct Model *model, struct Model *copy, int Ndata, int DOF)
   //copy->mass = model->mass;
   copy->logL = model->logL;
   copy->logP = model->logP;
+  copy->snr  = model->snr;
   
   copy->N = model->N;
   

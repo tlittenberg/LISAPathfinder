@@ -54,9 +54,15 @@ double sample(double *fprop, double pmax, dataParams *data, gsl_rng *r)
       printf("   f/flow=%g/%g\n",f,flow);
       printf("   alpha=%g/%g\n",alpha,pmax);
       printf("   fprop[%i]=%g\n",i,fprop[i]);
-      abort();
+      f=flow;
+      //abort();
       counter=0;
       lap++;
+      
+      
+      alpha = fprop[i];
+      f=flow;
+      
     }
   } while(alpha > fprop[i]);
 

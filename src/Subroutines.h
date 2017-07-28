@@ -59,6 +59,7 @@ struct Model
   double logL; //likelihod
   double logP; //prior
   double logQ; //proposal
+  double snr;  //snr
 
   /* Impact parameters */
 
