@@ -198,6 +198,7 @@ style = """<!DOCTYPE html>
         </style>
         </head>"""
 
+#### Formatting the Page Navigation 
 topnav =  """<body>
 
         <div class="topnav">
@@ -228,6 +229,7 @@ topnav =  """<body>
 		</div></div>
 	</div> """
 
+######################## Functions ##########################
 
 #sorts List
 def atof(text):
@@ -308,38 +310,10 @@ def makeindex(webaddress,title, scriptsdir):
 
     header = style 
 
-    test = """<body>
-
-        <div class="topnav">
-          <a class="active" href="index.html">Home</a> 
-          <a href="momenta.html">Momenta Search</a>
-	  <a href="time.html">Time Search</a>
-	<div class="dropdown">
-		<button class="dropbtn">Time Graphs</button>	
-		<div class="dropdown-content">
-			<a href="gifs_runs.html">Gifs</a>
-			<a href="momenta_graphs_runs.html">Momenta Hists</a>
-			<a href="noise_runs.html">Noise</a>	
-			<a href="flat_LPF_runs.html">Flat LPFs</a>
-			<a href="likelihood_runs.html">Likelihood</a>
-			<a href="skyloc_runs.html">Sky Location</a>
-			<a href="impact_runs.html">Impact Model</a>
-		</div></div>
-	<div class="dropdown">
-		<button class="dropbtn">Momenta Graphs</button>	
-		<div class="dropdown-content">
-			<a href="gifs_moms.html">Gifs</a>
-			<a href="momenta_graphs_moms.html">Momenta Hists</a>
-			<a href="noise_runs.html">Noise</a>
-			<a href="flat_LPF_moms.html">Flat LPFs</a>
-			<a href="likelihood_moms.html">Likelihood</a>
-			<a href="skyloc_moms.html">Sky Location</a>
-			<a href="impact_moms.html">Impact Model</a>
-		</div></div>
-	</div>"""
     navigation = topnav +"""</div>
         <div style="padding-left:16px">
     		<h2> LISA Pathfinder Micrometeoroid Impacts </h2>
+	
 	<p> A spacecraft designed in Europe <br>
 	  Whose data impacts interrupt <br>
 	  Till Thorpe saw one day <br>
@@ -365,7 +339,6 @@ def makeimgpage(webaddress,title,filenames,i, img_directory, scriptsdir):
         #print('making directory %s' %(directory))
 		
         filename = ('%s/%s.html'%(scriptsdir,filenames[i]))
-	#filename = ('%s/website/public_html/html_scripts/%s.html')%(homedir,title[i])
         f = open(filename,'w+')
 
 	wraptitle = style 
@@ -379,36 +352,9 @@ def makeimgpage(webaddress,title,filenames,i, img_directory, scriptsdir):
             #nexti = len(title)-2
         filenamenext = ('%s/html_scripts/%s.html'%(webaddress,filenames[nexti]))
         filenameprev = ('%s/html_scripts/%s.html'%(webaddress,filenames[previ]))
-	#filenamenext = ('%s/website/public_html/html_scripts/%s.html')%(webaddress,title[nexti]) 
-        #filenameprev = ('%s/website/public_html/html_scripts/%s.html')%(webaddress,title[previ])
-        body = """<body>
-
-        <div class="topnav">
-          <a class="active" href="index.html">Home</a> 
-          <a href="momenta.html">Momenta Search</a>
-	  <a href="time.html">Time Search</a>
-	<div class="dropdown">
-		<button class="dropbtn">Time Graphs</button>	
-		<div class="dropdown-content">
-			<a href="gifs_runs.html">Gifs</a>
-			<a href="momenta_graphs_runs.html">Momenta Hists</a>
-			<a href="noise_runs.html">Noise</a>	
-			<a href="flat_LPF_runs.html">Flat LPFs</a>
-			<a href="likelihood_runs.html">Likelihood</a>
-			<a href="skyloc_runs.html">Sky Location</a>
-			<a href="impact_runs.html">Impact Model</a>
-		</div></div>
-	<div class="dropdown">
-		<button class="dropbtn">Momenta Graphs</button>	
-		<div class="dropdown-content">
-			<a href="gifs_moms.html">Gifs</a>
-			<a href="momenta_graphs_moms.html">Momenta Hists</a>
-			<a href="noise_runs.html">Noise</a>
-			<a href="flat_LPF_moms.html">Flat LPFs</a>
-			<a href="likelihood_moms.html">Likelihood</a>
-			<a href="skyloc_moms.html">Sky Location</a>
-			<a href="impact_moms.html">Impact Model</a>
-		</div></div>
+	
+	body = topnav + """ 
+	
 	</div>
         <div style="padding-left:16px">
           <h2>%s</h2>
@@ -420,16 +366,6 @@ def makeimgpage(webaddress,title,filenames,i, img_directory, scriptsdir):
         </div>
         """%(title[i], filenameprev,filenamenext)
 
-
-
-#       <div class="w3-bar w3-teal">
-# """
-        #for path, subdirs, files in os.walk(directory[0]):
-    #           for name in files:
-#                       print(name)
-#                       print os.path.join(path,name)   
-        
-        #"""<a href="#" class="w3-bar-item w3-button w3-mobile">London</a>"""
         images = '' 
         data_noise = []
         mom_img = []
@@ -457,11 +393,6 @@ def makeimgpage(webaddress,title,filenames,i, img_directory, scriptsdir):
 	    for files in histfiles:
 	    	#print('#######################################' + direc+'/'+files)
 		hist_list.append("""<img src='%s/%s' alt='%s'>"""%(histdir,files, files))    
-	    #print('going through files in %s'%(direc))
-            #direc = direc.replace(homedir,"")
-	    #direc = webaddress+'/'+direc
-	    #print(direc) 
-            #print(onlyfiles)
             for files in onlyfiles:
                 #print(files)
                 if 'dofs' in files[:4]:
@@ -481,10 +412,6 @@ def makeimgpage(webaddress,title,filenames,i, img_directory, scriptsdir):
                     skyloc.append("""<p><img src='%s/%s' alt='%s'></p>"""%(direc,files, files)) 
                 if 'gif' in files[:3]:
                     gif.append("""<p><img src='%s/%s' alt='%s'></p>"""%(direc,files, files)) 
-#                else:
-#                    images += """<div class = "gallery"> 
-#                                    <img src='%s/%s' alt='%s' width = "600" height ="400">
-#                                </div> """%(direc,files, files)        
                     
             i += 1
         
@@ -553,43 +480,12 @@ def makeimgpage(webaddress,title,filenames,i, img_directory, scriptsdir):
         return filename, giflist, mom_list, flat, hist, sky, lprob, noise_dofs, impact_list
 
 def makegraphpg(homedir,graphtitle,title, graphlist):
-#        print('making directory %s' %(directory))
         filename = ('%s/%s.html'%(scriptsdir,graphtitle))
-	#filename = ('%s/website/public_html/html_scripts/%s.html')%(homedir,graphtitle)
         f = open(filename,'w+')
 
         wraptitle = style 
-        
-	body = """<body>
-
-        <div class="topnav">
-          <a class="active" href="index.html">Home</a> 
-          <a href="momenta.html">Momenta Search</a>
-	  <a href="time.html">Time Search</a>
-	<div class="dropdown">
-		<button class="dropbtn">Time Graphs</button>	
-		<div class="dropdown-content">
-			<a href="gifs_runs.html">Gifs</a>
-			<a href="momenta_graphs_runs.html">Momenta Hists</a>
-			<a href="noise_runs.html">Noise</a>	
-			<a href="flat_LPF_runs.html">Flat LPFs</a>
-			<a href="likelihood_runs.html">Likelihood</a>
-			<a href="skyloc_runs.html">Sky Location</a>
-			<a href="impact_runs.html">Impact Model</a>
-		</div></div>
-	<div class="dropdown">
-		<button class="dropbtn">Momenta Graphs</button>	
-		<div class="dropdown-content">
-			<a href="gifs_moms.html">Gifs</a>
-			<a href="momenta_graphs_moms.html">Momenta Hists</a>
-			<a href="noise_runs.html">Noise</a>
-			<a href="flat_LPF_moms.html">Flat LPFs</a>
-			<a href="likelihood_moms.html">Likelihood</a>
-			<a href="skyloc_moms.html">Sky Location</a>
-			<a href="impact_moms.html">Impact Model</a>
-		</div></div>
-	</div>
-
+         
+	body = topnav + """
     	<div style="padding-left:16px">
 	<h2> %s </h2>
 	</div>
@@ -606,7 +502,6 @@ def makegraphpg(homedir,graphtitle,title, graphlist):
 
 def makelistpage(webaddress,filenames, title,search, capital, scriptsdir):
     filename = ('%s/%s.html'%(scriptsdir,title))
-    #filename = ('%swebsite/public_html/html_scripts/%s.html')%(scriptsdir,title)
     f = open(filename,'w+')
     
     header = style
@@ -621,44 +516,6 @@ def makelistpage(webaddress,filenames, title,search, capital, scriptsdir):
     <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search %s.." title="Search %s">
     <ul id="myUL">"""%(capital, capital, capital)
 
-
-    test = """<body>
-
-        <div class="topnav">
-          <a class="active" href="index.html">Home</a> 
-          <a href="momenta.html">Momenta Search</a>
-	  <a href="time.html">Time Search</a>
-	<div class="dropdown">
-		<button class="dropbtn">Time Graphs</button>	
-		<div class="dropdown-content">
-			<a href="gifs_runs.html">Gifs</a>
-			<a href="momenta_graphs_runs.html">Momenta Hists</a>
-			<a href="noise_runs.html">Noise</a>	
-			<a href="flat_LPF_runs.html">Flat LPFs</a>
-			<a href="likelihood_runs.html">Likelihood</a>
-			<a href="skyloc_runs.html">Sky Location</a>
-			<a href="impact_runs.html">Impact Model</a>
-		</div></div>
-	<div class="dropdown">
-		<button class="dropbtn">Momenta Graphs</button>	
-		<div class="dropdown-content">
-			<a href="gifs_moms.html">Gifs</a>
-			<a href="momenta_graphs_moms.html">Momenta Hists</a>
-			<a href="noise_runs.html">Noise</a>
-			<a href="flat_LPF_moms.html">Flat LPFs</a>
-			<a href="likelihood_moms.html">Likelihood</a>
-			<a href="skyloc_moms.html">Sky Location</a>
-			<a href="impact_moms.html">Impact Model</a>
-		</div></div>
-	</div>
-
-    <div style="padding-left:16px">
-    """
-    
-    searchlist = """<h2>Search by %s</h2>
-
-    <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search %s.." title="Search %s">
-    <ul id="myUL">"""%(capital, capital, capital)
     
     listpart = ""
     index = 0
@@ -837,6 +694,5 @@ makegraphpg(scriptsdir,'impact_runs','Impact Model by Time',impacts)
 #makegraphpg(homedir,'error_dofs_runs', dofs)
 
 mom_filenames = np.asarray(mom_filenames)
-#makelistpage(webaddress,filenames, title, capital, scriptsdir):
 makelistpage(webaddress = webaddress,filenames = mom_filenames, title = 'momenta',search ='', capital = 'Momenta', scriptsdir = scriptsdir)
 makelistpage(webaddress = webaddress,filenames = run_filenames,title ='time', search = nameruns, capital = 'Time',scriptsdir = scriptsdir)
