@@ -2,7 +2,7 @@
 #nicolepagane|model_tool.py
 
 """
-This file contains functions to make model inferences on the micrometeorite populations (JFC = Jupiter-Family Comets, HTC = Halley-Type Comets).
+This file contains functions to make model inferences on the micrometeorite populations (JFC = Jupiter-Family Comets, HTC = Halley-Type Comets), namely rates from extrapolated fluxes.
 
 PREREQUISITE DIRECTORIES AND FILES:
 	data/run_e_*[impactGPS]*
@@ -16,6 +16,7 @@ import pandas as pd
 from rotation_tool import quatTrans, eqToEc, quat
 import sys
 import os
+import bisect 
 
 ############################################
 ## read in files
@@ -172,13 +173,14 @@ def prompt_rate(mass, flux, JFC, HTC):
    lat = lat - np.pi/2
    # interpolate to infer rates
    print('interpolating momenta and sky localization to infer rate')
-   ind = int((lon - min(model.lon))/(np.pi*2)*len(model.lon))
-   indlow = ind - 1
-   indup = ind + 1
+   #ind = int((lon - min(model.lon))/(np.pi*2)*len(model.lon))
+   ind = bisect.bisect_left(model.lon, lon)
+   indlow = ind - 15
+   indup = ind + 15
    val = 0
    if indlow < 0:
-      val = -np.pi*2
-   while not model.lon[indlow] + val < lon:
+      indlow = len(model.lon) -1 + indlow
+   while not model.lon[indlow] < lon:
       indlow = indlow - 10
    while not model.lon[indup]  > lon:
       indup = indup + 10
@@ -223,11 +225,13 @@ def rate(event, time, mass, flux, JFC, HTC):
          os.makedirs(''.join(['models/rates/', mod]))
       with open(''.join(['models/rates/', mod, '/', time]), 'w') as file:
          for i in range(len(lon)):
-            ind = int((lon[i] - min(model.lon))/(np.pi*2)*len(model.lon))
-            indlow = ind - 1
-            indup = ind + 1
+            #ind = int((lon[i] - min(model.lon))/(np.pi*2)*len(model.lon))
+            ind = bisect.bisect_left(model.lon, lon[i])
+            indlow = ind - 15
+            indup = ind + 15
             val = 0
             if indlow < 0:
+               indlow = len(model.lon) -1 + indlow
                val = -np.pi*2
             while not model.lon[indlow] + val < lon[i]:
                indlow = indlow - 10
