@@ -249,7 +249,7 @@ def rate(event, time, mass, flux, JFC, HTC):
             file.write(' '.join([str(flux[mod][ind]*SA), str(dist)]))
             file.write('\n')
             if np.mod(i, 50000) == 0:
-               print(i/len(lon)*100, '%', 'of event', time)
+               print(i/len(lon)*100, '%', 'of event', time, 'for model', mod)
       modelind = modelind + 1
 
 
