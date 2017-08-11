@@ -136,9 +136,7 @@ def skymap(angles, indiv = False, series = False, weighted = 'length'):
       if indiv == True:
          # spacecraft
          latwrap = np.arccos(np.asarray(angles[keys[ind]]['lat']))*180/np.pi
-         for i in range(len(latwrap)):
-            if latwrap[i] > 90:
-               latwrap[i] = latwrap[i] - 180
+         latwrap = latwrap - 180  
          lonwrap = np.asarray(angles[keys[ind]]['lon'])*180/np.pi
          for i in range(len(lonwrap)):
             if lonwrap[i] > 180:
@@ -187,9 +185,7 @@ def skymap(angles, indiv = False, series = False, weighted = 'length'):
       if series == True: 
          # spacecraft 
          latwrap = np.arccos(np.asarray(lat))*180/np.pi
-         for i in range(len(latwrap)):
-            if latwrap[i] > 90:
-               latwrap[i] = latwrap[i] - 180
+         latwrap = latwrap - 180
          lonwrap = np.asarray(lon)*180/np.pi
          for i in range(len(lonwrap)):
             if lonwrap[i] > 180:
