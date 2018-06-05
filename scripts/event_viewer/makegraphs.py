@@ -117,11 +117,6 @@ def confidence_interval(data, confidence):
 
     return confidence_down, confidence_up, median, N
 
-#####------ Run Directories -------######
-directories, names = get_the_subdir(homedir+'/runs/')
-count = 0 #Used to print where the code is running 
-count_orig = count
-
 ##### ----------Define Linux commands for easy use----------------#####
 parser = argparse.ArgumentParser()
 
@@ -133,10 +128,28 @@ parser.add_argument('-ng','--nogifs','--nogif', help = "Make all graphs (includi
 parser.add_argument('-f','--fast', help = "Make the fastest plots", action = 'store_true')
 parser.add_argument('-g','--gifs','--gif', help = "Make gifs", action = 'store_true')
 parser.add_argument('-e','--everything', help = "Make EVERYTHING", action = 'store_true')
-
+parser.add_argument('--old', help = "Use old Data", action = 'store_true')
+parser.add_argument('-a','--skipaug', help = "Skip the runs in august", action = 'store_true')
 parser.add_argument('-p','--poster', help = "Just Graphs for my Poster", action = 'store_true')
 #Uses all directories by default
 parser.add_argument('-d','--directory', help = "pick a run_e_directory, input gps time, (drop the run_e_)", nargs ='?', default = 'all') 
+parser.add_argument('-r','--run', help = "pick a run_X directory, give the letter", nargs ='?', default = 'all') 
+args = parser.parse_args()
+
+if not args.run: #Defines where the run_e files live
+	print('Using run_e')
+	letter = 'e'
+	where_runs = 'runs/run_e'
+else:
+	print 'Using run_%s'%(args.run)
+	letter = args.run
+	where_runs = 'runs/run_'+ args.run  #runs
+
+
+#####------ Run Directories -------######
+directories, names = get_the_subdir(homedir+'/' + where_runs +'/')
+count = 0 #Used to print where the code is running 
+count_orig = count
 
 
 ### Defining all Plots, Makes it easier to do switches, only have to define True #
@@ -163,7 +176,6 @@ make_peak     = False			   #Makes a plot of where the peaks in the noise are
 make_amp      = False			   #Makes a 2d hist where the peaks in amp vs freq of the noise are
 make_q        = False			   #Makes a 2d hist where the peaks in the q vs freq are
 
-args = parser.parse_args()
 print(args)
 #Makes cumulative plots#
 
@@ -173,6 +185,7 @@ if args.poster:
 if args.timeline:
 	timeline      = True
 	default       = False
+
 if args.cumulative:			   
 	if not 'all' in args.directory:
 		print('### WARNING ### Cumul plots only work when all directories are selected')	
@@ -228,6 +241,8 @@ if args.gifs:
 	make_all_gifs = True			   #Makes the .gif files 
 
 	default       = False
+
+
 if args.everything:
 	print('Making everything!')
 	
@@ -250,11 +265,11 @@ if args.everything:
 	momentum_hist = True			   #Makes momentum histogram
 	flatten       = True			   #Makes the Flat LPF, for making physical 3d models
 	
-	confidence    = True			   #Makes a confidence interval for the noise
-	make_flines   = True			   #Makes hists showing where the peaks in the noise are
-	make_peak     = True			   #Makes a plot of where the peaks in the noise are
-	make_amp      = True			   #Makes a 2d hist where the peaks in amp vs freq of the noise are
-	make_q        = True			   #Makes a 2d hist where the peaks in the q vs freq are
+	#confidence    = True			   #Makes a confidence interval for the noise
+	#make_flines   = True			   #Makes hists showing where the peaks in the noise are
+	#make_peak     = True			   #Makes a plot of where the peaks in the noise are
+	#make_amp      = True			   #Makes a 2d hist where the peaks in amp vs freq of the noise are
+	#make_q        = True			   #Makes a 2d hist where the peaks in the q vs freq are
 
 	default       = False
 # Make Default Graphs, no noise or gifs 
@@ -262,7 +277,7 @@ if default:
 	print('Making Default graphs')
 	if not 'all' in args.directory:
 		print('### WARNING ### Cumul plots only work when all directories are selected')	
-	timeline      = True                       #Makes a timeline of all of the impacts vs momenta
+	timeline      = False                      #Makes a timeline of all of the impacts vs momenta
 	mom_confidence= True			   #Makes a plot of 90% confidence for all the momenta
 	
 	skyloc        = True			   #Makes the skylocation in spacecraft coordinates
@@ -277,13 +292,20 @@ if 'all' in args.directory:
 else:#lif args.directory:
 	#print args.directory
 	args.directory.replace('run_e_','')
-	directories = [homedir+'/runs/run_e_'+ args.directory]
+	directories = [homedir+'/'+ where_runs +'/run_'+letter+'_'+ args.directory]
 	#print directories
 if poster:
 	# Set Global fontsize 
 	matplotlib.rcParams.update({'font.size': 22})
-	directories = [homedir+'/runs/run_e_1156209395',homedir+'/runs/run_e_1154962633', homedir +'/runs/run_e_1154023383']
+	if 'o' in args.run:
+		directories = [homedir+'/' + where_runs+'/run_o_1156017899',homedir+'/' + where_runs+ '/run_o_1154963107', homedir +'/'+ where_runs +'/run_o_1157908235']
+	#Old Poster
+	if 'h' in args.run:
+		directories = [homedir+'/' + where_runs+'/run_h_1146428350',homedir+'/' + where_runs+ '/run_h_1167944424', homedir +'/'+ where_runs +'/run_h_1144228507']
+	#directories = [homedir+'/' + where_runs+'/run_e_1156209395',homedir+'/' + where_runs+ '/run_e_1154962633', homedir +'/'+ where_runs +'/run_e_1154023383']
 #Initializes arrays used for Total error bar Lists
+
+matplotlib.rcParams.update({'font.size': 22})
 fSnx_list = []; fSny_list = []; fSnz_list = []; fSntheta_list=[]; fSneta_list = []; fSnphi_list = []         #Frequencies
 wfSnx_list = []; wfSny_list = []; wfSnz_list = []; wfSntheta_list=[]; wfSneta_list = []; wfSnphi_list = []   #Weights (Necessary because varying lengths)
 momenta_list = []
@@ -316,28 +338,43 @@ print(directories)
 
 if timeline:
 	#Gets the dates that we've looked at for the timeline
-	catalogfilename = homedir + '/runs/catalogfiles.txt'
-	df_timeline = pd.read_csv(catalogfilename, header = None,delimiter = '\s+',
-	names = ['times'])
-	
-	looking_timeline = []
-	for t in df_timeline['times']: 
-		looking_time = int(t[2:12])
-		len_time     = int(t[13:17])	
-		looking_timeline.append([gps2utc(0,looking_time),gps2utc(0,looking_time + len_time)])
+	catalogfilename = homedir + '/'+ where_runs +'/catalogfiles.txt'
+	if os.path.isfile(catalogfilename):
+		df_timeline = pd.read_csv(catalogfilename, header = None,delimiter = '\s+',
+		names = ['times'])	
+		looking_timeline = []
+		
+		for t in df_timeline['times']: 
+			looking_time = int(t[2:12])
+			len_time     = int(t[13:17])	
+			looking_timeline.append([gps2utc(0,looking_time),gps2utc(0,looking_time + len_time)])
 
-print(looking_timeline)
+		print(looking_timeline)
+for direc in directories:
+
+	if not 'run' in direc[len(homedir+'/'+ where_runs +'/'):-13]:
+		continue 
 for direc in directories:
     
     #Skips directories that are not run directories
-    if not 'run' in direc[len(homedir+'/runs/'):-13]:
-	pass 
-    
+    if not 'run' in direc[len(homedir+'/'+ where_runs +'/'):-13]:
+	continue 
     else: 
+
+	if args.skipaug:	 
+		rundir = direc[-16:]  #'run_e_1144228507'
+		currun = rundir[-10:] #'1144228507
+		print (1185580818. - float(currun))
+		if float(currun) < 1156636817:
+			if float(currun) > 1154044817: 
+				print "This run is in August 2016"
+				continue
+			else:
+				pass	
 	print('count graph plots = %s'%(count))
 	print('going through files in %s'%(direc))
 	
-	total_hist_path = homedir +'/runs/total_hists'
+	total_hist_path = homedir +'/'+ where_runs +'/total_hists'
 	if not os.path.exists(total_hist_path):
 		os.mkdir(total_hist_path)
 	
@@ -354,10 +391,14 @@ for direc in directories:
 	impactname = direc + '/impactchain.dat'
 	
 	#### Import Data ####
-	df = pd.read_csv(impactname, header = None,delimiter = '\s+',
-	names = ['logp','impactnum','time','mom','whatever','who??','coslat', 'longi', 'face', 'xloc','yloc','zloc'])#, skiprows = int(len(index)/2))
-	
+	if 'e' in letter:
+		df = pd.read_csv(impactname, header = None,delimiter = '\s+',
+		names = ['logp','impactnum','time','mom','whatever','who??','coslat', 'longi', 'face', 'xloc','yloc','zloc'])#, skiprows = int(len(index)/2))
+	else: 
+		df = pd.read_csv(impactname, header = None,delimiter = '\s+',
+		names = ['logp','SNR','impactnum','time','mom','whatever','who??','coslat', 'longi', 'face', 'xloc','yloc','zloc'])#, skiprows = int(len(index)/2))
 	#Only reads second 1/2 of Data, MCMC burn in
+	print("Length of dataframe = %s"%(len(df['impactnum'])))
 	df = df.tail(n = int(len(df['impactnum'])/2))
 	#print('DF length = %s'%(len(df['impactnum'])))
 
@@ -379,7 +420,7 @@ for direc in directories:
 	
 	##### Plot confidence, Noise in Data, Miami Dolphins colors#####
 	if confidence:
-		lpf.ploterror(mednmom, currun, dirpath, rundirpath, homedir) #Yscale is always Log
+		lpf.ploterror(mednmom, currun, dirpath, rundirpath, homedir, where_runs) #Yscale is always Log
 
 	####### Runs Flat LPF Functions, the ones that fold up in real life ########
 	N = 50
@@ -389,6 +430,7 @@ for direc in directories:
 		lpf.flatten_LPF(df,N, 'log', mednmom, currun, colormap.parula, dirpath, rundirpath)
 	#Makes Timeline of the impacts
 	if timeline:
+
 		gpstime = int(float(currun))	
 		utctime = gps2utc(0,gpstime)
 		#print(gpstime,utctime)
@@ -482,7 +524,7 @@ for direc in directories:
 	if make_flines:
 		print('Making Peak Frequency Graphs')
 	
-		pathto = homedir + '/runs' #rundirpath.replace(rundir,'')#'/home/sophie.hourihane/website/runs'
+		pathto = homedir + '/' + where_runs #rundirpath.replace(rundir,'')#'/home/sophie.hourihane/website/runs'
 		
 		#Arbitrary Passing value for how intense the lines must be to grab. Make it > 1. 
 		snrpass = 5
@@ -641,7 +683,9 @@ if poster:
 	#plt.suptitle('Impact Reconstruction'%(mednmom, currun_title +'[s]'))
 		
 	paramname = ['X', 'Y', 'Z', 'Theta', 'Eta', 'Phi']
-	runext = '/runs/run_e_1154962633'
+	runext = '/'+ where_runs + '/run_h_1144228507'
+	
+	#'/run_o_1157908235' #'/run_e_1154962633'
 
 	filename  = homedir + runext + '/TD_model_%s.dat'%(0) 
 	df_model = pd.read_csv(filename, header = None,delimiter = '\s+',
@@ -655,10 +699,10 @@ if poster:
 	ax.plot(1638.4-df_data['time'], df_data['amp'], label = 'Data',color = dark_purple, zorder = 1)
 	ax.plot(1638.4-df_model['time'],df_model['amp'],label ='Model', color = light_teal, zorder = 10)
 		#ax.set_yscale('log')
-	ax.set_ylim(-13,13)
-	ax.set_xlim(750,1000)
+	ax.set_ylim(75,-75)#-30,20)#-13,13)
+	ax.set_xlim(1300,1500)#1000, 1250) #750,1000)
 	ax.set_xlabel('Time [s]')
-	ax.set_title('Impact Reconstruction\n2016-08-11')
+	ax.set_title('Impact Reconstruction\n2016-04-09')#2016-09-14') #2016-08-11')
 	
 	ax.legend(loc = 'upper left')
 	filename = posterpath + '/impact_pulse_%s_%s.png'%(currun,mednmom)
@@ -668,7 +712,7 @@ if poster:
 
 if mom_confidence:
 	print('Making Momentum CDFs')	
-	path = homedir + '/runs' #/home/sophie.hourihane/public_html/website/public_html'
+	path = homedir + '/' + where_runs #/home/sophie.hourihane/public_html/website/public_html'
 
 	########## Plots Cumulative momentum WRT median ####################
 	fig = plt.figure(figsize = (10,10))
@@ -726,7 +770,7 @@ if mom_confidence:
 	ax.set_xlabel('Fractional Error')
 	ax.set_ylabel('CDF')
 	#ax.legend(loc='upper left')
-	path = homedir + '/runs' #'/home/sophie.hourihane/public_html/website/public_html'
+	path = homedir + '/'+ where_runs  #'/home/sophie.hourihane/public_html/website/public_html'
 	plt.tight_layout()
 	plt.savefig(path+'/total_hists/mom_90_confidence.png')
 	plt.close()
@@ -745,10 +789,11 @@ if timeline:
 	ones = np.ones(len(times))
 	ax.scatter(times,ones, c=dark_purple, s=80)
 	
-	#makes a line for every second interval of time, takes a bit of time
-	for t in looking_timeline:
-		#print(t)
-		ax.plot(t,[1.25,1.25], c = light_teal , linewidth = lw)
+	if os.path.isfile(catalogfilename):
+		#makes a line for every second interval of time, takes a bit of time
+		for t in looking_timeline:
+			#print(t)
+			ax.plot(t,[1.25,1.25], c = light_teal , linewidth = lw)
 	ax.get_yaxis().set_ticks([])
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
@@ -759,7 +804,7 @@ if timeline:
 	fig.autofmt_xdate()
 	ax.fmt_xdata = mdates.DateFormatter('%Y-%m-%d')
 
-	path = homedir + '/runs' #'/home/sophie.hourihane/public_html/website/public_html'
+	path = homedir + '/'+ where_runs #'/home/sophie.hourihane/public_html/website/public_html'
 	plt.tight_layout()
 	plt.savefig(path+'/total_hists/timeline.png')
 	plt.close()
@@ -787,7 +832,7 @@ if momentum_hist:
 	ax.set_xlabel('Momentum kg m/s')
 
 	ax.set_ylabel('Counts')
-	path = homedir + '/runs' #'/home/sophie.hourihane/public_html/website/public_html'
+	path = homedir + '/' + where_runs #'/home/sophie.hourihane/public_html/website/public_html'
 	plt.tight_layout()
 	plt.savefig(path+'/total_hists/total_momenta.png')
 	
@@ -811,7 +856,7 @@ if make_flines: #Makes hists of where the errors are for ALL TIME, probably not 
 	
 	weights = [wSnx,wSny,wSnz,wSntheta,wSneta,wSnphi]
 	nameparams = ['Snx','Sny','Snz','Sntheta','Sneta','Snphi']
-	path = homedir +'/runs' #'/home/sophie.hourihane/public_html/website/public_html'
+	path = homedir +'/'+ where_runs #'/home/sophie.hourihane/public_html/website/public_html'
 	i = 0
 	
 	fig = plt.figure(figsize = (6,12))
