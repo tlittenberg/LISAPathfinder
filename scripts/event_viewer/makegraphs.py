@@ -392,11 +392,12 @@ for direc in directories:
 	
 	#### Import Data ####
 	if 'e' in letter:
-		df = pd.read_csv(impactname, header = None,delimiter = '\s+',
-		names = ['logp','impactnum','time','mom','whatever','who??','coslat', 'longi', 'face', 'xloc','yloc','zloc'])#, skiprows = int(len(index)/2))
+	    df = pd.read_csv(impactname, header = None,delimiter = '\s+',
+	    names = ['logp','impactnum','time','mom','whatever','who??','coslat', 'longi', 'face', 'xloc','yloc','zloc'])#, skiprows = int(len(index)/2))
 	else: 
-		df = pd.read_csv(impactname, header = None,delimiter = '\s+',
-		names = ['logp','SNR','impactnum','time','mom','whatever','who??','coslat', 'longi', 'face', 'xloc','yloc','zloc'])#, skiprows = int(len(index)/2))
+	    df = pd.read_csv(impactname, header = None,delimiter = '\s+',
+	    names = ['logp','SNR','impactnum','time','mom','whatever','who??','coslat', 'longi', 'face', 'xloc','yloc','zloc'])#, skiprows = int(len(index)/2))
+
 	#Only reads second 1/2 of Data, MCMC burn in
 	print("Length of dataframe = %s"%(len(df['impactnum'])))
 	df = df.tail(n = int(len(df['impactnum'])/2))

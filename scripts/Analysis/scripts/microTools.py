@@ -66,7 +66,7 @@ def readRawChain(chainDir,grs=1, burnIn=0.5, outDir='data'):
     data['dfrac'] = dfrac
     
     # save data in processed directory
-    pickle.dump(data,open(str(os.cwd)+'/' + outDir+'/'+str(int(gpsTime))+'_grs' + str(int(grs)) + '.pickle','wb'))
+    pickle.dump(data,open(str(os.cwd)+'/' + outDir + '/' + str(int(gpsTime))+'_grs' + str(int(grs)) + '.pickle','wb'))
 
     # return data
     return data
