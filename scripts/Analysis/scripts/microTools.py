@@ -42,18 +42,20 @@ def readRawChain(chainDir,grs=1, burnIn=0.5, outDir='data'):
     dat = np.delete(dat, slice(0, trim), axis=0)
     
     # build into a dictionary
+    t0 = np.median(dat[:,3])
     data = {
-    	'gps' : gpsTime,
-    	'N' : np.shape(dat)[0],
-    	't0' : dat[:,2], 
-    	'Ptot' : dat[:,3], 
-    	'lat' : 90-(np.arccos(dat[:,7])*180/np.pi), 
-    	'lon' : np.mod(dat[:,8]*180/np.pi+180,360)-180,
-    	'rx' : dat[:,10],
-    	'ry' : dat[:,11],
-    	'rz' : dat[:,12],
-    	'face' : dat[:,9]}
-    	
+        'segment' : gpsTime,
+        'gps' : gpsTime + t0,
+        'N' : np.shape(dat)[0],
+        't0' : dat[:,3]-t0,
+        'Ptot' : dat[:,3], 
+        'lat' : 90-(np.arccos(dat[:,7])*180/np.pi), 
+        'lon' : np.mod(dat[:,8]*180/np.pi+180,360)-180,
+        'rx' : dat[:,10],
+        'ry' : dat[:,11],
+        'rz' : dat[:,12],
+        'face' : dat[:,9]}
+    
     # load log likelihood chain
     logLfile = chainDir +'/logLchain.dat'
     dat = np.loadtxt(logLfile)
@@ -66,7 +68,7 @@ def readRawChain(chainDir,grs=1, burnIn=0.5, outDir='data'):
     data['dfrac'] = dfrac
     
     # save data in processed directory
-    pickle.dump(data,open(str(os.cwd)+'/' + outDir + '/' + str(int(gpsTime))+'_grs' + str(int(grs)) + '.pickle','wb'))
+    pickle.dump(data,open(str(os.cwd)+'/' + outDir+'/'+str(int(gpsTime))+'_grs' + str(int(grs)) + '.pickle','wb'))
 
     # return data
     return data
