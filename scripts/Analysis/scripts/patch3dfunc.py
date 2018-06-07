@@ -94,20 +94,150 @@ def findmb(x1, y1, x2, y2):
 	b = y1 - m * x1
 	return m, b
 
+def dataFrameOnlyFace(df, facenumber):
+	
+	# Make copy of original df so we dont modify
+	# important values
+	df_copy = df.copy()
+	df_copy.loc[df['face'] == facenumber]
+
+	return df_copy
+
 #TODO, write function that splits up dataframes by facenumber
-def translate_to_origin(facenumber):
+def translate_to_origin(df, facenumber):
+	# translates side to origin
 
-	## 	 . o        . x
-	##      \     
-	## .     . -> .   o   .
-	## .     .    .    \  .
-	##   . .        .   .
+	# REQUIRES: dataframe only has values in specified face
 
-	#TODO df = getDFface(facenumber)
+	## 	 .  o        .   x
+	##       \     
+	## .      . -> .       .
+	##                 o 
+	## .      .    .    \  .
 
-	df['xloc'] -= xsc[facenumber]
-	df['yloc'] -= ysc[facenumber]
+	##   .  .        .   .
+	
+	for i in range(len(df['xloc'])):
+		df['xloc'][i] -= xsc[facenumber]
+		df['yloc'][i] -= ysc[facenumber]
 
+	return df
+
+def rotate_at_origin(df, facenumber):
+	# rotates face to origin
+
+	## 	 .  .        .   .
+	##            
+	## .      . -> .       .
+	##     o           o --   
+	## .     \.    .     x .
+
+	##   .  .        .   .
+
+	base_vector = [xsc[facenumber + 1] - xsc[facenumber], 
+				  ysc[facenumber + 1] - ysc[facenumber]]
+
+	# unit version of base vector
+	unit_BV = base_vector / np.linalg.norm(base_vector)
+	origin = [1, 0]
+
+	# TODO Check which theta this is!!! 
+	cos_theta = np.dot(unit_BV, origin)
+	theta = np.acos(cos_theta)
+
+	# Rotation matrix
+	for i in range(len(df['xloc'])):
+		x_old = df['xloc'][i]
+		y_old = df['yloc'][i]
+
+		df['xloc'][i] = x_old * np.cos(theta) - y_old * np.sin(theta) 
+		df['yloc'][i] = x_old * np.sin(theta) + y_old * np.sin(theta) 
+
+	return df, theta
+
+def hist(df, facenumber, N):
+	## REQURES
+	# Already rotated to origin
+
+	Ltotal = xsc[5] - xsc[0]                   
+	Wtotal = ysc[2] - ysc[7]
+
+	# Bins / Unit Length
+	ndensity = N / Ltotal
+	
+	# TODO Chekc! might not work for side 7
+	# Original position base
+	base_vector = [xsc[facenumber + 1] - xsc[facenumber], 
+				  ysc[facenumber + 1] - ysc[facenumber]]
+
+	maxfacex = np.linalg.norm(base_vector)
+	minfacex = 0
+	minfacez = 0
+	maxfacez = H # height
+
+	# unit version of base vector
+	unit_BV = base_vector / np.linalg.norm(base_vector)
+
+	bins_x = int(H * max(df['xloc']))
+	bins_z = int(H * ndensity)  
+
+	#Creates Histogram in Easy (X,Z) reference frame
+	Hist, xedges, zedges = np.histogram2d(df['xloc'], df['zloc'], bins = [bins_x, bins_z],
+		range = [[minfacex, maxfacex], [minfacez, maxfacez]])
+
+	Hist = Hist.T
+
+	# find point slope of original line
+	m, b = findmb(xsc[facenum], ysc[facenum], ysc[facenum + 1], ysc[facenum + 1])
+
+	for t in range(len(zedges) - 1):
+		for i in range(len(xedges) - 1):
+			# TODO wont work for xedges, they are not in the right place!
+			# Maybe (xedges[i] + xsc[facenum])
+			verts = [((xedges[i], m * xedges[i]       + b, zedges[t]),
+				(xedges[i + 1],   m * xedges[i + 1]   + b, zedges[t]),
+				(xedges[i + 1],   m * xedges[i + 1]   + b, zedges[t+1]),
+				(xedges[i],       m * xedges[i]       + b, zedges[t+1]))]
+			ax.add_collection3d(Poly3DCollection(verts, 
+				alpha = alpha, edgecolor = ec, linewidth = lw, 
+				facecolor = my_cmap(norm(Hist[t, i]))))
+
+	
+def MakeFace3d(df, facenum):
+	
+	## get only the data from that face
+
+	## Translate data to origin
+
+	## Rotate data to first quadrant
+
+	## create histogram
+
+	## Rotate histogram back to original angle
+
+	## translate histogram to original position
+	
+
+
+
+
+
+
+
+
+
+	
+
+
+	
+
+	
+
+
+	
+
+
+	
 
 
 
