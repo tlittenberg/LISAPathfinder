@@ -10,179 +10,179 @@ Ira Thorpe
 
 # function to read chain files as output by MCMC tool
 def readRawChain(chainDir,grs=1, burnIn=0.5, outDir='data'):
-    """
-    Function to read micrometeoroite MCMC chain files. Assumes directory structure 
-    as in the Aug2017 runs directory on tsankawi. Output is a python pickle file 
-    containing a dictionary with the relevant chain information. 
-    Arguments
-       chainDir = directory corresponding to the MCMC output is found
-       grs = index of the grs for this chain (1 or 2)
-       burnIn = fraction of chain to throw out for burn in
-       outDir = output directory for pickle file (name will be generated automatically)
-       
-    Ira Thorpe
-    2018-05-12 
-    """
-    
-    # modules
-    import numpy as np
-    import os
-    import pickle
-    import string
-    
-    # find directory and get gps time
-    base = os.path.basename(chainDir)
-    gpsTime = float(base[len(base)-10:len(base)])
-    
-    # load impactChain
-    impFile = chainDir +'/impactchain.dat'
-    dat = np.loadtxt(impFile)
-    N = np.shape(dat)[0]
-    trim = int(float(N)*burnIn);
-    dat = np.delete(dat, slice(0, trim), axis=0)
-    
-    # build into a dictionary
-    t0 = np.median(dat[:,3])
-    data = {
-        'segment' : gpsTime,
-        'gps' : gpsTime + t0,
-        'N' : np.shape(dat)[0],
-        't0' : dat[:,3]-t0,
-        'Ptot' : dat[:,3], 
-        'lat' : 90-(np.arccos(dat[:,7])*180/np.pi), 
-        'lon' : np.mod(dat[:,8]*180/np.pi+180,360)-180,
-        'rx' : dat[:,10],
-        'ry' : dat[:,11],
-        'rz' : dat[:,12],
-        'face' : dat[:,9]}
-    
-    # load log likelihood chain
-    logLfile = chainDir +'/logLchain.dat'
-    dat = np.loadtxt(logLfile)
-    N = np.shape(dat)[0]
-    trim = int(float(N)*burnIn);
-    dat = np.delete(dat, slice(0, trim), axis=0)
-    
-    # compute detection fraction
-    dfrac = np.sum(dat[:,0])/(np.shape(dat)[0])
-    data['dfrac'] = dfrac
-    
-    # save data in processed directory
-    pickle.dump(data,open(str(os.cwd)+'/' + outDir+'/'+str(int(gpsTime))+'_grs' + str(int(grs)) + '.pickle','wb'))
+	"""
+	Function to read micrometeoroite MCMC chain files. Assumes directory structure 
+	as in the Aug2017 runs directory on tsankawi. Output is a python pickle file 
+	containing a dictionary with the relevant chain information. 
+	Arguments
+	   chainDir = directory corresponding to the MCMC output is found
+	   grs = index of the grs for this chain (1 or 2)
+	   burnIn = fraction of chain to throw out for burn in
+	   outDir = output directory for pickle file (name will be generated automatically)
+	   
+	Ira Thorpe
+	2018-05-12 
+	"""
+	
+	# modules
+	import numpy as np
+	import os
+	import pickle
+	import string
+	
+	# find directory and get gps time
+	base = os.path.basename(chainDir)
+	gpsTime = float(base[len(base)-10:len(base)])
+	
+	# load impactChain
+	impFile = chainDir +'/impactchain.dat'
+	dat = np.loadtxt(impFile)
+	N = np.shape(dat)[0]
+	trim = int(float(N)*burnIn);
+	dat = np.delete(dat, slice(0, trim), axis=0)
+	
+	# build into a dictionary
+	t0 = np.median(dat[:,3])
+	data = {
+		'segment' : gpsTime,
+		'gps' : gpsTime + t0,
+		'N' : np.shape(dat)[0],
+		't0' : dat[:,3]-t0,
+		'Ptot' : dat[:,3], 
+		'lat' : 90-(np.arccos(dat[:,7])*180/np.pi), 
+		'lon' : np.mod(dat[:,8]*180/np.pi+180,360)-180,
+		'rx' : dat[:,10],
+		'ry' : dat[:,11],
+		'rz' : dat[:,12],
+		'face' : dat[:,9]}
+	
+	# load log likelihood chain
+	logLfile = chainDir +'/logLchain.dat'
+	dat = np.loadtxt(logLfile)
+	N = np.shape(dat)[0]
+	trim = int(float(N)*burnIn);
+	dat = np.delete(dat, slice(0, trim), axis=0)
+	
+	# compute detection fraction
+	dfrac = np.sum(dat[:,0])/(np.shape(dat)[0])
+	data['dfrac'] = dfrac
+	
+	# save data in processed directory
+	pickle.dump(data,open(str(os.cwd)+'/' + outDir+'/'+str(int(gpsTime))+'_grs' + str(int(grs)) + '.pickle','wb'))
 
-    # return data
-    return data
-    
+	# return data
+	return data
+
 # function to get spacecraft quaternions    
 def getSCquats(gps,doText=False):
-    """
-    function to read SC quaternion file. Can either read a python binary file (faster, 
-    default) or an ASCII text file (slower)
-    
-    Ira Thorpe
-    2018-05-12
-    """
-    #import libraries
-    import numpy as np, quaternion
-    import os
-    import pathlib
-    
-    # get current working directory
-    p = pathlib.PurePath(os.getcwd())
-    baseDir = str(p.parent)
-    
-    # load Quaternion data
-    if doText:
-        quatFile = baseDir +'/rawData/allQuats.txt'
-        dat = np.loadtxt(quatFile)
-    else :
-        quatFile = baseDir + '/data/quats.npy'
-        dat = np.load(quatFile)
-        
-    # separate out gps time (1st column) from quaternions (columns 2-5)
-    allGPS = np.array(dat[...,0])
-    allQuats = quaternion.as_quat_array(np.array(dat[...,[4,1,2,3]]))
-    
-    # find nearest gps time
-    idxmin = (np.abs(allGPS-gps)).argmin()
-    impQuat = allQuats[idxmin]
+	"""
+	function to read SC quaternion file. Can either read a python binary file (faster, 
+	default) or an ASCII text file (slower)
+	
+	Ira Thorpe
+	2018-05-12
+	"""
+	#import libraries
+	import numpy as np, quaternion
+	import os
+	import pathlib
+	
+	# get current working directory
+	p = pathlib.PurePath(os.getcwd())
+	baseDir = str(p.parent)
+	
+	# load Quaternion data
+	if doText:
+		quatFile = baseDir +'/rawData/allQuats.txt'
+		dat = np.loadtxt(quatFile)
+	else :
+		quatFile = baseDir + '/data/quats.npy'
+		dat = np.load(quatFile)
+		
+	# separate out gps time (1st column) from quaternions (columns 2-5)
+	allGPS = np.array(dat[...,0])
+	allQuats = quaternion.as_quat_array(np.array(dat[...,[4,1,2,3]]))
+	
+	# find nearest gps time
+	idxmin = (np.abs(allGPS-gps)).argmin()
+	impQuat = allQuats[idxmin]
 
-    # return the quaternion
-    return impQuat
-    
+	# return the quaternion
+	return impQuat
+
 
 # function to locate impact and estimate area using healpix binning.
-def findSkyAngles(data, CI=0.68, nside=32):
-    """
-    function to determine impact sky area using HEALPIX binning. Returns 1 sigma sky area in 
-    square degrees and central point latitude and longitude. If dictionary passed to the 
-    function has sun-frame angles in addition to SC-frame angles, it will operate on both.
-    Arguments
-        data = dictionary containing chain data
-        CI = confidence interval for sky area
-        nside = HEALPIX number of sides
-    
-    Ira Thorpe
-    2018-05-24
-    """
-    #import libraries
-    import healpy as hp
-    import numpy as np
-    import matplotlib.pyplot as plt
+def findSkyAngles(data, CI = 0.68, nside = 32):
+	"""
+	function to determine impact sky area using HEALPIX binning. Returns 1 sigma sky area in 
+	square degrees and central point latitude and longitude. If dictionary passed to the 
+	function has sun-frame angles in addition to SC-frame angles, it will operate on both.
+	Arguments
+		data = dictionary containing chain data
+		CI = confidence interval for sky area
+		nside = HEALPIX number of sides
+	
+	Ira Thorpe
+	2018-05-24
+	"""
+	#import libraries
+	import healpy as hp
+	import numpy as np
+	import matplotlib.pyplot as plt
 
-    # Build the HEALPIX map
-    npix = hp.nside2npix(nside)
-    mp = np.arange(npix)
+	# Build the HEALPIX map
+	npix = hp.nside2npix(nside)
+	mp = np.arange(npix)
 
-    # Convert data to HEALPIX
-    dat_hp = hp.pixelfunc.ang2pix(nside, data['lon'], data['lat'], nest=False, lonlat=True)
+	# Convert data to HEALPIX
+	dat_hp = hp.pixelfunc.ang2pix(nside, data['lon'], data['lat'], nest=False, lonlat=True)
 
-    # Make the histogram
-    bin_edges = np.arange(-0.5,npix+0.5,1.0)
-    bin_centers = np.arange(0,npix,1.0)
-    cnt_hp, bins = np.histogram(dat_hp,bin_edges)
-    
-    # Measure centroid and sky area
-    cdf = np.cumsum(cnt_hp.astype('float'))/float(data['N'])        
-    ilb = (np.abs(cdf-((1.0-CI)/2.0))).argmin()
-    iub = (np.abs(cdf-(1.0-((1.0-CI)/2.0)))).argmin()
-    imed = (np.abs(cdf-0.5)).argmin()
-    area = 41253.0*float(iub-ilb)/float(npix)
-    lon_c, lat_c = hp.pixelfunc.pix2ang(nside, imed, nest=False, lonlat=True)
-    lon_c = np.mod(180+lon_c,360)-180
-    
-    # put back into data dictionary
-    data['lat_c'] = lat_c
-    data['lon_c'] = lon_c
-    data['skyArea'] = area
-    data['healPix'] = cnt_hp/float(data['N'])
-    
-    # if Sun angles are present, repeat for them
-    if 'lon_sun' in data :
-        # Convert data to HEALPIX
-        dat_hp = hp.pixelfunc.ang2pix(nside, data['lon_sun'], data['lat_sun'], nest=False, lonlat=True)
+	# Make the histogram
+	bin_edges = np.arange(-0.5, npix + 0.5, 1.0)
+	bin_centers = np.arange(0, npix, 1.0)
+	cnt_hp, bins = np.histogram(dat_hp, bin_edges)
+	
+	# Measure centroid and sky area
+	cdf = np.cumsum(cnt_hp.astype('float')) / float(data['N'])        
+	ilb = (np.abs(cdf - ((1.0 - CI) / 2.0))).argmin()
+	iub = (np.abs(cdf - (1.0 - ((1.0 - CI) / 2.0)))).argmin()
+	imed = (np.abs(cdf - 0.5)).argmin()
+	area = 41253.0 * float(iub - ilb) / float(npix)
+	lon_c, lat_c = hp.pixelfunc.pix2ang(nside, imed, nest = False, lonlat = True)
+	lon_c = np.mod(180 + lon_c, 360) - 180
+	
+	# put back into data dictionary
+	data['lat_c'] = lat_c
+	data['lon_c'] = lon_c
+	data['skyArea'] = area
+	data['healPix'] = cnt_hp / float(data['N'])
+	
+	# if Sun angles are present, repeat for them
+	if 'lon_sun' in data :
+		# Convert data to HEALPIX
+		dat_hp = hp.pixelfunc.ang2pix(nside, data['lon_sun'], data['lat_sun'], nest = False, lonlat = True)
 
-        # Make the histogram
-        cnt_hp, bins = np.histogram(dat_hp,bin_edges)
-    
-        # Measure sky area
-        cdf = np.cumsum(cnt_hp.astype('float'))/float(data['N'])        
-        ilb = (np.abs(cdf-((1.0-CI)/2.0))).argmin()
-        iub = (np.abs(cdf-(1.0-((1.0-CI)/2.0)))).argmin()
-        imed = (np.abs(cdf-0.5)).argmin()
-        area = 41253.0*float(iub-ilb)/float(npix)
-        lon_c, lat_c = hp.pixelfunc.pix2ang(nside, imed, nest=False, lonlat=True)
-        lon_c = np.mod(180+lon_c,360)-180
-        
-        # put into dictionary
-        data['lat_c_sun'] = lat_c
-        data['lon_c_sun'] = lon_c
-        data['skyArea_sun'] = area
-        data['healPix_sun'] = cnt_hp/float(data['N'])
+		# Make the histogram
+		cnt_hp, bins = np.histogram(dat_hp, bin_edges)
+	
+		# Measure sky area
+		cdf = np.cumsum(cnt_hp.astype('float')) / float(data['N'])        
+		ilb = (np.abs(cdf - ((1.0 - CI) / 2.0))).argmin()
+		iub = (np.abs(cdf - (1.0 - ((1.0 - CI) / 2.0)))).argmin()
+		imed = (np.abs(cdf - 0.5)).argmin()
+		area = 41253.0 * float(iub - ilb) / float(npix)
+		lon_c, lat_c = hp.pixelfunc.pix2ang(nside, imed, nest = False, lonlat = True)
+		lon_c = np.mod(180 + lon_c, 360) - 180
+		
+		# put into dictionary
+		data['lat_c_sun'] = lat_c
+		data['lon_c_sun'] = lon_c
+		data['skyArea_sun'] = area
+		data['healPix_sun'] = cnt_hp / float(data['N'])
 
-    
-    # return dictionary
-    return data
+	
+	# return dictionary
+	return data
 
 # function to convert angles from SC frame to Sun-center frame (in degrees)
 def SCtoSun(data):
@@ -360,7 +360,7 @@ def dualCorner(data1,data2,
 			
 	return hf
 
-def summaryString(data,keys = ['Ptot','lat','lon','rx','ry','rz'],scale = [1.0e6,1.0,1.0,100.0,100.0,100.0]):
+def summaryString(data, keys = ['Ptot','lat','lon','rx','ry','rz'], scale = [1.0e6,1.0,1.0,100.0,100.0,100.0]):
 	"""
 	function to produce a string for use in a ApJ style fancy table
 	"""
@@ -369,7 +369,7 @@ def summaryString(data,keys = ['Ptot','lat','lon','rx','ry','rz'],scale = [1.0e6
 	
 	p = np.zeros([np.shape(keys)[0],3])
 
-	for idx,kk in enumerate(keys) :
+	for idx, kk in enumerate(keys) :
 		p[idx,:] = np.percentile(data[kk]*scale[idx],[50,2.75, 97.5])
 
 	faceNames = ['+x+x','+x+y','+y+y','+y-x','-x-x','-x-y','-y-y','-y+x','+z+z','-z-z']
@@ -407,17 +407,430 @@ def summaryString(data,keys = ['Ptot','lat','lon','rx','ry','rz'],scale = [1.0e6
 		'Sunlon' : SunlonText}
 	
 
-	tabStr = str(('\n{0[date]:s} & ' + 
-		'{0[gps]:.0f} & ' +
-		'{0[Pmed]:4.1f}^{{+{0[PerrU]:.1f}}}_{{{0[PerrL]:.1f}}} & ' +
-		'{0[face]:s} & ' + 
-		'{0[area]:s} & ' + 
-		'{0[SClat]:s} & ' +
-		'{0[SClon]:s} & ' +
-		'{0[Sunlat]:s} & ' +
-		'{0[Sunlon]:s} \\\\').format(printTab))
+	
+	tabStr = str((r'\n{0[date]:s} & ' + 
+		r'{0[gps]:.0f} & ' +
+		r'{0[Pmed]:4.1f}^{{+{0[PerrU]:.1f}}}_{{{0[PerrL]:.1f}}} & ' +
+		r'{0[face]:s} & ' + 
+		r'{0[area]:s} & ' + 
+		r'{0[SClat]:s} & ' +
+		r'{0[SClon]:s} & ' +
+		r'{0[Sunlat]:s} & ' +
+		r'{0[Sunlon]:s} \\\\').format(printTab))
 
 	return tabStr
+
+
+
+
+####################################################
+###################  3D LPF Functions ##############
+####################################################
+
+import matplotlib.pyplot as plt
+import numpy as np 
+import pandas as pd
+from matplotlib import cm
+import itertools
+
+#3D
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from mpl_toolkits.mplot3d import art3d
+
+#2D Hist
+import matplotlib.patches as patches
+from matplotlib.path import Path
+
+import matplotlib.colors
+from matplotlib.colors import LogNorm
+import copy
+import colormap as colormap
+
+#Confidence
+import scipy as sp
+import scipy.stats
+
+import os, sys
+
+
+H = 8.315000e-01        # Height of spacecraft [m]
+xsc = np.zeros(8)       # initializing x array 
+ysc = np.zeros(8)	    # initializing y array
+xsc[0] =     -9.260000e-01 # x coordinate of spacecraft bottom deck corner 1 [m] 'SC_BOT_CORNER_1_X': 
+ysc[0] =     -2.168000e-01 # y coordinate of spacecraft bottom deck corner 1 [m] 'SC_BOT_CORNER_1_Y': 
+xsc[1] =     -9.260000e-01 # x coordinate of spacecraft bottom deck corner 2 [m] 'SC_BOT_CORNER_2_X': 
+ysc[1] =      2.048000e-01 # y coordinate of spacecraft bottom deck corner 2 [m] 'SC_BOT_CORNER_2_Y': 
+xsc[2] =     -5.263000e-01 # x coordinate of spacecraft bottom deck corner 3 [m] 'SC_BOT_CORNER_3_X': 
+ysc[2] =     8.970000e-01  # y coordinate of spacecraft bottom deck corner 3 [m] 'SC_BOT_CORNER_3_Y': 
+xsc[3] =     5.163000e-01  # x coordinate of spacecraft bottom deck corner 4 [m  'SC_BOT_CORNER_4_X': 
+ysc[3] =     8.970000e-01  # y coordinate of spacecraft bottom deck corner 4 [m] 'SC_BOT_CORNER_4_Y': 
+xsc[4] =     9.160000e-01  # x coordinate of spacecraft bottom deck corner 5 [m] 'SC_BOT_CORNER_5_X': 
+ysc[4] =     2.048000e-01  # y coordinate of spacecraft bottom deck corner 5 [m] 'SC_BOT_CORNER_5_Y': 
+xsc[5] =     9.160000e-01  # x coordinate of spacecraft bottom deck corner 6 [m] 'SC_BOT_CORNER_6_X': 
+ysc[5] =     -2.168000e-01 # y coordinate of spacecraft bottom deck corner 6 [m] 'SC_BOT_CORNER_6_Y': 
+xsc[6] =     5.163000e-01  # x coordinate of spacecraft bottom deck corner 7 [m] 'SC_BOT_CORNER_7_X': 
+ysc[6] =     -9.090000e-01 # y coordinate of spacecraft bottom deck corner 7 [m] 'SC_BOT_CORNER_7_Y': 
+xsc[7] =     -5.263000e-01 # x coordinate of spacecraft bottom deck corner 8 [m] 'SC_BOT_CORNER_8_X': 
+ysc[7] =     -9.090000e-01 # y coordinate of spacecraft bottom deck corner 8 [m] 'SC_BOT_CORNER_8_Y': 
+
+
+def dictionaryToDataFrame(dictionary):
+	"""
+	Converts dictionary to pandas dataframe
+	"""
+	# Creates a dataframe from the given dictionary
+	df = pd.DataFrame()
+	df['face'] = dictionary['face']
+	df['xloc'] = dictionary['rx']
+	df['yloc'] = dictionary['ry']
+	df['zloc'] = dictionary['rz']
+	return df
+
+#### Helper functions for 3d Patch ###
+
+# Find equaltion of a line
+def findmb(x1, y1, x2, y2):
+	m = (y2 - y1) / (x2 - x1)
+	b = y1 - m * x1
+	return m, b
+
+def dataFrameOnlyFace(df, facenumber):
+	"""
+	Returns dataframe with only values on a single face
+
+	"""
+	
+	# Make copy of original df so we dont modify
+	# important values
+	df_copy = df.copy()
+	return df_copy.loc[df['face'] == facenumber, :]
+	
+def translate_to_origin(df, facenumber):
+	# translates side to origin
+
+	# REQUIRES: dataframe only has values in specified face
+
+	## 	 .  o        .   x
+	##       \     
+	## .      . -> .       .
+	##                 o 
+	## .      .    .    \  .
+
+	##   .  .        .   .
+
+	df.loc[:, 'xloc'] -= xsc[facenumber]
+	df.loc[:, 'yloc'] -= ysc[facenumber]
+	return df
+
+
+def translate_from_origin(xedges, yedges, facenumber):
+	# translates side to origin
+
+	# REQUIRES: dataframe only has values in specified face
+
+	## 	 .  o        .   x
+	##       \     
+	## .      . <- .       .
+	##                 o 
+	## .      .    .    \  .
+
+	##   .  .        .   .
+
+	xedges += xsc[facenumber]
+	yedges += ysc[facenumber]
+
+	return xedges, yedges
+
+
+
+def rotate_at_origin(df, facenumber, back = False):
+	# rotates face to origin
+	# if back, df is a numpy array
+	# else df is a dataframe
+
+	## 	 .  .        .   .
+	##            
+	## .      . -> .       .
+	##     o           o --   
+	## .     \.    .     x .
+
+	##   .  .        .   .
+
+	if (facenumber == 7):
+		base_vector = [xsc[0] - xsc[facenumber], 
+					  ysc[0] - ysc[facenumber]]
+	elif (facenumber < 7):
+		base_vector = [xsc[facenumber + 1] - xsc[facenumber], 
+					  ysc[facenumber + 1] - ysc[facenumber]]
+	else:
+		print("facenumber = %s"%(facenumber), " is out of range")
+		raise ValueError
+		return
+
+	# unit version of base vector
+	unit_BV = base_vector / np.linalg.norm(base_vector)
+	origin = [1, 0]
+
+	cos_theta = np.dot(unit_BV, origin)
+	theta = np.arccos(cos_theta)
+
+	# some of the faces need to rotate larger angle
+	if facenumber in [0, 1, 7]:
+		theta = 2 * np.pi - theta
+
+	if back:
+		# Since we are transforming from origin
+		# x = xedges
+		# y = zeros
+
+		#since we are moving backwards, rotate back
+		theta *= -1
+
+		x_old = df
+		y_old = np.zeros_like(df)
+
+		xedges = x_old * np.cos(theta) - y_old * np.sin(theta) 
+		yedges = x_old * np.sin(theta) + y_old * np.cos(theta) 
+
+		return xedges, yedges
+		
+	else:
+		df_old = df.copy()
+		x_old = df_old.loc[:, 'xloc']
+		y_old = df_old.loc[:, 'yloc']
+
+		df.loc[:, 'xloc'] = x_old * np.cos(theta) - y_old * np.sin(theta) 
+		df.loc[:, 'yloc'] = x_old * np.sin(theta) + y_old * np.cos(theta) 
+
+
+	# Must make copy so these values do not change
+	df_old = df.copy()
+	x_old = df_old.loc[:, 'xloc']
+	y_old = df_old.loc[:, 'yloc']
+
+	df.loc[:, 'xloc'] = x_old * np.cos(theta) - y_old * np.sin(theta) 
+	df.loc[:, 'yloc'] = x_old * np.sin(theta) + y_old * np.cos(theta) 
+
+	return df, theta
+
+
+def hist(df, facenumber, N, length_df):
+	## REQURES
+	# Already rotated to origin
+
+	Ltotal = xsc[5] - xsc[0]                   
+	Wtotal = ysc[2] - ysc[7]
+
+	# Bins / Unit Length
+	ndensity = N / Ltotal
+	
+	# Original position base
+	if (facenumber == 7):
+		base_vector = [xsc[0] - xsc[facenumber], 
+					  ysc[0] - ysc[facenumber]]
+	elif (facenumber < 7):
+		base_vector = [xsc[facenumber + 1] - xsc[facenumber], 
+					  ysc[facenumber + 1] - ysc[facenumber]]
+	else:
+		print("facenumber = %s"%(facenumber), " is out of range")
+		raise ValueError
+		return
+
+	# max face is the length of the side
+	maxfacex = np.linalg.norm(base_vector)
+	minfacex = 0
+
+	# height of LPF
+	maxfacez = H
+	minfacez = 0
+
+	# unit version of base vector
+	unit_BV = base_vector / np.linalg.norm(base_vector)
+
+	# find bins in each direction
+	bins_x = int(np.linalg.norm(base_vector) * ndensity)
+	bins_z = int(H * ndensity)  
+
+	#Creates Histogram in Easy (X,Z) reference frame
+	Hist, xedges, zedges = np.histogram2d(df['xloc'], df['zloc'], bins = [bins_x, bins_z],
+		range = [[minfacex, maxfacex], [minfacez, maxfacez]])
+
+	Hist = Hist.T / length_df
+	# find point slope of original line
+	return Hist, xedges, zedges
+
+def makeSidePatch(ax, Hist, xedges, yedges, zedges, facenumber, 
+					norm, cmap = colormap.parula):
+	alpha = 1 
+	ec = 'white'
+	lw = .02 
+
+
+	for t in range(len(zedges) - 1):
+		for i in range(len(xedges) - 1):
+
+			# shift back to original position
+			x1 = xedges[i] 
+			x2 = xedges[i + 1]
+			
+			y1 = yedges[i] 
+			y2 = yedges[i + 1]
+
+			verts = [((x1, y1, zedges[t]),
+				(x2, y2, zedges[t]),
+				(x2, y2, zedges[t + 1]),
+			(x1, y1, zedges[t + 1]))]
+			ax.add_collection3d(Poly3DCollection(verts, 
+				alpha = alpha, edgecolor = ec, linewidth = lw, 
+				facecolor = cmap(norm(Hist[t, i]))))
+
+	return
+
+def makeTopPatch(ax, df, facenumber, N, length_df, 
+		norm, cmap = colormap.parula):
+	alpha = 1 
+	ec = 'white'
+	lw = .02 
+
+
+	if facenumber == 8:
+		z = H   # Zposition            
+	elif facenumber == 9:
+		z = 0
+	#to Shift graphing Position, Must shift everything
+
+	Ltotal = xsc[5] - xsc[0]                   
+	Wtotal = ysc[2] - ysc[7]
+
+	# Bins / Unit Length
+	ndensity = N / Ltotal
+	binsheight = int(Wtotal * ndensity)  
+	
+
+	minfacex = xsc[0]
+	maxfacex = xsc[5]
+
+	minfacey = ysc[7]
+	maxfacey = ysc[2]
+	
+	#input data
+	xs = df.loc[:, 'xloc']
+	ys = df.loc[:, 'yloc']
+
+	#Creates Histogram (NxN), Xedges (N), and Yedges (N)
+	Hist, xedges, yedges = np.histogram2d(xs, ys, bins = [N, binsheight],
+			range = [[minfacex, maxfacex],[minfacey, maxfacey]])
+	
+	#transforms the Histogram so it can be graphed
+	Hist = Hist.T / length_df
+
+	# finds slopes of the outside lines
+	mtright, btright = findmb(xsc[3], ysc[3], xsc[4], ysc[4])
+	mbright, bbright = findmb(xsc[6], ysc[6], xsc[5], ysc[5])
+	mbleft, bbleft = findmb(xsc[0], ysc[0], xsc[7], ysc[7])
+	mtleft, btleft = findmb(xsc[1], ysc[1], xsc[2], ysc[2])
+
+	for t in range(len(yedges)-1):
+		for i in range(len(xedges)-1):
+			verts = [((xedges[i], yedges[t], z),
+				(xedges[i + 1], yedges[t], z),
+				(xedges[i + 1], yedges[t + 1], z),
+				(xedges[i], yedges[t + 1], z))]
+
+			# check left
+			if (xedges[i + 1] > xsc[3]):
+				if (mtright * xedges[i] + btright < yedges[t]):
+					continue
+				elif (mbright * xedges[i] + bbright > yedges[t + 1]):
+					continue
+			# check right
+			elif (xedges[i + 1] < xsc[2]):
+				if (mbleft * xedges[i + 1] + bbleft > yedges[t + 1]):
+					continue
+				elif(mtleft * xedges[i + 1] + btleft < yedges[t]):
+					continue
+
+			ax.add_collection3d(Poly3DCollection(verts, 
+				alpha = alpha, edgecolor  = ec, linewidth = lw, 
+				facecolor = cmap(norm(Hist[t,i]))))
+	return
+
+### Makes the 3D LPF ###
+def make3DLPF(dictionary, N = 50, scale = 'log', cmap = colormap.parula):
+	"""
+	Creates a 3D version of the LPF, 2D histogram on each face indicating where 
+	the impact was
+	Input:
+		dictionary = data instance defined in MicroTools
+	
+	Arguments:
+		N = integer defining how many bins histogram uses, 
+			the greater N is, the longer it will take to run
+			default = 50
+
+		scale = string, defines how colormap is normalized, 
+			either 'log' or 'lin'
+			default = 'log'
+
+		cmap = matplotlib colormap instance,
+			default is parula from colormap.py
+	returns: 
+	3D figure instance
+	"""
+
+	# initalize colors
+	my_cmap = copy.copy(matplotlib.cm.get_cmap(cmap))
+	my_cmap.set_bad(my_cmap(0))
+	
+	if scale == 'log':
+		from matplotlib.colors import LogNorm
+		norm = LogNorm(vmin = 1e-3, vmax = 1)
+	else:
+		norm = matplotlib.colors.Normalize(0, 1)
+
+	# converts dictionary to pandas Dataframe
+	df = dictionaryToDataFrame(dictionary)
+
+	# initialize figure
+	fig3D = plt.figure()
+
+	# add subplot with equal axes
+	ax3d = fig3D.add_subplot(1,1,1, projection = '3d')
+	ax3d.set_xlim(-1, 1)
+	ax3d.set_ylim(-1, 1)
+	ax3d.set_zlim(-1, 1)
+	ax3d.set_aspect('equal')
+
+
+	for f in np.arange(0,10):
+		#Gets only values on one face
+		df_new = dataFrameOnlyFace(df, f)
+		
+		#vertical sides
+		if f < 8:
+			# Translated
+			df_new = translate_to_origin(df_new, f)
+
+			# Rotated
+			df_new, theta = rotate_at_origin(df_new, f)
+
+			# makes historgram
+			Hist, xedges, zedges = hist(df_new, f, N, length_df = len(df.index) / N)
+
+			# rotates histogram edges (creates y edges)
+			xedges, yedges = rotate_at_origin(xedges, f, back = True)
+
+			# translates histogram edges
+			xedges, yedges = translate_from_origin(xedges, yedges, f)
+			makeSidePatch(ax3d, Hist, xedges, yedges, zedges, f, norm, cmap = my_cmap)
+
+		else:
+			# makes top and bottom patches
+			makeTopPatch(ax3d, df_new, f, N, 
+					length_df = len(df.index) / N, norm = norm, cmap = my_cmap)
+	return fig3D
+
 
 
 
@@ -425,23 +838,6 @@ def summaryString(data,keys = ['Ptot','lat','lon','rx','ry','rz'],scale = [1.0e6
 ############# FLATTEN LPF FUNCTIONS #############
 import numpy as np
 import pandas as pd
-
-### Funtion transforms around the 'origin', or the specific spacecraft coordinte, makes all y values equal, used for Flat LPF
-def transform(xs, ys, xorigin, yorigin, gotovector, index):    
-	xprime = []
-	yprime = []
-
-	for i in index: # Must index this way or the program will attempt to transform NaN
-		r = np.sqrt((xs[i] - xorigin)**2 + (ys[i] - yorigin)**2) #finds distance away from sc (Space Craft) origin
-		magvec = np.sqrt(gotovector[0]**2 + gotovector[1]**2)    #find the magnitude of the pointing vector
-		#print(r)
-		unitvec = [gotovector[0]/magvec,gotovector[1]/magvec]    #finds the unit vector 
-		
-		#normvec = np.linalg.norm(gotovector)
-		xprime.append(r * unitvec[0]  + xorigin)                 #from the origin, adds x position
-		yprime.append(r * unitvec[1]  + yorigin)                 #from the origin, adds y position
-	return xprime, yprime
-
 
 # Rotates Matrix, Used for Flat LPF 
 def DoRotation(xspan, yspan, RotRad): #(xspan -> flattened x coords, yspan -> flattend y coords)
@@ -470,13 +866,6 @@ def getfinite(df,i):
 	else:
 		index = np.asarray(list(facenum.index.values)) #get index 
 	return facenum, index
-
-def dictionaryToDataFrame(dictionary):
-	df = pd.DataFrame(dictionary)
-	# converts new naming conventions to old
-	df = df.rename(columns={'rx': 'xloc', 'ry' : 'yloc', 'rz' : 'zloc'})
-	return df
-
 
 
 #### Makes the Flattened LPF, the thing that you fold up ####
@@ -539,27 +928,6 @@ def flatten_LPF(dictionary, N = 50, scale = 'log', cmap = None,
 	if not cmap:
 		import colormap
 		cmap = colormap.parula
-
-	#### Defines Spacecraft coordinates ###
-	H = 8.315000e-01            #Height of spacecraft [m]
-	xsc = np.zeros(8)           #initializing x array 
-	ysc = np.zeros(8)           #initializing y array
-	xsc[0] =     -9.260000e-01 # x coordinate of spacecraft bottom deck corner 1 [m] 'SC_BOT_CORNER_1_X': 
-	ysc[0] =     -2.168000e-01 # y coordinate of spacecraft bottom deck corner 1 [m] 'SC_BOT_CORNER_1_Y': 
-	xsc[1] =     -9.260000e-01 # x coordinate of spacecraft bottom deck corner 2 [m] 'SC_BOT_CORNER_2_X': 
-	ysc[1] =      2.048000e-01 # y coordinate of spacecraft bottom deck corner 2 [m] 'SC_BOT_CORNER_2_Y': 
-	xsc[2] =     -5.263000e-01 # x coordinate of spacecraft bottom deck corner 3 [m] 'SC_BOT_CORNER_3_X': 
-	ysc[2] =     8.970000e-01  # y coordinate of spacecraft bottom deck corner 3 [m] 'SC_BOT_CORNER_3_Y': 
-	xsc[3] =     5.163000e-01  # x coordinate of spacecraft bottom deck corner 4 [m  'SC_BOT_CORNER_4_X': 
-	ysc[3] =     8.970000e-01  # y coordinate of spacecraft bottom deck corner 4 [m] 'SC_BOT_CORNER_4_Y': 
-	xsc[4] =     9.160000e-01  # x coordinate of spacecraft bottom deck corner 5 [m] 'SC_BOT_CORNER_5_X': 
-	ysc[4] =     2.048000e-01  # y coordinate of spacecraft bottom deck corner 5 [m] 'SC_BOT_CORNER_5_Y': 
-	xsc[5] =     9.160000e-01  # x coordinate of spacecraft bottom deck corner 6 [m] 'SC_BOT_CORNER_6_X': 
-	ysc[5] =     -2.168000e-01 # y coordinate of spacecraft bottom deck corner 6 [m] 'SC_BOT_CORNER_6_Y': 
-	xsc[6] =     5.163000e-01  # x coordinate of spacecraft bottom deck corner 7 [m] 'SC_BOT_CORNER_7_X': 
-	ysc[6] =     -9.090000e-01 # y coordinate of spacecraft bottom deck corner 7 [m] 'SC_BOT_CORNER_7_Y': 
-	xsc[7] =     -5.263000e-01 # x coordinate of spacecraft bottom deck corner 8 [m] 'SC_BOT_CORNER_8_X': 
-	ysc[7] =     -9.090000e-01 # y coordinate of spacecraft bottom deck corner 8 [m] 'SC_BOT_CORNER_8_Y': 
 
 	# Converts dictionary to a pandas dataframe
 	df = dictionaryToDataFrame(dictionary)
@@ -1243,5 +1611,51 @@ def flatten_LPF(dictionary, N = 50, scale = 'log', cmap = None,
 
 	ax.set_title('LPF Micrometeroid Impact Location %s'%(scale))
 	return fig
+
+
+
+
+############# FUNCTIONS #############
+
+### Funtion transforms around the 'origin', or the specific spacecraft coordinte, makes all y values equal, used for Flat LPF
+def transform(xs, ys, xorigin, yorigin, gotovector, index):    
+	xprime = []
+	yprime = []
+
+	for i in index: # Must index this way or the program will attempt to transform NaN
+		r = np.sqrt((xs[i] - xorigin)**2 + (ys[i] - yorigin)**2) #finds distance away from sc (Space Craft) origin
+		magvec = np.sqrt(gotovector[0]**2 + gotovector[1]**2)    #find the magnitude of the pointing vector
+		#print(r)
+		unitvec = [gotovector[0]/magvec,gotovector[1]/magvec]    #finds the unit vector 
+		
+		#normvec = np.linalg.norm(gotovector)
+		xprime.append(r * unitvec[0]  + xorigin)                 #from the origin, adds x position
+		yprime.append(r * unitvec[1]  + yorigin)                 #from the origin, adds y position
+	return xprime, yprime
+
+
+#Returns only finite values of the dataframe, gets rid of NaN from masking, Only works with newer numpy!
+def getfinite(df,i):
+	# Makes places where face=! i NaN
+	facenumna = df.where(df['face'] == i)
+	# Makes places where NaN dissapear
+	facenum = facenumna.dropna(axis = 0, how = 'any')
+		
+	if len(facenum['face']) == 1:
+		#if there is only one value in a face, just drop it. need [] or len > 1 for hist
+		facenum = df[df.face != i] 	
+		#drops all values where face != face , face always = face 
+		index = np.asarray(list(facenum.index.values))
+			
+	else:
+		index = np.asarray(list(facenum.index.values)) #get index 
+	return facenum, index
+
+
+
+
+
+
+
 				
 
