@@ -45,9 +45,9 @@ def readRawChain(chainDir,grs=1, burnIn=0.5, outDir='data'):
 	t0 = np.median(dat[:,3])
 	data = {
 		'segment' : gpsTime,
-		'gps' : gpsTime + t0,
+		'gps' : gpsTime + 1638.4 - t0,
 		'N' : np.shape(dat)[0],
-		't0' : dat[:,3]-t0,
+		't0' : -(dat[:,3]-t0),
 		'Ptot' : dat[:,3], 
 		'lat' : 90-(np.arccos(dat[:,7])*180/np.pi), 
 		'lon' : np.mod(dat[:,8]*180/np.pi+180,360)-180,
