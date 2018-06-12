@@ -1,0 +1,74 @@
+\documentclass[twocolumn,showpacs,aps,prd,nobibnotes,nofootinbib,floatfix]{revtex4-1}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[usenames]{color}
+\usepackage[normalem]{ulem}
+\usepackage{verbatim}
+
+\begin{document}
+\date{\today}
+\title{Brief notes on fitting micrometeoroid population models from sparse detections}
+\author{John G.~Baker$^{1,2}$}
+\affiliation{$^1$ Gravitational Astrophysics Laboratory, NASA Goddard Space Flight Center, Greenbelt, MD 20771, USA}
+\affiliation{$^4$ Joint Space-Science Institute, University of Maryland, College Park, MD 20742, USA}
+
+\begin{abstract}
+  Just some notes laying out the approach.  Just quickly assembled, based on some other notes, with minimal explanation.  Hopefully Tyson can follow...
+\end{abstract}
+\maketitle
+\section{A Bayesian approach to population models}
+Observations of micrometeoroid impacts provide some information about the population of micrometeoroids overall.  To make consistent inferences about a population from observational data including a moderate number of events, it is appropriate to take a Bayesian approach.  It is useful begin by laying down the general problem of how population models can be constrained by event observations. What is an appropriate likelihood function for the analysis, and more broadly, what are the relevant features in appropriate expressions of Bayes theorem.  
+
+We express Bayes' theorem as
+\begin{equation}
+  p(\theta\in\Sigma|D)=\frac{p(D|\theta)p(\theta)}{p(D)}
+\end{equation}
+where we have used $D\in\Sigma_D$ to represent the overall set of observed data.  We can go to the next level by splitting $\theta=\{\theta_P,\theta_O\}$ into ``population'' parameters and ``observation'' parameters, respectively correspongin to the parameters characterizing the micrometeoroid population, and those which we make inferences about in our observational impact analysis,
+\begin{eqnarray*}
+  p(\theta_O,\theta_P\|D)&=&\frac{p(D|\theta_O,\theta_P)p(\theta_O,\theta_P)}{p(D)}\\
+  &=&\frac{p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)p(\theta_P)}{p(D)}.
+\end{eqnarray*}
+If we are only interested in the metaparameters $\theta_P$, then we can marginalize over $\theta_O$,
+\begin{eqnarray}
+  p(\theta_P|D)&=&\int_{\Sigma_o}p(\theta_O,\theta_P|D)
+  d{\theta_O}\\
+  &=&\int_{\Sigma_o} p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)d\theta_O\frac{ p(\theta_P)}{p(D)}.
+\end{eqnarray} 
+The integral on the right hand side is the transdimenstional integral over the full model space $\Sigma_o$.  In integral factor is, in effect, the likelihood we are looking for in the population mode inference
+\begin{equation}
+  p(D|\theta_P)=\int_{\Sigma_o} p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)d\theta_O.
+\end{equation}
+
+Consistent with our approach to micrometeoroids, we can suppose that the data is broken into many small data subsets $D=\{D_\alpha\}$ which are small enough so that multiple impacts are unlikely in each bin, but large enough that the individual responses are likely to be well-contained within a single bin.
+In each subspace, we make inferences on transdimensional observation parameters $\theta_{O,\alpha}=(n,\{\psi^{\{n\}})=(n,\{\psi_1,...\psi_n\})$ where $n$ is the number of impacts and $\psi_n$ represents all the parameters for the $n$th impact.  We also assume that there is no explicit dependence on the event detection likelihood on the population metaparameters $\theta_P$. Then,
+\begin{eqnarray}
+  p(D|\theta_P)&=&\prod{\{\alpha\}} p(D_\alpha|\theta_P)\\
+  p(D_\alpha|\theta_P)&=&\sum_{k=0}^\infty\int d\psi^{\{k\}} p(D|\psi^{\{k\}},n=k)p(n=k,\psi^{\{k\}}|\theta_P).
+\end{eqnarray}
+The second expression is almost the same as the likelihood used in our event inference analysis, except that we have $p(n=k,\psi^{\{k\}}|\theta_P)$ in place the population-model independent prior that we use in the existing impact analysis, which we will label $\hat p(n=k,\psi^{\{k\}})$ using a hat to indicate a distribution specifically based on the assumptions in the impact event inference analysis. In practice, we also neglect the possibility that there is more than one impact per bin, so that the sum runs only to $k=1$, which we will consistently do here as well. Thus we can write
+\begin{eqnarray}
+  p(D_\alpha|\theta_P)&=&\sum_{k=0}^1\int d\psi^{\{k\}} p(D_\alpha|\psi^{\{k\}},n=k)\hat p(n=k,\psi^{\{k\}})\nonumber\\
+  &&\times\frac{p(n=k,\psi^{\{k\}}|\theta_P)}{\hat p(n=k,\psi^{\{k\}})}\\
+  &=&\sum_{k=0}^1\int d\psi^{\{k\}} \hat p(\psi^{\{k\}},n=k|D_\alpha)\frac{p(n=k,\psi^{\{k\}}|\theta_P)}{\hat p(n=k,\psi^{\{k\}})}\\
+  &\approx&\sum_{j\in S}\frac{p(n=k_j,\psi_j^{\{k_j\}}|\theta_P)}{\hat p(n=k_j,\psi_j^{\{k_j\}})}\\
+  &\approx&\frac{N_0}{N_S}\frac{p(n=0|\theta_P)}{\hat p(n=0)}+\frac1{N_1}\sum_{j\in S_1}\frac{p(n=1,\psi_j|\theta_P)}{\hat p(n=1,\psi_j)}.
+\end{eqnarray}
+In the second line we recognize the presence of a product corresponding to the (unnormalized) posterior distribution treated in out impact analysis.  In the third line we apply the usual approach to treating such posterior-weighted integrals, approximating the integral as the some of the coproduct over a posterior distributed sample.  For concreteness we suppose that our impact analysis yields a posterior distirbuted sample of $N_S$ parameter points comprising a set $S$.  We denote the sample as consisting of a $N_0$ non-impact samples and a set $S_1$ of $N_1$ impacts. This allows the concrete realization in the last line.
+
+Note that, at this level, there is no need to simulate a sensitivity rate.  That is already taken into account.  If our data consisted only of information about a marginalized subspace of the impact event parameter space then we would have to correspondingly marginalize over the rest of the subspace in the conditional prior expectated impact probabilites for the parameter subspace based on the population metaparameters $\theta_P$ (appearing in the numerator of the fractions in the last line).
+
+The last piece needed is an explicit form for the expected impact probabilites.  For these we just assume Poisson probabilty distribution (truncated at 1 event) based on the rates we have from the micrometeoroid models (transformed into the LPF frame):
+\begin{eqnarray*}
+  p(n_\alpha|\psi,\theta_P)&=&\frac{r_\alpha(\psi,\theta_P)^n}{n!}e^{-r_\alpha(\psi,\theta_p)}.\\
+  p(n_\alpha|\theta_P)&=&\int\frac{r_\alpha(\psi,\theta_P)^n}{n!}e^{-r_\alpha(\psi,\theta_p)}d\psi^n\\
+  &=&\frac{R_\alpha(\theta_P)^n}{n!}e^{-R_\alpha(\theta_p)}\\
+  R_\alpha(\theta_P)&=&\int{r_\alpha(\theta_P)}d\psi.
+\end{eqnarray*}
+where $r_\alpha(\theta_P)$ is the expected rate events occuring in segment $\alpha$ given the metaparameters $\theta_P$.  
+
+A small additional detail is that we will want to ignore most information from the segments with no impacts.  I would recommend that assume these are uninformative regarding the impact parameters $\psi$ but that we do keep track of the impact probability even for these, in order to get the rates right.
+
+The rest of the details should be straightforward though I am out of time to write more.
+
+
+\end{document}
