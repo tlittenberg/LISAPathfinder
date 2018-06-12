@@ -5,13 +5,28 @@ from os import listdir
 from os.path import isfile, join
 from datetime import datetime, timedelta
 import re
-
+import argparse
 ########################################### Change These Lines ! ###############################################
 homedir      = '/home/sophie.hourihane/public_html/REU'                       #Absolute Location of REU folder
 webaddress = "https://ldas-jobs.ligo-wa.caltech.edu/~sophie.hourihane/REU"    #Web Address
 
+where_runs = 'augRuns' 							      #What Runs we are looking at
 #Do not put / at the end of these lines or stuff won't run 
 ################################################################################################################
+parser = argparse.ArgumentParser()
+parser.add_argument('-r','--run', help = "pick a run_X directory, give the letter", nargs ='?', default = 'all')
+args = parser.parse_args()
+
+if not args.run: #Defines where the run_e files live
+        print('Using run_e')
+        letter = 'e'
+        where_runs = 'runs/run_e'
+else:
+        print 'Using run_%s'%(args.run)
+        letter = args.run
+        where_runs = 'runs/run_'+ args.run  #run
+
+scripts_dir = 'run_'+letter+'_scripts'
 
 # Sets the style for the whole website
 style = """<!DOCTYPE html>
@@ -307,54 +322,55 @@ def makeindex(webaddress,title, scriptsdir):
     filename = ('%s/%s.html'%(scriptsdir,title))
     #filename = ('%swebsite/public_html/html_scripts/%s.html')%(homedir,title)
     f = open(filename,'w+') 
-
     header = style 
-
     navigation = topnav +"""</div>
-        <div style="padding-left:16px">
-    		<h2> LISA Pathfinder Micrometeoroid Impacts </h2>
-	
+	<div style="padding-left:16px">
+		<h2> LISA Pathfinder Micrometeoroid Impacts </h2>
+
 	<p> A spacecraft designed in Europe <br>
 	  Whose data impacts interrupt <br>
 	  Till Thorpe saw one day <br>
 	  It need not be that way. <br>
 	  We just need that Littenberg up </p>
-    
+
 	<p> This mission created by ESA <br>
 	  Proved tech was ready for LISA  <br>
 	  Impulse sensitivity <br>
 	  Gave us a proclivity <br>
-	  To research what comets released us </p>
+	  To research what comets released us <br> 
+	</p></div>"""
 
-
-    </body>
-    </html>"""
-    whole = header + navigation 
+    images = """<div class="gallery noise"> <img src='%s' alt='momentumconfidence'> </div>
+		<div class="gallery noise"> <img src='%s' alt='momentumintervals'> </div> 
+		<div class="gallery noise"> <img src='%s' alt='timeline'> </div> 
+	"""%(webaddress+"/runs/run_"+letter+"/total_hists/mom_90_confidence.png",webaddress+"/runs/run_"+letter+"/total_hists/mom_confidence.png",webaddress+"/runs/run_"+letter+"/total_hists/timeline.png")
+    end = """</body>  </html>"""
+    whole = header + navigation + images + end
 
     f.write(whole)
     f.close()
 
 def makeimgpage(webaddress,title,filenames,i, img_directory, scriptsdir):
 	##print(title[i])
-        #print('making directory %s' %(directory))
+	#print('making directory %s' %(directory))
 		
-        filename = ('%s/%s.html'%(scriptsdir,filenames[i]))
-        f = open(filename,'w+')
+	filename = ('%s/%s.html'%(scriptsdir,filenames[i]))
+	f = open(filename,'w+')
 
 	wraptitle = style 
-        
-        nexti = i+1
-        previ = i-1
-        if previ == 0:
-            previ = i
-        if nexti == len(filenames):
-            nexti = i
-            #nexti = len(title)-2
-        filenamenext = ('%s/html_scripts/%s.html'%(webaddress,filenames[nexti]))
-        filenameprev = ('%s/html_scripts/%s.html'%(webaddress,filenames[previ]))
-	
+
+	nexti = i+1
+	previ = i-1
+	if previ == 0:
+	    previ = i
+	if nexti == len(filenames):
+	    nexti = i
+	    #nexti = len(title)-2
+	filenamenext = ('%s/html_scripts/%s/%s.html'%(webaddress,scripts_dir,filenames[nexti]))
+	filenameprev = ('%s/html_scripts/%s/%s.html'%(webaddress,scripts_dir,filenames[previ]))
+
 	body = topnav + """ 
-	
+
 	</div>
         <div style="padding-left:16px">
           <h2>%s</h2>
@@ -521,7 +537,7 @@ def makelistpage(webaddress,filenames, title,search, capital, scriptsdir):
     index = 0
     for fname in filenames:
 	wherefile = fname.replace(homedir+'/',"")	 
-        partlink = wherefile.replace("html_scripts/","")
+        partlink = wherefile.replace("html_scripts/"+ scripts_dir +'/',"")
 	if 'momenta' in title:
 		units = 'kg m/s'
 		partlink = partlink.replace('mom_','')
@@ -562,8 +578,8 @@ def makelistpage(webaddress,filenames, title,search, capital, scriptsdir):
 
 
 
-directoryruns = homedir + '/runs'                #Location of the run directories
-scriptsdir = homedir + '/html_scripts'           #Location of the Scripts directories
+directoryruns = homedir + '/' + where_runs                #Location of the run directories
+scriptsdir = homedir + '/html_scripts/'+ scripts_dir           #Location of the Scripts directories
 
 if not os.path.exists(scriptsdir):
                 os.mkdir(scriptsdir)
