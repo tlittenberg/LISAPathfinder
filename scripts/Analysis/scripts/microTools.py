@@ -45,9 +45,9 @@ def readRawChain(chainDir,grs=1, burnIn=0.5, outDir='data'):
 	t0 = np.median(dat[:,3])
 	data = {
 		'segment' : gpsTime,
-		'gps' : gpsTime + t0,
+		'gps' : gpsTime + 1638.4 - t0,
 		'N' : np.shape(dat)[0],
-		't0' : dat[:,3]-t0,
+		't0' : -(dat[:,3]-t0),
 		'Ptot' : dat[:,3], 
 		'lat' : 90-(np.arccos(dat[:,7])*180/np.pi), 
 		'lon' : np.mod(dat[:,8]*180/np.pi+180,360)-180,
@@ -74,7 +74,7 @@ def readRawChain(chainDir,grs=1, burnIn=0.5, outDir='data'):
 	return data
 
 # function to get spacecraft quaternions    
-def getSCquats(gps,doText=False):
+def getSCquats(gps, doText = False):
 	"""
 	function to read SC quaternion file. Can either read a python binary file (faster, 
 	default) or an ASCII text file (slower)
@@ -109,6 +109,39 @@ def getSCquats(gps,doText=False):
 
 	# return the quaternion
 	return impQuat
+
+def ECI_to_SUN(gps):
+	"""
+	returns rotation quaternion from ECI to SUN coordinates
+
+	"""
+	import numpy as np, quaternion
+	import os
+	import pathlib
+	from astropy.time import Time
+	from astropy.coordinates import get_body
+
+	# quaternion to rotate from ECI to Sun (place +x in Sunward direction)
+	# Get sun location 
+	s = get_body('sun', Time(gps ,format = 'gps', scale = 'utc'))
+	sun_dec_rad = s.dec.value * np.pi / 180
+	sun_ra_rad = s.ra.value * np.pi / 180
+
+	# unit vector in sunward direction
+	usun = np.array([np.cos(sun_dec_rad) * np.cos(sun_ra_rad),
+				np.cos(sun_dec_rad) * np.sin(sun_ra_rad), 
+				np.sin(sun_dec_rad)])
+	
+	# find quaternion to go between x and sunward direction
+	ux = np.array([1, 0, 0])
+	usun_x_ux = np.cross(usun, ux)
+	qr_ECIx_sun = quaternion.as_quat_array([1 + np.dot(ux, usun),
+										usun_x_ux[0],
+										usun_x_ux[1],
+										usun_x_ux[2]])
+	qr_ECIx_sun = qr_ECIx_sun / quaternion.np.abs(qr_ECIx_sun)
+
+	return qr_ECIx_sun
 
 
 # function to locate impact and estimate area using healpix binning.
@@ -184,6 +217,8 @@ def findSkyAngles(data, CI = 0.68, nside = 32):
 	# return dictionary
 	return data
 
+	
+
 # function to convert angles from SC frame to Sun-center frame (in degrees)
 def SCtoSun(data):
 	"""
@@ -201,39 +236,32 @@ def SCtoSun(data):
 	from astropy.coordinates import get_body
 	
 	# make quaternion array from SC latitude and longitude
-	lon_sc_rad = data['lon']*np.pi/180
-	lat_sc_rad = data['lat']*np.pi/180
-	n = np.vstack((np.zeros(np.shape(lat_sc_rad)),np.cos(lat_sc_rad)*np.cos(lon_sc_rad),np.cos(lat_sc_rad)*np.sin(lon_sc_rad),np.sin(lat_sc_rad)))
+	lon_sc_rad = data['lon'] * np.pi / 180
+	lat_sc_rad = data['lat'] * np.pi / 180
+	n = np.vstack((np.zeros(np.shape(lat_sc_rad)),
+				np.cos(lat_sc_rad) * np.cos(lon_sc_rad),
+				np.cos(lat_sc_rad) * np.sin(lon_sc_rad),
+				np.sin(lat_sc_rad)))
 	q_coord_sc = quaternion.as_quat_array(np.transpose(n))
-	
-	# read SC quaternion (rotate from ECI to SC)
+
+	# read SC quaternion (rotate from SC to ECI)
 	qr_ECI_SC = getSCquats(int(data['gps']))
 	
 	# perform first rotation
-	q_coord_ECI = qr_ECI_SC*q_coord_sc*quaternion.np.conjugate(qr_ECI_SC)
+	q_coord_ECI = qr_ECI_SC * q_coord_sc * quaternion.np.conjugate(qr_ECI_SC)
 	
-	# quaternion to rotate from ECI to Sun (place +x in Sunward direction)
-	# Get sun location 
-	s = get_body('sun', Time(data['gps'] ,format='gps',scale='utc'))
-	sun_dec_rad = s.dec.value*np.pi/180
-	sun_ra_rad = s.ra.value*np.pi/180
-
-	# unit vector in sunward direction
-	usun = np.array([np.cos(sun_dec_rad)*np.cos(sun_ra_rad),np.cos(sun_dec_rad)*np.sin(sun_ra_rad),np.sin(sun_dec_rad)])
-	
-	# find quaternion to go between x and sunward direction
-	ux = np.array([1,0,0])
-	usun_x_ux = np.cross(usun,ux)
-	qr_ECIx_sun = quaternion.as_quat_array([1+np.dot(ux,usun),usun_x_ux[0],usun_x_ux[1],usun_x_ux[2]])
-	qr_ECIx_sun = qr_ECIx_sun/quaternion.np.abs(qr_ECIx_sun)
+	# get rotation matrix from ECI to SUN
+	qr_ECIx_sun = ECI_to_SUN(data['gps'])
 	
 	# perform second rotation
-	q_coord_sun = qr_ECIx_sun*q_coord_ECI*quaternion.np.conjugate(qr_ECIx_sun)
+	q_coord_sun = qr_ECIx_sun * q_coord_ECI * quaternion.np.conjugate(qr_ECIx_sun)
 	
 	# extract latitude and longitude in Sunward direction
 	q_coord_sun_n = quaternion.as_float_array(q_coord_sun)
-	lon_sun = 180/np.pi*np.arctan2(q_coord_sun_n[:,2], q_coord_sun_n[:,1])
-	lat_sun = 180/np.pi*np.arctan2(q_coord_sun_n[:,3],np.sqrt(np.square(q_coord_sun_n[:,1])+np.square(q_coord_sun_n[:,2])))
+	lon_sun = 180 / np.pi * np.arctan2(q_coord_sun_n[:, 2], 
+									   q_coord_sun_n[:, 1])
+	lat_sun = 180 / np.pi * np.arctan2(q_coord_sun_n[:, 3],
+							np.sqrt(np.square(q_coord_sun_n[:, 1]) + np.square(q_coord_sun_n[:, 2])))
 	
 	# add to dictionary
 	data['lon_sun'] = lon_sun
@@ -241,13 +269,72 @@ def SCtoSun(data):
 	
 	# return
 	return data
+
+
+# function to convert angles from SC frame to Sun-center frame (in degrees)
+def SuntoSC(data):
+	"""
+	function to convert angles from sun-centered frame used by micrometeoroid 
+	population models to SC frame. 
+	
+	Sophie Hourihane
+	2018-06-12
+	"""
+	
+	# libraries & modules
+	import numpy as np, quaternion
+	from microTools import getSCquats
+	from astropy.time import Time
+	from astropy.coordinates import get_body
+	
+	# get longitude and latitude in radians
+	try:
+		lon_sun_rad = data['lon_sun'] * np.pi / 180
+		lat_sun_rad = data['lat_sun'] * np.pi / 180
+	except ValueError:
+		print("data['lon_sun'] or data['lat_sun'] does not exist!")
+		return
+
+	# turn long lat angles into quaternion
+	n = np.vstack((np.zeros(np.shape(lat_sun_rad)),
+				np.cos(lat_sun_rad) * np.cos(lon_sun_rad),
+				np.cos(lat_sun_rad) * np.sin(lon_sun_rad),
+				np.sin(lat_sun_rad)))
+	q_coord_sun = quaternion.as_quat_array(np.transpose(n))
+
+	# get rotation quaternion
+	qr_ECIx_sun = ECI_to_SUN(int(data['gps']))
+	
+	# Rotate from SUN to ECI:
+	q_coord_ECI = quaternion.np.conjugate(qr_ECIx_sun) * q_coord_sun * qr_ECIx_sun
+
+	# read SC quaternion (get rotation q from ECI to SC)
+	qr_ECI_SC = getSCquats(int(data['gps']))
+
+	# rotate from ECI to SC
+	q_coord_sc = quaternion.np.conjugate(qr_ECI_SC) * q_coord_ECI * qr_ECI_SC
+
+	# extract latitude and longitude in SC direction
+	q_coord_sc_n = quaternion.as_float_array(q_coord_sc)
+	lon_sc = 180 / np.pi * np.arctan2(q_coord_sc_n[:, 2], 
+									   q_coord_sc_n[:, 1])
+	lat_sc = 180 / np.pi * np.arctan2(q_coord_sc_n[:, 3],
+							np.sqrt(np.square(q_coord_sc_n[:, 1]) + np.square(q_coord_sc_n[:, 2])))
+
+	# add to dictionary
+	data['lon'] = lon_sc
+	data['lat'] = lat_sc
+	return data
+	
 	
 # function to make dual corner plots
-def dualCorner(data1,data2,
-	keys=['Ptot','lat','lon','rx','ry','rz'],
-	labels = ['$P_{tot}\,[\mu N]$','$lat\,[deg]$','$lon\,[deg]$','$r_x\,[cm]$','$r_y\,[cm]$','$r_z\,[cm]$'],
-	scale = [1.0e6,1.0,1.0,100.0,100.0,100.0],
-	Nbins = 30):
+def dualCorner(data1, data2,
+		keys=['Ptot', 'lat', 'lon', 'rx', 'ry', 'rz'],
+		labels = ['$P_{tot}\,[\mu N]$', '$lat\,[deg]$', '$lon\,[deg]$', 
+				 '$r_x\,[cm]$', '$r_y\,[cm]$', '$r_z\,[cm]$'],
+		scale = [1.0e6, 1.0, 1.0, 100.0, 100.0, 100.0],
+		Nbins = 30):
+
 	"""
 	function to produce a 'dual corner plot': basically a corner plot for each GRS with the 
 	lower corner being GRS1 and the upper corner being GRS2. Useful for comparing chains
@@ -274,90 +361,99 @@ def dualCorner(data1,data2,
 	hf=plt.figure(figsize=(18, 16), dpi= 80, facecolor='w', edgecolor='k')
 	kk = 0
 	# loop over keys for x (rows)
-	for ii in range(0,Nkeys):
+	for ii in range(0, Nkeys):
 		# get x data for both GRS
-		x1 = data1[keys[ii]]*scale[ii]
+		x1 = data1[keys[ii]] * scale[ii]
 		N1 = np.shape(x1)[0]
-		x2 = data2[keys[ii]]*scale[ii]
+		x2 = data2[keys[ii]] * scale[ii]
 		N2 = np.shape(x2)[0]
+
 		# determine x bins
-		xtot = np.concatenate([x1,x2])
-		xbins = np.linspace(np.min(xtot),np.max(xtot),Nbins)
-		xe = xbins - 0.5*(xbins[1]-xbins[0])
-		xe = np.append(xe,xe[Nbins-1]+ xe[1]-xe[0])
+		xtot = np.concatenate([x1, x2])
+		xbins = np.linspace(np.min(xtot), np.max(xtot), Nbins)
+		xe = xbins - 0.5 * (xbins[1] - xbins[0])
+		xe = np.append(xe, xe[Nbins - 1] + xe[1] - xe[0])
+
 		# loop over keys for y (columns)
-		for jj in range(0,Nkeys):
+		for jj in range(0, Nkeys):
 			# lower corner
-			if jj < ii :
-				kk = kk+1
+			if jj < ii:
+				kk = kk + 1
 				# get y data
-				y1 = data1[keys[jj]]*scale[jj]
-				y2 = data2[keys[jj]]*scale[jj]
+				y1 = data1[keys[jj]] * scale[jj]
+				y2 = data2[keys[jj]] * scale[jj]
+
 				# determine y bins
-				ytot = np.concatenate([y1,y2])
-				ybins = np.linspace(np.min(ytot),np.max(ytot),Nbins)
-				ye = ybins - 0.5*(ybins[1]-ybins[0])
-				ye = np.append(ye,ye[Nbins-1]+ ye[1]-ye[0])
+				ytot = np.concatenate([y1, y2])
+				ybins = np.linspace(np.min(ytot), np.max(ytot), Nbins)
+				ye = ybins - 0.5 * (ybins[1] - ybins[0])
+				ye = np.append(ye, ye[Nbins - 1] + ye[1] - ye[0])
+
 				# 2D histogram and plot
-				c_x1y1,x2e,y2e = np.histogram2d(x1,y1,[xbins,ybins],normed = True)
-				plt.subplot(Nkeys,Nkeys,kk)
-				plt.contourf(c_x1y1,extent=[y2e.min(),y2e.max(),x2e.min(),x2e.max()],cmap=matplotlib.cm.Reds)
+				c_x1y1, x2e, y2e = np.histogram2d(x1, y1, [xbins, ybins], normed = True)
+				plt.subplot(Nkeys, Nkeys, kk)
+				plt.contourf(c_x1y1, extent = [y2e.min(), y2e.max(), x2e.min(), x2e.max()], cmap=matplotlib.cm.Reds)
 				ax = plt.gca()
-				ax.grid(color='k',linestyle='--')
+				ax.grid(color = 'k',linestyle = '--')
+
 			# diagonals
-			elif jj == ii :
+			elif jj == ii:
 				# histograms
-				c_x1x1,x1e = np.histogram(x1,xe,normed = True)
-				c_x2x2,x1e = np.histogram(x2,xe,normed = True)
+				c_x1x1, x1e = np.histogram(x1, xe, normed = True)
+				c_x2x2, x1e = np.histogram(x2, xe, normed = True)
+
 				# plot
-				kk = kk+1
-				plt.subplot(Nkeys,Nkeys,kk)
-				plt.step(xbins,c_x1x1,'r')
-				plt.step(xbins,c_x2x2,'b')
+				kk = kk + 1
+				plt.subplot(Nkeys, Nkeys, kk)
+				plt.step(xbins, c_x1x1, 'r')
+				plt.step(xbins, c_x2x2, 'b')
 				ax = plt.gca()
-				ax.grid(color='k',linestyle='--')
-				ax.legend(['GRS1','GRS2'])
+				ax.grid(color = 'k', linestyle = '--')
+				ax.legend(['GRS1', 'GRS2'])
 				ax.set_yticklabels([])
+
 			# upper corner
-			elif jj > ii :
-				kk = kk+1
+			elif jj > ii:
+				kk = kk + 1
+
 				# determine y bins
-				y1 = data1[keys[jj]]*scale[jj]
-				y2 = data2[keys[jj]]*scale[jj]
-				ytot = np.concatenate([y1,y2])
-				ybins = np.linspace(np.min(ytot),np.max(ytot),Nbins)
-				ye = ybins - 0.5*(ybins[1]-ybins[0])
-				ye = np.append(ye,ye[Nbins-1]+ ye[1]-ye[0])
+				y1 = data1[keys[jj]] * scale[jj]
+				y2 = data2[keys[jj]] * scale[jj]
+				ytot = np.concatenate([y1, y2])
+				ybins = np.linspace(np.min(ytot), np.max(ytot), Nbins)
+				ye = ybins - 0.5 * (ybins[1] - ybins[0])
+				ye = np.append(ye, ye[Nbins - 1]+ ye[1] - ye[0])
+
 				# 2D histogram and plot
-				c_x2y2,x2e,y2e = np.histogram2d(x2,y2,[xbins,ybins],normed = True)
-				plt.subplot(Nkeys,Nkeys,kk)
-				plt.contourf(c_x2y2,extent=[y2e.min(),y2e.max(),x2e.min(),x2e.max()],cmap=matplotlib.cm.Blues)
+				c_x2y2, x2e, y2e = np.histogram2d(x2, y2, [xbins, ybins], normed = True)
+				plt.subplot(Nkeys, Nkeys, kk)
+				plt.contourf(c_x2y2, extent = [y2e.min(), y2e.max(), x2e.min(), x2e.max()], cmap = matplotlib.cm.Blues)
 				ax = plt.gca()
 				ax.grid(color='k',linestyle='--')
+
 			# assign axes labels
-			if jj == 0 :
-				if ii>0 :
+			if jj == 0:
+				if ii > 0:
 					ax.yaxis.label.set_text(labels[ii])
-				else :
+				else:
 					ax.set_yticklabels([])
-			elif jj == Nkeys-1 :
-				if ii < Nkeys-1 :
+			elif jj == Nkeys - 1:
+				if ii < Nkeys - 1:
 					ax.yaxis.label.set_text(labels[ii])
 					ax.yaxis.set_label_position('right')
 					ax.yaxis.tick_right()
-				else :
+				else:
 					ax.set_yticklabels([])
-			else :
+			else:
 				ax.set_yticklabels([])
 			if ii == 0 :
 				ax.xaxis.label.set_text(labels[jj])
 				ax.xaxis.set_label_position('top')
 				ax.xaxis.tick_top()
-			elif ii == Nkeys-1 :
+			elif ii == Nkeys - 1:
 				ax.xaxis.label.set_text(labels[jj])
-			else :
+			else:
 				ax.set_xticklabels([])
-			
 	return hf
 
 def summaryString(data, keys = ['Ptot','lat','lon','rx','ry','rz'], scale = [1.0e6,1.0,1.0,100.0,100.0,100.0]):
@@ -420,6 +516,167 @@ def summaryString(data, keys = ['Ptot','lat','lon','rx','ry','rz'], scale = [1.0
 
 	return tabStr
 
+############ skymaps ##########
+
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import numpy as np
+import pandas as pd
+import colormap
+
+import microTools
+from astropy.coordinates import SkyCoord
+from astropy.io import fits
+from astropy import units as u
+import ligo.skymap.plot
+
+# function to read chain files as output by MCMC tool
+def readSkymapData(dataDir, dataFile = "JFC_30um"):
+	"""
+		dataDir = directory where file is located
+		datafile = filename (JFC_30um or HTC_30um)
+	"""
+	# modules
+	import numpy as np
+
+	# load data
+	dat = np.loadtxt(dataDir + "/" + dataFile )
+	
+	# turn into dictionary
+	data = {
+		'lon' : dat[:, 0], # Longitude (Deg) centered @ apex of earths motion
+		'lat' : dat[:, 1], # Latitude (Deg), zero plane is ecliptic 
+		'vel' : dat[:, 2], # impact velocity
+		'flux': dat[:, 3], # meteoroid flux, # meteoroid / m^2 / s
+		'N'   : len(dat[:, 0])
+	}
+
+	return data
+
+def reshapeData(data, y_var = 'flux', step = 2):
+	"""
+	called by makeCometPlots
+
+		data = dictionary of JFC or HTC 30um data
+		y_var = "flux" or "vel", describes y axis of plots 
+		step = float or int, describes how to grid is split up
+
+		
+	"""
+	df = pd.DataFrame(data)
+	x = np.arange(-180, 180, step)
+	y = np.arange(-90, 90, step)
+	y_var_list = np.zeros((len(x), len(y)))
+	for i in range(len(x) - 1):
+		within_x = df.loc[(x[i] < df['lon']) & (df['lon'] <= x[i + 1])]
+		for j in range(len(y) - 1):
+			within_y = within_x.loc[(y[j] < df['lat']) & (df['lat'] <= y[j + 1])]
+			
+			val = np.median(within_y[y_var])
+
+			#some spaces have no assigned value, assume zero flux
+			if np.isnan(val):
+				y_var_list[i, j] = 0
+			else:
+				y_var_list[i, j] = val
+
+	return x, y, y_var_list
+
+
+
+def makeCometPlots(data, y_var = "flux", comet = "HTC", step = 5):
+	"""
+	Creates plots like JFC and HTC .jpg describing comet populations
+
+	data = dictionary made by readSkymapData
+	y_var = string, either "flux" or "vel"
+	comet = string, either "HTC" or "JFC"
+	step = float or int, describes how to grid is split up
+
+	"""
+
+	fig = plt.figure(figsize = (7, 5))
+	fig.suptitle(comet)
+
+	# create grids for plots
+	grid = plt.GridSpec(3, 2, wspace = 0.4, hspace = 0.5)
+
+	ax1 = fig.add_subplot(grid[0:2, :])
+	x, y, y_var_list = reshapeData(data, y_var = y_var, step = step)
+
+	my_cmap = colors.LogNorm()
+	palette = colormap.parula 
+	palette.set_bad(palette(0.0), 1.0)
+	cax = plt.pcolormesh(x, y, y_var_list.T, cmap = palette)
+
+	# Decoration for 1st plot
+	ax1.set_aspect("equal")
+	ax1.set_xlabel("Longitude (degrees)")
+	ax1.set_ylabel("Latitude (degrees)")
+	cbar = fig.colorbar(cax)
+	cbar.set_label(y_var, rotation=270)
+
+	
+	med_y_var_x = np.zeros(len(x))
+	med_y_var_y = np.zeros(len(y))
+
+	for i in range(len(x)):
+		med_y_var_x[i] = np.median(y_var_list[i,:])
+	for i in range(len(y)):
+		med_y_var_y[i] = np.median(y_var_list[:,i])
+
+	ax2 = fig.add_subplot(grid[2, 0])
+	ax2.bar(x, med_y_var_x, width = step)
+	ax2.set_xlabel("Longitude (degrees)")
+
+	# set y label
+	if y_var == "flux":
+		ax2.set_ylabel("Median Flux count / $m^2 / s$")
+	elif y_var == "vel":
+		ax2.set_ylabel("Median vel $m / s$")
+		
+
+	
+	ax3 = fig.add_subplot(grid[2, 1])
+	ax3.bar(y, med_y_var_y, width = step)
+	ax3.set_xlabel("Latitude (degrees)")
+
+	return fig
+
+def makeMollweide(data, sun = False, GRS_num = None):
+	"""
+		data: dictionary
+		sun: whether to use sun centered data or not
+		GRS_num: string, number of GRS
+	"""
+	fig = plt.figure(figsize=(8, 4), dpi=100)
+	ax = plt.axes(
+		projection = 'geo degrees mollweide')
+
+	data1 = microTools.findSkyAngles(data)
+
+
+	if GRS_num:
+		title = ('GRS%s Impact direction posterior for '%(GRS_num) + 
+				str(int(data['gps'])))
+	else:
+		title = ('Impact direction posterior for ' + 
+				str(int(data['gps'])))
+	if sun:
+		ax.imshow_hpx(data['healPix_sun'], cmap='cylon')
+		title += " [sun]"
+	else:
+		ax.imshow_hpx(data['healPix'], cmap='cylon')
+		title += " [spacecraft]"
+
+	ax.set_title(title)
+	ax.grid(linestyle = ':')
+	ax.coords[0].set_ticks(exclude_overlapping = True, spacing = 45 * u.deg)
+	ax.coords[1].set_ticks(exclude_overlapping = True, spacing = 30 * u.deg)
+
+
+	return fig
 
 
 
@@ -557,6 +814,7 @@ def rotate_at_origin(df, facenumber, back = False):
 
 	##   .  .        .   .
 
+	# fixes indexing problem, xsc[8] = xsc[0]
 	if (facenumber == 7):
 		base_vector = [xsc[0] - xsc[facenumber], 
 					  ysc[0] - ysc[facenumber]]
@@ -579,6 +837,7 @@ def rotate_at_origin(df, facenumber, back = False):
 	if facenumber in [0, 1, 7]:
 		theta = 2 * np.pi - theta
 
+	# backwards rotation
 	if back:
 		# Since we are transforming from origin
 		# x = xedges
@@ -594,8 +853,10 @@ def rotate_at_origin(df, facenumber, back = False):
 		yedges = x_old * np.sin(theta) + y_old * np.cos(theta) 
 
 		return xedges, yedges
-		
+
+	# forwards rotation	
 	else:
+		# Must make copy so these values do not change
 		df_old = df.copy()
 		x_old = df_old.loc[:, 'xloc']
 		y_old = df_old.loc[:, 'yloc']
@@ -604,20 +865,19 @@ def rotate_at_origin(df, facenumber, back = False):
 		df.loc[:, 'yloc'] = x_old * np.sin(theta) + y_old * np.cos(theta) 
 
 
-	# Must make copy so these values do not change
-	df_old = df.copy()
-	x_old = df_old.loc[:, 'xloc']
-	y_old = df_old.loc[:, 'yloc']
-
-	df.loc[:, 'xloc'] = x_old * np.cos(theta) - y_old * np.sin(theta) 
-	df.loc[:, 'yloc'] = x_old * np.sin(theta) + y_old * np.cos(theta) 
-
 	return df, theta
 
 
 def hist(df, facenumber, N, length_df):
 	## REQURES
 	# Already rotated to origin
+
+	# deals with numpy hist2d bug
+	# if only 1 hit, just drop the side
+	if len(df.index) == 1:
+
+		df = df[df.face != facenumber] 	
+		#df.drop(df.index[0])
 
 	Ltotal = xsc[5] - xsc[0]                   
 	Wtotal = ysc[2] - ysc[7]
@@ -652,12 +912,13 @@ def hist(df, facenumber, N, length_df):
 	bins_x = int(np.linalg.norm(base_vector) * ndensity)
 	bins_z = int(H * ndensity)  
 
+
 	#Creates Histogram in Easy (X,Z) reference frame
 	Hist, xedges, zedges = np.histogram2d(df['xloc'], df['zloc'], bins = [bins_x, bins_z],
 		range = [[minfacex, maxfacex], [minfacez, maxfacez]])
 
 	Hist = Hist.T / length_df
-	# find point slope of original line
+	
 	return Hist, xedges, zedges
 
 def makeSidePatch(ax, Hist, xedges, yedges, zedges, facenumber, 
@@ -665,7 +926,7 @@ def makeSidePatch(ax, Hist, xedges, yedges, zedges, facenumber,
 	alpha = 1 
 	ec = 'white'
 	lw = .02 
-
+	
 
 	for t in range(len(zedges) - 1):
 		for i in range(len(xedges) - 1):
@@ -680,7 +941,7 @@ def makeSidePatch(ax, Hist, xedges, yedges, zedges, facenumber,
 			verts = [((x1, y1, zedges[t]),
 				(x2, y2, zedges[t]),
 				(x2, y2, zedges[t + 1]),
-			(x1, y1, zedges[t + 1]))]
+				(x1, y1, zedges[t + 1]))]
 			ax.add_collection3d(Poly3DCollection(verts, 
 				alpha = alpha, edgecolor = ec, linewidth = lw, 
 				facecolor = cmap(norm(Hist[t, i]))))
@@ -757,7 +1018,7 @@ def makeTopPatch(ax, df, facenumber, N, length_df,
 	return
 
 ### Makes the 3D LPF ###
-def make3DLPF(dictionary, N = 50, scale = 'log', cmap = colormap.parula):
+def make3DLPF(dictionary, N = 50, scale = 'log', cmap = colormap.parula, return_ax = False):
 	"""
 	Creates a 3D version of the LPF, 2D histogram on each face indicating where 
 	the impact was
@@ -793,17 +1054,18 @@ def make3DLPF(dictionary, N = 50, scale = 'log', cmap = colormap.parula):
 	df = dictionaryToDataFrame(dictionary)
 
 	# initialize figure
-	fig3D = plt.figure()
+	fig3D = plt.figure(figsize = (4,4))
 
 	# add subplot with equal axes
 	ax3d = fig3D.add_subplot(1,1,1, projection = '3d')
+	ax3d.set_axis_off()
 	ax3d.set_xlim(-1, 1)
 	ax3d.set_ylim(-1, 1)
 	ax3d.set_zlim(-1, 1)
 	ax3d.set_aspect('equal')
 
 
-	for f in np.arange(0,10):
+	for f in np.arange(0, 10):
 		#Gets only values on one face
 		df_new = dataFrameOnlyFace(df, f)
 		
@@ -829,7 +1091,10 @@ def make3DLPF(dictionary, N = 50, scale = 'log', cmap = colormap.parula):
 			# makes top and bottom patches
 			makeTopPatch(ax3d, df_new, f, N, 
 					length_df = len(df.index) / N, norm = norm, cmap = my_cmap)
-	return fig3D
+	if return_ax:
+		return ax3d, fig3D
+	else:
+		return fig3D
 
 
 
@@ -1633,23 +1898,89 @@ def transform(xs, ys, xorigin, yorigin, gotovector, index):
 		yprime.append(r * unitvec[1]  + yorigin)                 #from the origin, adds y position
 	return xprime, yprime
 
+def fillGifDir(dictionary, segmentPlotDir, GRS_num = '1', 
+				N = 50, scale = 'log', cmap = colormap.parula):
 
-#Returns only finite values of the dataframe, gets rid of NaN from masking, Only works with newer numpy!
-def getfinite(df,i):
-	# Makes places where face=! i NaN
-	facenumna = df.where(df['face'] == i)
-	# Makes places where NaN dissapear
-	facenum = facenumna.dropna(axis = 0, how = 'any')
+	ax, fig = make3DLPF(dictionary, N = N, scale = scale, 
+			cmap = colormap.parula, return_ax = True)
+
+	dirnametop = segmentPlotDir + '/gif_top_GRS%s_%s'%(GRS_num, scale)
+	dirnamebot = segmentPlotDir + '/gif_bot_GRS%s_%s'%(GRS_num, scale)
+
+	if not os.path.exists(dirnamebot):
+		os.mkdir(dirnamebot)
+	if not os.path.exists(dirnametop):
+		os.mkdir(dirnametop)
+	
+	step = 15 
+	ax.set_title('3D LISA Pathfinder %s Scale'%(scale))
+
+	for ii in np.arange(0, 360, step):
+		print('gif bottom angle = %s'%(ii))
+		ax.view_init(elev = -15, azim = ii)
+		fig.savefig(dirnamebot + "/bot_%i.png"%(ii))
+
+	ax.set_title('3D LISA Pathfinder %s Scale'%(scale))
+	for ii in np.arange(0,360 + step, step):
+		print('gif top  angle = %s'%(ii))
+
+		ax.view_init(elev = 15, azim = ii)
+		fig.savefig(dirnametop + "/top_%i.png"%(ii))
+	plt.close(fig)
+
+
+import imageio
+import re
+import glob
+import os
+from os import listdir
+from os.path import isfile, join
+
+def tryint(s):
+	try:
+		return int(s)
+	except:
+		return s
+
+def alphanum_key(s):
+	""" Turn a string into a list of string and number chunks.
+		"z23a" -> ["z", 23, "a"]
+	"""
+	return [ tryint(c) for c in re.split('([0-9]+)', s) ]
+
+def get_the_subdir(a_dir):
+	subdir = []
+	names  = []
+	#print('directory = %s'%(a_dir))
+	for name in os.listdir(a_dir):
+		#print('name of directory = %s'%(name))
+		if os.path.isdir((os.path.join(a_dir,name))):
+			names.append(name)
+			subdir.append((os.path.join(a_dir, name)))
+	return subdir#, names
+
+
+def gif_maker(plotDir, GRS_num):
+	gif_dirs = get_the_subdir(plotDir)
+	print(gif_dirs)
+	for gif_dir in gif_dirs:
+		#make sure subdirectories are correct gif images
+		if (not 'top' in gif_dir) and (not 'bot' in gif_dir):
+			print("here")
+			continue
+		filenames = [fil for fil in listdir('%s'%(gif_dir)) if isfile(join('%s'%(gif_dir),fil))]
+		images = []
+		filenames.sort(key = alphanum_key)
+		for filename in filenames:	
+			images.append(imageio.imread(gif_dir + '/' + filename))
+		if 'top' in gif_dir:
+			imageio.mimsave(plotDir + '/' + 'GRS%s_top.gif'%(GRS_num), images)
+		else:
+			imageio.mimsave(plotDir + '/' + 'GRS%s_bot.gif'%(GRS_num), images)
 		
-	if len(facenum['face']) == 1:
-		#if there is only one value in a face, just drop it. need [] or len > 1 for hist
-		facenum = df[df.face != i] 	
-		#drops all values where face != face , face always = face 
-		index = np.asarray(list(facenum.index.values))
+
 			
-	else:
-		index = np.asarray(list(facenum.index.values)) #get index 
-	return facenum, index
+
 
 
 
