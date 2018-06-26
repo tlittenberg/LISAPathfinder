@@ -1,0 +1,140 @@
+\documentclass[twocolumn,showpacs,aps,prd,nobibnotes,nofootinbib,floatfix]{revtex4-1}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[usenames]{color}
+\usepackage[normalem]{ulem}
+\usepackage{verbatim}
+
+\begin{document}
+\date{\today}
+\title{Notes on fitting micrometeoroid population models from sparse detections}
+\author{John G.~Baker$^{1,2}$}
+\affiliation{$^1$ Gravitational Astrophysics Laboratory, NASA Goddard Space Flight Center, Greenbelt, MD 20771, USA}
+\affiliation{$^4$ Joint Space-Science Institute, University of Maryland, College Park, MD 20742, USA}
+
+\begin{abstract}
+  Just some notes laying out the approach.
+\end{abstract}
+\maketitle
+\section{A Bayesian approach to population models}
+Observations of micrometeoroid impacts provide some information about the population of micrometeoroids overall.  To make consistent inferences about a population from observational data including a moderate number of events, it is appropriate to take a Bayesian approach.  It is useful begin by laying down the general problem of how population models can be constrained by event observations. What is an appropriate likelihood function for the analysis, and more broadly, what are the relevant features in appropriate expressions of Bayes theorem.
+
+An approach to this kind of problem is to first consider a monolithic Bayesian model which covers the full scope of processes which produce the data.  Those processes include some which can be considered properties of the universe at-large, and others which are related to the specifics of the observational data.  Then one needs to express the result in terms of intermediate calculations which correspond to the experimental inferences, and the the subsequent assembly of those compoents in the overall computation.
+
+There are few points of contact in the literature that it may be relevant to make contact with.  In high-energy photon observations, a common approach emphasizes the detection of events as a Poisson process, leading to a likelihood related to the so-call Cash statistic \cite{Cash79}.  A limitation of that analysis, however is that it assumes any uncertainties in the observed parameters which are relevant to the population model are negligibly small.  Another approach is that of \cite{Mandel2010} which focuses on Bayesian characterization of distributions of parameter measurements over several observations.  It seems, however that that approach is not focused on determining population parameters (as distinct from distributions of observed parameters), including important meta parameters such as \emph{rates}.  A broader approach is the general field of heirarchical Bayesian modeling.  I believe that the discussion here generally fits within that category, though I make no attempt to specifically follow the conventions of that field.
+
+The goal for the first step of our process is to define the model space $\Sigma=\Sigma_{p}\otimes\Sigma{o}$ for broader set of processes including both the properties of the universe which characterize the population of interest $\Sigma_p$, and the detailed processes related to the observational data $\Sigma_o$.  The model space $\Sigma_p$ describing the population may describe properties such as event rates for certain types of observable processes as influenced perhaps by several parameters or may be disjoint representing competing proposals.
+
+For event-based observations, the space $\Sigma_o$ is necessarily disjoint, describing processes which, assuming some instance $\theta_P$ of inferrable population descriptors in $\Sigma_p$, produce a specific countable set of observational parameters in $\Sigma_p$. Each inferrable observation generally includes its own observational parameters, making $\Sigma_o$ necesssarily disjoint, described by transdimensional parameterization $\theta_O$.
+
+To give a relevant concrete example, in the specific case that there is just one \emph{type} of event which occurs an unknown number of times, we can represent $\Sigma_o=\mathbb{N}\otimes\bigcup_{n=0}^{\infty}{\Sigma_e}^n$, with $\theta_O$ including both a number $n\in \mathbb{N}$ and $n$ copies of the event parameters $\psi\in\Sigma_e$.  It is straightforward to generalize this to an include multiple types of observations which may have distinct parameterizations.
+
+We express Bayes' theorem as
+\begin{equation}
+  p(\theta\in\Sigma|D)=\frac{p(D|\theta)p(\theta)}{p(D)}
+\end{equation}
+where we have used $D\in\Sigma_D$ to represent the overall set of observed data.  We can go to the next level by splitting $\theta=\{\theta_P,\theta_O\}$,
+\begin{eqnarray*}
+  p(\theta_O,\theta_P\|D)&=&\frac{p(D|\theta_O,\theta_P)p(\theta_O,\theta_P)}{p(D)}\\
+  &=&\frac{p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)p(\theta_P)}{p(D)}.
+\end{eqnarray*}
+If we are only interested in the metaparameters $\theta_P$, then we can marginalize over $\theta_O$,
+\begin{eqnarray}
+  p(\theta_P|D)&=&\int_{\Sigma_o}p(\theta_O,\theta_P|D)
+  d{\theta_O}\\
+  &=&\int_{\Sigma_o} p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)d\theta_O\frac{ p(\theta_P)}{p(D)}.
+\end{eqnarray} 
+The integral on the right hand side is the transdimenstional integral over the full model space $\Sigma_o$.  In integral factor is, in effect, the likelihood we are looking for in the population mode inference
+\begin{equation}
+  p(D|\theta_P)=\int_{\Sigma_o} p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)d\theta_O.
+\end{equation}
+   
+Everything so far is extremely general.  As we have laid out so far the transdimensional parameters $\theta_O=(n,\{\psi_1,...\psi_n\})$ describe all the events collectively.  This may be the appropriate stopping place if the data are best understood this way (e.g. for LISA, perhaps), but if detections are effectively independent of each other, then it is helpful to go a step further. To do this, we make an important simplifying restriction, by supposing that the observed events can be approximately localized within the data.  Making this concrete (In the simplest way that is clear to me), suppose that the data, together with the model space, support division into a finite set of $N$ discrete independent sub-spaces defined by a set of projectors $\{\pi_\alpha\}$. For the data $\Sigma_D=\bigotimes_{\alpha=1}^N\Sigma_{D_\alpha}$, with $\pi_\alpha:D\rightarrow D_\alpha$.  Think of $N$ time-bins for a concrete example). At the same time, $\Sigma_o=\bigotimes_{\alpha=1}^N\Sigma{O_\alpha}$.  We specify the subspaces $\Sigma_{O_\alpha}$ via a corresponding projection of the event parameter space into disjoint subspaces $\Sigma_E=\bigcup_{\alpha=1}^N\Sigma_{E_\alpha}$. Then  
+\begin{equation*}
+  \pi_{\alpha}:(n,\{\psi_0,...\psi_n\})\rightarrow(n_\alpha,\{\psi_{\alpha,0},...\psi{\alpha,n_\alpha}\})
+\end{equation*}
+Where the set $\{\psi_{\alpha,i}\}$ includes only those members of $\{\psi_i\}$ with the subspace $\Sigma_{O_\alpha}$ and $n_\alpha$ is the number of these. Then, naturally $n=\sum_{\alpha=1}^Nn_\alpha$.
+
+All of that is just a bunch of contentless mathematical definitions, but needed to allow us to express the following familiar assumption, that the data in each bin are independent of each other and the likelihood, vis-a-vis a specific bin's data is independent of events ocurring in association with other bins.  In mathematical terms, this means that the subspace projectors can be chosen so that the likelihood satisfies two conditions:
+\begin{enumerate}
+\item The data in each subspace bin are effectively independent, that is $p(D|\theta_O)=\prod_{\alpha=1}^Np(D_\alpha|\theta_O)$.
+\item The bin data are independent of outside events, $p(D_\alpha|\theta_O)=p(D_\alpha|\theta_{O_\alpha}):=\int_{\Sigma_{O_{\beta\neq\alpha}}}{p(D_\alpha|\theta_O)d\theta_O}$
+\end{enumerate}
+With those assumptions, the likelihood becomes
+\begin{eqnarray}
+  p(D|\theta_P)&=&\int_{\Sigma_o} p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)d\theta_O.\\
+  &=&\int_{\Sigma_o} \left[\prod_{\alpha=1}^Np(D_\alpha|\theta_{O_\alpha},\theta_P)\right]p(\theta_O|\theta_P)d\theta_O.
+\end{eqnarray}
+We also assume, consistent with our heuristic scenario, a model in which the priors for the observation parameters of events in different bins are independent of each other, $p(\theta_{O})=\prod_{\alpha{=}1}^Np(\theta_{O_\alpha})$. Then
+\begin{eqnarray}
+  p(D|\theta_P)&=&\prod_{\alpha=1}^N\int_{\Sigma_o} p(D_\alpha|\theta_{O_\alpha},\theta_P) p(\theta_{O_\alpha}|\theta_P)d\theta_O \\ 
+  &=&\prod_{\alpha=1}^N\int_{\Sigma_{o_\alpha}} p(D_\alpha|\theta_{O_\alpha},\theta_P) p(\theta_{O_\alpha}|\theta_P)d\theta_{O_\alpha}.
+\end{eqnarray}
+Our extra assumptions have thus reduced the overall likelihood calculation to a set of separate local conditional observational likelihood computations in each of the subdomains. 
+
+Next we make the gentle assumption that the prior for models with $n$ events, there is no prior distinction of the eventsso that the prior can be written as a product of independent and otherwise identical priors for each event,$p(\theta_{O_\alpha}|n_\alpha,\theta_P)=\prod_{k{=}1}^{n_\alpha}p(\psi_{\alpha,k}|\theta_p)$, where the functional form of the prior $p(\psi_{\alpha,k}|\theta_p)$ is identical for each $k$.  It is also fair to assume that the likelihood for detections in each segment is independent of the metaparameters $\theta_P$. Then
+\begin{eqnarray}
+  p(D_\alpha|\theta_P)&=&\sum_{k{=}1}^{\infty}p(n_\alpha{=}k|\theta_P)\nonumber\\
+  &&\times
+  \int_{\Sigma_{E_\alpha}} p(D_\alpha|{\psi_1,...\psi_k}) \prod_{i{=}1}^k p(\psi_{\alpha,i}|\theta_P)d\psi_{\alpha}^k\nonumber\\
+  &=&\sum_{k{=}1}^{\infty}E_{\alpha,k|\theta_P}\label{eq:sectionedLike}
+\end{eqnarray}
+where $E_{\alpha,k|\theta_P}$ defined in going to the last line is the quantified evidence for $k$ events in the segment $\alpha$ given the metaparameters $\theta_P$.
+
+Now we are almost ready to make contact with a formulation in terms of plausible observed data, but we need to know just what data we have.  For micrometeoroid impact data, we begin by splitting the data into $\{D_\alpha\}$  corresponding to a large number of time bins, numerous enough that we expect no more than one impact per bin, yet still large enough that the edges of the data segments are far (in comparison with the duration of the impact response, from the region of data corresponding to the impact response.
+
+The event detection and characterization analysis will typically divide these into two sets, those in which there are detected events $D_{E_1}=\{D_\alpha:\alpha\in E_1\}$ where $E_1$ is the set of segment labels in which there is an event detected above threshhold and its compliment $D_{E_0}=\{D_\alpha:\alpha\in E_0\}$ corresponding to the segments with no detected events. (In principle one could allow segments with multiple detections as well, but for rare events, this can be avoided.)
+
+For each segment in  $D_{E_1}$ the intermediate data generally should also include a posterior for the detection, providing both a detection probability and posterior-distributed samples for the detection parameters.  Each of these segment detection analyses will have been conducted with some specific prior assumptions about the priors about the number of events $p(n_\alpha=1)=1-p(n\alpha=0)$ and for the event parameters  $p(\psi|n_\alpha=1)$.  The inferred posterior for such a detection will be
+\begin{eqnarray*}
+  \hat p(\psi|n_\alpha{=}1,D_\alpha)&=&\frac{p(D_\alpha|\psi,n_\alpha{=}1) \hat p(\psi,n_\alpha{=}1)}{\hat E_{\alpha,1}}\\
+  \hat E_{\alpha,1}&=&\hat p(n_\alpha{=}1,D_\alpha)\\
+  &=&\int_{\Sigma_{E_\alpha}}{p(D_\alpha|\psi,n_\alpha{=}1) \hat p(\psi,n_\alpha{=}1)}d\psi\\
+  \hat E_{\alpha,0}&=&\hat p(n_\alpha{=}0,D_\alpha)\\
+  &=& {p(D_\alpha|n_\alpha{=}0)\hat p(n_\alpha{=}0)}
+  \label{eq:Phats}
+\end{eqnarray*}
+The second expression normalizes the probability distribution for the first function and gives the evidence for a detection. We have used a hat to distinguish the specifc priors assumed in the detection/characterization analysis, and posteriors based on those priors. The last three lines lay out the normalization procedure which relates the evidence to a posterior probability of detection.
+For posterior distributed samples where only one or zero detections are allowed, it follows that $E_{\alpha,1}$ and $E_{\alpha,0}$ correspond to the fraction of samples with/without detected events, respectivly. In particular, $E_{\alpha,1}+E_{\alpha,0}=1$.
+
+For segments deemed not to be detections $\{D_{E_0}\}$, we assume that we only save the computed probability of detection.
+
+From this information, we need to compute the segment likelihood term in Eq.~\ref{eq:sectionedLike}, specifically, we need:
+\begin{eqnarray*}
+  E_{\alpha,k|\theta_P}&=&
+  p(n_\alpha{=}k|\theta_P)\int_{\Sigma_{E_\alpha}} p(D_\alpha|n_\alpha{=}k,{\psi_1,...\psi_k},\theta_P)\nonumber\\
+  &&\times \prod_{i{=}1}^k p(\psi_{\alpha,i}|\theta_P)d\psi_{\alpha}^k\\
+  E_{\alpha,0|\theta_P}&=&
+  p(n_\alpha{=}0|\theta_P)p(D_\alpha|n_\alpha{=}0)\\
+  E_{\alpha,1|\theta_P}&=&
+  p(n_\alpha{=}1|\theta_P)\int_{\Sigma_{E_\alpha}} p(D_\alpha|n_\alpha{=}1,{\psi}) p_\alpha(\psi|\theta_P)d\psi
+\end{eqnarray*}
+
+We can express the $E_{\alpha,k|\theta_P}$ in terms of the results of the micrometeoroid impact analysis.
+\begin{eqnarray}
+  E_{\alpha,0|\theta_P}&=&
+  \hat E_{\alpha,0}\frac{p(n_\alpha{=}0|\theta_P)}{\hat p(n_\alpha{=}0)}\\
+  E_{\alpha,1|\theta_P}&=&
+  \int_{\Sigma_{E_\alpha}}\hat p(\psi|n_\alpha{=}1,D_\alpha)
+  \frac{p(\psi,n_\alpha{=}1|\theta_P)}{\hat p(\psi,n_\alpha{=}1)}d\psi.
+\end{eqnarray}
+Note that hear we expect $E_{\alpha,0|\theta_P}+E_{\alpha,1|\theta_P}<1$ but we have cannot apply the same approach to estimating $E_{\alpha,k|\theta_P}$ for $k>1$ since we assumed above that $p(n_\alpha{>}1)=0$.  To proceed, it will be helpful to first elaborate our expectations for $p(n_\alpha|\theta_P)$.
+
+Our assumptions restrict us to cases where the rate of events per segment is not large; we also assume that each event is independent of the others. This motivates Poisson statistics for the number of events
+\begin{eqnarray*}
+  p(n_\alpha|\psi,\theta_P)&=&\frac{r_\alpha(\psi,\theta_P)^n}{n!}e^{-r_\alpha(\psi,\theta_p)}.\\
+  p(n_\alpha|\theta_P)&=&\int\frac{r_\alpha(\psi,\theta_P)^n}{n!}e^{-r_\alpha(\psi,\theta_p)}d\psi^n\\
+  &=&\frac{R_\alpha(\theta_P)^n}{n!}e^{-R_\alpha(\theta_p)}\\
+  R_\alpha(\theta_P)&=&\int{r_\alpha(\theta_P)}d\psi.
+\end{eqnarray*}
+where $r_\alpha(\theta_P)$ is the expected rate events occuring in segment $\alpha$ given the metaparameters $\theta_P$.  For the last two lines, I don't have a mathematical derivation, the result is based on the conceptual freedom to redefine the group of Poisson-process event of interest as any portion of the parameter space.  The process generating events across the whole parameter space is still a Poisson process.
+
+To fill out the picture a little more, it may be helpful to assume that the
+
+
+\section{Fitting models to rare events}
+Infrequent random processes, governed by some model dependent rate can typically be described by a Poisson process, which provide that the distribution of events in some bin is given by
+\begin{equation}
+  P_e(n)=\frac{e^n}{n!}e^{-e}.
+\end{equation}
+\end{document}
