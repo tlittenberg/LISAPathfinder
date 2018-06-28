@@ -47,8 +47,10 @@ def readRawChain(chainDir,grs=1, burnIn=0.5, outDir='data'):
 		'segment' : gpsTime,
 		'gps' : gpsTime + 1638.4 - t0,
 		'N' : np.shape(dat)[0],
-		't0' : -(dat[:,3]-t0),
-		'Ptot' : dat[:,3], 
+		'logL': dat[:, 0],
+		'snr': dat[:, 1],
+		't0' : -(dat[:, 3] - t0),
+		'Ptot' : dat[:, 4], 
 		'lat' : 90-(np.arccos(dat[:,7])*180/np.pi), 
 		'lon' : np.mod(dat[:,8]*180/np.pi+180,360)-180,
 		'rx' : dat[:,10],
@@ -529,7 +531,6 @@ import microTools
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy import units as u
-import ligo.skymap.plot
 
 # function to read chain files as output by MCMC tool
 def readSkymapData(dataDir, dataFile = "JFC_30um"):
@@ -650,6 +651,7 @@ def makeMollweide(data, sun = False, GRS_num = None):
 		sun: whether to use sun centered data or not
 		GRS_num: string, number of GRS
 	"""
+	import ligo.skymap.plot
 	fig = plt.figure(figsize=(8, 4), dpi=100)
 	ax = plt.axes(
 		projection = 'geo degrees mollweide')
