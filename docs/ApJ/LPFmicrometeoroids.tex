@@ -1,0 +1,533 @@
+%% TeX source for "Micrometeoroid events in LISA Pathfinder" 
+%% Author: I. Thorpe, NASA/GSFC
+%% Note: Compiled using AASTeX 6.1
+
+\documentclass[preprint, trackchanges]{aastex61}
+%% options are:
+%%  twocolumn   : two text columns, 10 point font, single spaced article.
+%%                This is the most compact and represent the final published
+%%                derived PDF copy of the accepted manuscript from the publisher
+%%  manuscript  : one text column, 12 point font, double spaced article.
+%%  preprint    : one text column, 12 point font, single spaced article.  
+%%  preprint2   : two text columns, 12 point font, single spaced article.
+%%  modern      : a stylish, single text column, 12 point font, article with
+%% 		  wider left and right margins. This uses the Daniel
+%% 		  Foreman-Mackey and David Hogg design.
+%%
+%% Note that you can submit to the AAS Journals in any of these 6 styles.
+%%
+%% There are other optional arguments one can envoke to allow other stylistic
+%% actions. The available options are:
+%%
+%%  astrosymb    : Loads Astrosymb font and define \astrocommands. 
+%%  tighten      : Makes baselineskip slightly smaller, only works with 
+%%                 the twocolumn substyle.
+%%  times        : uses times font instead of the default
+%%  linenumbers  : turn on lineno package.
+%%  trackchanges : required to see the revision mark up and print its output
+%%  longauthor   : Do not use the more compressed footnote style (default) for 
+%%                 the author/collaboration/affiliations. Instead print all
+%%                 affiliation information after each name. Creates a much
+%%                 long author list but may be desirable for short author papers
+%%
+%% these can be used in any combination, e.g.
+%%
+%% \documentclass[twocolumn,linenumbers,trackchanges]{aastex61}
+
+%% Additional Packages
+\usepackage{placeins}
+
+%% MACROs
+\newcommand{\vdag}{(v)^\dagger}
+\newcommand\aastex{AAS\TeX}
+\newcommand\latex{La\TeX}
+
+%% Dates
+\received{September 22, 2017}
+\revised{\today}
+\accepted{\today}
+%% Command to document which AAS Journal the manuscript was submitted to.
+%% Adds "Submitted to " the arguement.
+\submitjournal{ApJ}
+
+%% Mark up commands to limit the number of authors on the front page.
+%% Note that in AASTeX v6.1 a \collaboration call (see below) counts as
+%% an author in this case.
+%
+%\AuthorCollaborationLimit=7
+%
+%% Will only show Schwarz, Muench and "the AAS Journals Data Scientist 
+%% collaboration" on the front page of this example manuscript.
+%%
+%% Note that all of the author will be shown in the published article.
+%% This feature is meant to be used prior to acceptance to make the
+%% front end of a long author article more manageable. Please do not use
+%% this functionality for manuscripts with less than 20 authors. Conversely,
+%% please do use this when the number of authors exceeds 40.
+%%
+%% Use \allauthors at the manuscript end to show the full author list.
+%% This command should only be used with \AuthorCollaborationLimit is used.
+
+%% The following command can be used to set the latex table counters.  It
+%% is needed in this document because it uses a mix of latex tabular and
+%% AASTeX deluxetables.  In general it should not be needed.
+%\setcounter{table}{1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% The following section outlines numerous optional output that
+%% can be displayed in the front matter or as running meta-data.
+%%
+%% If you wish, you may supply running head information, although
+%% this information may be modified by the editorial offices.
+\shorttitle{Micrometeoroid Impacts in LISA Pathfinder}
+\shortauthors{Thorpe et al.}
+%%
+%% You can add a light gray and diagonal water-mark to the first page 
+%% with this command:
+% \watermark{text}
+%% where "text", e.g. DRAFT, is the text to appear.  If the text is 
+%% long you can control the water-mark size with:
+%  \setwatermarkfontsize{dimension}
+%% where dimension is any recognized LaTeX dimension, e.g. pt, in, etc.
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% This is the end of the preamble.  Indicate the beginning of the
+%% manuscript itself with \begin{document}.
+
+\begin{document}
+
+\title{Micrometeoroid Events in LISA Pathfinder}
+
+%% LaTeX will automatically break titles if they run longer than
+%% one line. However, you may use \\ to force a line break if
+%% you desire. In v6.1 you can include a footnote in the title.
+
+%% A significant change from earlier AASTEX versions is in the structure for 
+%% calling author and affilations. The change was necessary to implement 
+%% autoindexing of affilations which prior was a manual process that could 
+%% easily be tedious in large author manuscripts.
+%%
+%% The \author command is the same as before except it now takes an optional
+%% arguement which is the 16 digit ORCID. The syntax is:
+%% \author[xxxx-xxxx-xxxx-xxxx]{Author Name}
+%%
+%% This will hyperlink the author name to the author's ORCID page. Note that
+%% during compilation, LaTeX will do some limited checking of the format of
+%% the ID to make sure it is valid.
+%%
+%% Use \affiliation for affiliation information. The old \affil is now aliased
+%% to \affiliation. AASTeX v6.1 will automatically index these in the header.
+%% When a duplicate is found its index will be the same as its previous entry.
+%%
+%% Note that \altaffilmark and \altaffiltext have been removed and thus 
+%% can not be used to document secondary affiliations. If they are used latex
+%% will issue a specific error message and quit. Please use multiple 
+%% \affiliation calls for to document more than one affiliation.
+%%
+%% The new \altaffiliation can be used to indicate some secondary information
+%% such as fellowships. This command produces a non-numeric footnote that is
+%% set away from the numeric \affiliation footnotes.  NOTE that if an
+%% \altaffiliation command is used it must come BEFORE the \affiliation call,
+%% right after the \author command, in order to place the footnotes in
+%% the proper location.
+%%
+%% Use \email to set provide email addresses. Each \email will appear on its
+%% own line so you can put multiple email address in one \email call. A new
+%% \correspondingauthor command is available in V6.1 to identify the
+%% corresponding author of the manuscript. It is the author's responsibility
+%% to make sure this name is also in the author list.
+%%
+%% While authors can be grouped inside the same \author and \affiliation
+%% commands it is better to have a single author for each. This allows for
+%% one to exploit all the new benefits and should make book-keeping easier.
+%%
+%% If done correctly the peer review system will be able to
+%% automatically put the author and affiliation information from the manuscript
+%% and save the corresponding author the trouble of entering it by hand.
+
+%% Define the addresses (at least for the LPF collaboration)
+
+\def\addressa{European Space Astronomy Centre, European Space Agency, Villanueva de la
+Ca\~{n}ada, 28692 Madrid, Spain}
+\def\addressb{Albert-Einstein-Institut, Max-Planck-Institut f\"ur Gravitationsphysik und Leibniz Universit\"at Hannover,
+Callinstra{\ss}e 38, 30167 Hannover, Germany}
+\def\addressc{APC, Univ Paris Diderot, CNRS/IN2P3, CEA/lrfu, Obs de Paris, Sorbonne Paris Cit\'e, France}
+\def\addressd{High Energy Physics Group, Physics Department, Imperial College London, Blackett Laboratory, Prince Consort Road, London, SW7 2BW, UK }
+\def\addresse{Dipartimento di Fisica, Universit\`a di Roma ``Tor Vergata'',  and INFN, sezione Roma Tor Vergata, I-00133 Roma, Italy}
+\def\addressf{Department of Industrial Engineering, University of Trento, via Sommarive 9, 38123 Trento, 
+and Trento Institute for Fundamental Physics and Application / INFN}
+\def\addressg{Airbus Defence and Space, Claude-Dornier-Strasse, 88090 Immenstaad, Germany}
+\def\addressh{European Space Technology Centre, European Space Agency, 
+Keplerlaan 1, 2200 AG Noordwijk, The Netherlands}
+\def\addressi{Dipartimento di Fisica, Universit\`a di Trento and Trento Institute for 
+Fundamental Physics and Application / INFN, 38123 Povo, Trento, Italy}
+\def\addressj{The School of Physics and Astronomy, University of
+Birmingham, Birmingham, UK}
+\def\addressk{Airbus Defence and Space, Gunnels Wood Road, Stevenage, Hertfordshire, SG1 2AS, UK }
+\def\addressl{Institut f\"ur Geophysik, ETH Z\"urich, Sonneggstrasse 5, CH-8092, Z\"urich, Switzerland}
+\def\addressm{The UK Astronomy Technology Centre, Royal Observatory, Edinburgh, Blackford Hill, Edinburgh, EH9 3HJ, UK}
+\def\addressn{Institut de Ci\`encies de l'Espai (CSIC-IEEC), Campus UAB, Carrer de Can Magrans s/n, 08193 Cerdanyola del Vall\`es, Spain}
+\def\addresso{DISPEA, Universit\`a di Urbino ``Carlo Bo'', Via S. Chiara, 27 61029 Urbino/INFN, Italy}
+\def\addressp{European Space Operations Centre, European Space Agency, 64293 Darmstadt, Germany }
+\def\addressq{Physik Institut, 
+Universit\"at Z\"urich, Winterthurerstrasse 190, CH-8057 Z\"urich, Switzerland}
+\def\addressr{SUPA, Institute for Gravitational Research, School of Physics and Astronomy, University of Glasgow, Glasgow, G12 8QQ, UK}
+\def\addresss{Department d'Enginyeria Electr\`onica, Universitat Polit\`ecnica de Catalunya,  08034 Barcelona, Spain}
+\def\addresst{Institut d'Estudis Espacials de Catalunya (IEEC), C/ Gran Capit\`a 2-4, 08034 Barcelona, Spain}
+\def\addressu{Gravitational Astrophysics Lab, NASA Goddard Space Flight Center, 8800 Greenbelt Road, Greenbelt, MD 20771 USA}
+\def\addressuuu{Code 674, NASA Goddard Space Flight Center, 8800 Greenbelt Road, Greenbelt, MD 20771 USA}
+\def\addressx{INAF Osservatorio Astronomico di Capodimonte, I-80131 Napoli, Italy and INFN sezione di Napoli, I-80126 Napoli, Italy}
+\def\addressxx{Dipartimento di Fisica, Universit\`a di Napoli ``Federico II'' and INFN -
+Sezione di Napoli, I-80126, Napoli, Italy}
+\def\addressy{INFN - Sezione di Napoli, I-80126, Napoli, Italy}
+\def\addressz{Dipartimento di Fisica ed Astronomia, Universit\`a degli Studi di Firenze and INFN - Sezione di Firenze, I-50019 Firenze, Italy}
+\def\addressuu{Center for Space Science \& Technology, University of Maryland Baltimore County, 1000 Hilltop Circle, Baltimore, Maryland 21250, USA  }
+\def\addressaa{CGS S.p.A, Compagnia Generale per lo Spazio, Via Gallarate, 150 - 20151 Milano, Italy}
+
+%% Corresponding Author
+
+\correspondingauthor{J.I. Thorpe}
+\email{james.i.thorpe@nasa.gov}
+
+%% Primary Authors
+
+\author[0000-0001-9276-4312]{J\,I~Thorpe}
+\affiliation{\addressu}
+
+\author{J~Slutsky}
+\affiliation{\addressu}
+\affiliation{\addressuu}
+
+\author{John G. Baker}
+\affiliation{\addressu}
+
+\author{Tyson B. Littenberg}
+\affiliation{NASA/MSFC}
+
+\author{Nicole Pagane}
+\affiliation{\addressu}
+\affiliation{Johns Hopkins University}
+
+\author{Sophie Hourihane}
+\affiliation{NASA/MSFC}
+\affiliation{University of Michigan}
+
+\author{Petr Pokorny}
+\affiliation{\addressuuu}
+\affiliation{Catholic University of America}
+
+\author{Diego Janches}
+\affiliation{\addressuuu}
+\nocollaboration
+
+%% The LISA Pathfinder Collaboration
+\collaboration{(The LISA Pathfinder Collaboration)}
+\author{M~Armano}\affiliation{\addressa}
+\author{H~Audley}\affiliation{\addressb}
+\author{G~Auger}\affiliation{\addressc}
+\author{J~Baird}\affiliation{\addressd}
+\author{M~Bassan}\affiliation{\addresse}
+\author{P~Binetruy}\altaffiliation{Deceased}\affiliation{\addressc}
+\author{M~Born}\affiliation{\addressb}
+\author{D~Bortoluzzi}\affiliation{\addressf}
+\author{N~Brandt}\affiliation{\addressg}
+\author{M~Caleno}\affiliation{\addressh}
+\author{A~Cavalleri}\affiliation{\addressi}
+\author{A~Cesarini}\affiliation{\addressi}
+\author{A\,M~Cruise}\affiliation{\addressj}
+\author{K~Danzmann}\affiliation{\addressb}
+\author{M~de~Deus~Silva}\affiliation{\addressa}
+\author{R~De~Rosa}\affiliation{\addressxx}
+\author{L~Di~Fiore}\affiliation{\addressy}
+\author{I~Diepholz}\affiliation{\addressb}
+\author{G~Dixon}\affiliation{\addressj}
+\author{R~Dolesi}\affiliation{\addressi}
+\author{N~Dunbar}\affiliation{\addressk}
+\author{L~Ferraioli}\affiliation{\addressl}
+\author{V~Ferroni}\affiliation{\addressi}
+\author{E\,D~Fitzsimons}\affiliation{\addressm}
+\author{R~Flatscher}\affiliation{\addressg}
+\author{M~Freschi}\affiliation{\addressa}
+\author{C~Garc\'ia Marirrodriga}\affiliation{\addressh}
+\author{R~Gerndt}\affiliation{\addressg}
+\author{L~Gesa}\affiliation{\addressn}
+\author{F~Gibert}\affiliation{\addressi}
+\author{D~Giardini}\affiliation{\addressl}
+\author{R~Giusteri}\affiliation{\addressi}
+\author{A~Grado}\affiliation{\addressx}
+\author{C~Grimani}\affiliation{\addresso}
+\author{J~Grzymisch}\affiliation{\addressh}
+\author{I~Harrison}\affiliation{\addressp}
+\author{G~Heinzel}\affiliation{\addressb}
+\author{M~Hewitson}\affiliation{\addressb}
+\author{D~Hollington}\affiliation{\addressd}
+\author{D~Hoyland}\affiliation{\addressj}
+\author{M~Hueller}\affiliation{\addressi}
+\author{H~Inchausp\'e}\affiliation{\addressc}
+\author{O~Jennrich}\affiliation{\addressh}
+\author{P~Jetzer}\affiliation{\addressq}
+\author{B~Johlander}\affiliation{\addressh}
+\author{N~Karnesis}\affiliation{\addressb}
+\author{B~Kaune}\affiliation{\addressb}
+\author{N~Korsakova}\affiliation{\addressb}
+\author{C\,J~Killow}\affiliation{\addressr}
+\author{J\,A~Lobo}\altaffiliation{Deceased}\affiliation{\addressn}
+\author{I~Lloro}\affiliation{\addressn}
+\author{L~Liu}\affiliation{\addressi}
+\author{J\,P~L\'opez-Zaragoza}\affiliation{\addressn}
+\author{R~Maarschalkerweerd}\affiliation{\addressp}
+\author{D~Mance}\affiliation{\addressl}
+\author{V~Mart\'{i}n}\affiliation{\addressn}
+\author{L~Martin-Polo}\affiliation{\addressa}
+\author{J~Martino}\affiliation{\addressc}
+\author{F~Martin-Porqueras}\affiliation{\addressa}
+\author{S\,Madden}\affiliation{\addressh}
+\author{I~Mateos}\affiliation{\addressn}
+\author{P\,W~McNamara}\affiliation{\addressh}
+\author{J~Mendes}\affiliation{\addressp}
+\author{L~Mendes}\affiliation{\addressa}
+\author{M~Nofrarias}\affiliation{\addressn}
+\author{S~Paczkowski}\affiliation{\addressb}
+\author{M~Perreur-Lloyd}\affiliation{\addressr}
+\author{A~Petiteau}\affiliation{\addressc}
+\author{P~Pivato}\affiliation{\addressi}
+\author{E~Plagnol}\affiliation{\addressc}
+\author{P~Prat}\affiliation{\addressc}
+\author{U~Ragnit}\affiliation{\addressh}
+\author{J~Ramos-Castro}\affiliation{\addresss}
+\author{J~Reiche}\affiliation{\addressb}
+\author{D\,I~Robertson}\affiliation{\addressr}
+\author{H\,Rozemeijer}\affiliation{\addressh}
+\author{F~Rivas}\affiliation{\addressn}
+\author{G~Russano}\affiliation{\addressi}
+\author{P~Sarra}\affiliation{\addressaa}
+\author{A~Schleicher}\affiliation{\addressg}
+\author{D~Shaul}\affiliation{\addressd}
+\author{C\,F~Sopuerta}\affiliation{\addressn}
+\author{R~Stanga}\affiliation{\addressz}
+\author{T~Sumner}\affiliation{\addressd}
+\author{D~Texier}\affiliation{\addressa}
+\author{C~Trenkel}\affiliation{\addressk}
+\author{M~Tr{\"o}bs}\affiliation{\addressb}
+\author{D~Vetrugno}\affiliation{\addressi}
+\author{S~Vitale}\affiliation{\addressi}
+\author{G~Wanner}\affiliation{\addressb}
+\author{H~Ward}\affiliation{\addressr}
+\author{P~Wass}\affiliation{\addressd}
+\author{D~Wealthy}\affiliation{\addressk}
+\author{W\,J~Weber}\affiliation{\addressi}
+\author{L~Wissel}\affiliation{\addressb}
+\author{A~Wittchen}\affiliation{\addressb}
+\author{A~Zambotti}\affiliation{\addressf}
+\author{C~Zanoni}\affiliation{\addressf}
+\author{T~Ziegler}\affiliation{\addressg}
+\author{P~Zweifel}\affiliation{\addressl}
+
+
+
+%% Note that the \and command from previous versions of AASTeX is now
+%% depreciated in this version as it is no longer necessary. AASTeX 
+%% automatically takes care of all commas and "and"s between authors names.
+
+%% AASTeX 6.1 has the new \collaboration and \nocollaboration commands to
+%% provide the collaboration status of a group of authors. These commands 
+%% can be used either before or after the list of corresponding authors. The
+%% argument for \collaboration is the collaboration identifier. Authors are
+%% encouraged to surround collaboration identifiers with ()s. The 
+%% \nocollaboration command takes no argument and exists to indicate that
+%% the nearby authors are not part of surrounding collaborations.
+
+%% Mark off the abstract in the ``abstract'' environment. 
+\begin{abstract}
+
+LISA Pathfinder was a technology demonstration mission for future space-based gravitational wave observatories which launched on December 3rd, 2015 and conducted science operations near Earth-Sun L1 until July of 2017 when it was deliberately decommissioned after a successful mission. Pathfinder's principal objective was to demonstrate a technique known as drag-free flight in which the spacecraft was controlled to fly around a pair of freely-flying reference masses located within one of its instruments. To achieve drag-free flight, the control system had to reject external disturbances on the spacecraft using a one of two micropropulsion systems. One such disturbance was impacts of micrometeoroids, which left a unique signature in the control system data. Using a simple model of the impacts, this signature can also be used to measure properties such as the transferred momentum (related to the particle's mass and velocity), direction of travel, and location of impact on the spacecraft. In this paper, we present the results of a systematic search for impacts during a large fraction of the Pathfinder data. We report a total of XXX candidates with momenta ranging from XXX to XXX.  We furthermore make a comparison of these candidates with models of two distinct  micrometeoroid populations in the inner solar system, those resulting from Jupiter-family comets and those resulting from Hailey-type comets. \red{CONCLUSION OF MODEL RESULTS GOES HERE}
+\end{abstract}
+
+%% Keywords should appear after the \end{abstract} command. 
+%% See the online documentation for the full list of available subject
+%% keywords and the rules for their use.
+\keywords{dust, micrometeoroids --- 
+miscellaneous}
+
+%% From the front matter, we move on to the body of the paper.
+%% Sections are demarcated by \section and \subsection, respectively.
+%% Observe the use of the LaTeX \label
+%% command after the \subsection to give a symbolic KEY to the
+%% subsection for cross-referencing in a \ref command.
+%% You can use LaTeX's \ref and \label commands to keep track of
+%% cross-references to sections, equations, tables, and figures.
+%% That way, if you change the order of any elements, LaTeX will
+%% automatically renumber them.
+
+%% We recommend that authors also use the natbib \citep
+%% and \citet commands to identify citations.  The citations are
+%% tied to the reference list via symbolic KEYs. The KEY corresponds
+%% to the KEY in the \bibitem in the reference list below. 
+
+\section{Introduction} \label{sec:intro}
+
+Introduction. Briefly introduce micrometeoroid/dust science, LISA Pathfinder mission, basic physics of the detection \cite{Thorpe:2015cxa}
+
+\section{Methods} \label{sec:methods}
+
+Detection / characterization methods.  Briefly descirbe steps for the detection and the detection steps. Reference Tyson's paper.
+
+\section{Results} \label{sec:results}
+
+Using the techniques described in Section \ref{sec:methods}, we performed a systematic search for impact events in a total of XXX hours of data during the interval from XXX to XXX. The searched time intervals covered only those times when the spacecraft was in a drag-free operational mode and no signal injections were being deliberately introduced. This included XXX hours of operations with the Cold Gas Micropropulsion system, XXX hours with the colloidal micropropulsion system, and XXX with both systems operating. The total `duty cycle' for micrometeoroid detection is thus XXX. Figure \ref{fig:timeline} depicts the searched intervals (blue bars) along with the impact candidates (dots). A total of XXX impact candidates were identified, the estimated impact time, SNR, transferred momentum, direction, and impact location are tabulated in Table \ref{tab:candidates} in Appendix \ref{sec:catalog}.
+
+
+\begin{figure}[ht!]
+\plotone{figures/superPlot.eps}
+\caption{ Summary timeline of the micrometeoroid search during the LISA Pathfinder mission. The bottom panel shows the cumulative time searched (quiescent noise runs) as a function of Day of Mission (DOM) for the three mission configurations: LTP (blue), DRS (red), joint operations (green), as well as the total (black). The top panel shows candidate micrometeoroid events as a function of time along with their  estimated transferred momentum and 90\% confidence interval error bars. The grey segments indicate log gaps in the search mostly due to other operations on the spacecraft (signal injections, etc.). The dashed vertical lines indicate calendar dates for the beginning of each quarter. \label{fig:timeline}}
+\end{figure}
+
+\FloatBarrier
+\subsection{Sample candidate events \label{sec:samples}}
+
+Give some examples of impacts (CDFs, corner plots, impact splotches). Reference table of candidates in the appendix. 
+
+\FloatBarrier
+\subsection{Ensemble results}
+
+
+Make some plots showing ensemble properties (sky maps), momentum binning.
+
+\begin{figure}[ht!]
+\plotone{figures/momentumCDF.eps}
+\caption{Cummulative number of candidates with momentum above a certain threshold value. The dashed line is a power-law fit: $ N_{P>P_{thresh}} = 48\,P_{thresh}^{-0.7}$ \label{fig:momPL}}
+\end{figure}
+
+\FloatBarrier
+\section{Model Inference} \label{sec:models}
+
+Describe how we did the model inference and what the results are.
+
+\section{Conclusions} \label{sec:conclusions}
+
+I guess  we need to have some
+%% If you wish to include an acknowledgments section in your paper,
+%% separate it off from the body of the text using the \acknowledgments
+%% command.
+\acknowledgments
+
+This analysis was conducted under a 2017 NASA Science Innovation Fund awarded to Thorpe, Littenberg, Janches, and Baker. Slutsky ackowledges support of the NASA Astrophysics Division. Pagane acknowledges the support of the NASA Undergraduate Summer Internship program and Hourihane acknowledges the support of the National Science Foundation's Research Experience for Undergraduates program.
+\\
+
+The data was produced by the LISA Pathfinder mission, which was part of the
+space-science programme of the European Space Agency and also hosted the NASA Disturbance Reduction System payload, developed under the NASA New Millennium Program. 
+
+The French contribution to LISA Pathfinder has been supported by the CNES (Accord Specific de projet
+CNES 1316634/CNRS 103747), the CNRS, the Observatoire de Paris and the University
+Paris-Diderot. E.~Plagnol and H.~Inchausp\'{e} would also like to acknowledge the
+financial support of the UnivEarthS Labex program at Sorbonne Paris Cit\'{e}
+(ANR-10-LABX-0023 and ANR-11-IDEX-0005-02).
+
+The Albert-Einstein-Institut acknowledges the support of the German Space Agency,
+DLR, in the development and operations of LISA Pathfinder. The work is supported by the Federal Ministry for Economic Affairs and Energy
+based on a resolution of the German Bundestag (FKZ 50OQ0501 and FKZ 50OQ1601). 
+
+The Italian contribution to LISA Pathfinder has been supported  by Agenzia Spaziale Italiana and Istituto
+Nazionale di Fisica Nucleare.
+
+The Spanish contribution to LISA Pathfinder has been supported by contracts AYA2010-15709 (MICINN),
+ESP2013-47637-P, and ESP2015-67234-P (MINECO). M.~Nofrarias acknowledges support from
+Fundacion General CSIC (Programa ComFuturo). F.~Rivas acknowledges an FPI contract
+(MINECO).
+
+The Swiss contribution to LISA Pathfinder was made possible by the support of the Swiss Space Office (SSO)
+via the PRODEX Programme of ESA. L.~Ferraioli is supported by the Swiss National
+Science Foundation.
+
+The UK LISA Pathfinder groups wish to acknowledge support from the United Kingdom Space Agency
+(UKSA), the University of Glasgow, the University of Birmingham, Imperial College,
+and the Scottish Universities Physics Alliance (SUPA).
+
+%% To help institutions obtain information on the effectiveness of their 
+%% telescopes the AAS Journals has created a group of keywords for telescope 
+%% facilities.
+%
+%% Following the acknowledgments section, use the following syntax and the
+%% \facility{} or \facilities{} macros to list the keywords of facilities used 
+%% in the research for the paper.  Each keyword is check against the master 
+%% list during copy editing.  Individual instruments can be provided in 
+%% parentheses, after the keyword, but they are not verified.
+
+\vspace{5mm}
+\facilities{LPF (\url{http://sci.esa.int/lisa-pathfinder/})}
+
+%% Similar to \facility{}, there is the optional \software command to allow 
+%% authors a place to specify which programs were used during the creation of 
+%% the manusscript. Authors should list each code and include either a
+%% citation or url to the code inside ()s when available.
+
+\software{LTPDA (\url{https://www.elisascience.org/ltpda/})}
+
+%% Appendix material should be preceded with a single \appendix command.
+%% There should be a \section command for each appendix. Mark appendix
+%% subsections with the same markup you use in the main body of the paper.
+
+%% Each Appendix (indicated with \section) will be lettered A, B, C, etc.
+%% The equation counter will reset when it encounters the \appendix
+%% command and will number appendix equations (A1), (A2), etc. The
+%% Figure and Table counter will not reset.
+
+
+\appendix
+\section{Catalog of candidate impact events\label{sec:catalog}}
+
+\startlongtable
+\begin{deluxetable}{ccrDcccccc}
+\tablecaption{Candidate micrometeoroid impact events \label{tab:candidates}}
+\tablehead{
+\multicolumn7c{} &  \multicolumn2c{SC frame} & \multicolumn2c{Sun Frame}\\
+\colhead{Date} & \colhead{Impact time} & \multicolumn3c{$\Delta P$} & \colhead{face} & $\Delta A$ & \colhead{lat} & \colhead{lon} & \colhead{lat} & \colhead{lon}  \\
+ & (GPS s) & \multicolumn3c{($\mu$N-s)} & & ($deg^2$) & ($deg$) & ($deg$)   & ($deg$) & ($deg$) \\
+}
+\decimals  
+\startdata
+2016-08-24 & 1156079137 &  $2.9^{+1.1}_{-0.8}$ &  - & 1084 & -1 & 84 & -26 & -93 \\
+\enddata
+\end{deluxetable}
+ 
+
+%% The reference list follows the main body and any appendices.
+%% Use LaTeX's thebibliography environment to mark up your reference list.
+%% Note \begin{thebibliography} is followed by an empty set of
+%% curly braces.  If you forget this, LaTeX will generate the error
+%% "Perhaps a missing \item?".
+%%
+%% thebibliography produces citations in the text using \bibitem-\cite
+%% cross-referencing. Each reference is preceded by a
+%% \bibitem command that defines in curly braces the KEY that corresponds
+%% to the KEY in the \cite commands (see the first section above).
+%% Make sure that you provide a unique KEY for every \bibitem or else the
+%% paper will not LaTeX. The square brackets should contain
+%% the citation text that LaTeX will insert in
+%% place of the \cite commands.
+
+%% We have used macros to produce journal name abbreviations.
+%% \aastex provides a number of these for the more frequently-cited journals.
+%% See the Author Guide for a list of them.
+
+%% Note that the style of the \bibitem labels (in []) is slightly
+%% different from previous examples.  The natbib system solves a host
+%% of citation expression problems, but it is necessary to clearly
+%% delimit the year from the author name used in the citation.
+%% See the natbib documentation for more details and options.
+
+\bibliography{Bibliography2}
+
+%% This command is needed to show the entire author+affilation list when
+%% the collaboration and author truncation commands are used.  It has to
+%% go at the end of the manuscript.
+%\allauthors
+
+%% Include this line if you are using the \added, \replaced, \deleted
+%% commands to see a summary list of all changes at the end of the article.
+\listofchanges
+
+\end{document}
+
