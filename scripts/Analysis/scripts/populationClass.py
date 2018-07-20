@@ -1,0 +1,274 @@
+from impactClass import impactClass
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from matplotlib import cm
+import pathlib
+import pickle
+import pandas as pd
+import os
+from mpl_toolkits.mplot3d import Axes3D
+import scipy as scp
+
+
+class population:
+	"""
+		Class to store data related to population models in JFC and HTC_30um files
+
+		TODO:
+		- Make work with varying estimation for momentum
+		- Add Probability function
+	"""
+	## Private Functions ## 
+	def __init__(self, dataDir, pop_type, usePtot = True):
+		"""
+			dataDir = directory where file is located
+			pop_type = String, Population type, one of 'JFC', 'HTC', 'Uniform'
+			usePtot = Whether to integrate momentum out
+		"""
+
+		# Setting wheter to interpolate with Ptot
+		self.usePtot = usePtot
+		self.pop_type = pop_type
+
+		if pop_type == 'Uniform':
+			dataFile = None
+		elif pop_type in ['AST', 'JFC', 'HTC', 'OCC']:
+			dataFile = pop_type + '_impulse.dat'	
+		else:
+			print('pop_type not valid:', pop_type)
+			print('Please use one of : \n\t-JFC\n \n\t-HTC\n \n\t-AST \n\t-OCC \n\t-Uniform\n')
+			raise(ValueError)
+
+		grid = self.getGrid()
+		# For uniform just take the Given Grid
+		if pop_type == 'Uniform':
+			self.df = self.getGrid()
+
+			# Set flux_map
+			self.setFluxMap()
+			self.norm = np.sum(self.getFlux(self.df['lon'].values, self.df['lat'].values, 
+														 self.df['Ptot'].values, norm = False))
+			return
+
+		# Read in data and convert to dataframe
+		self.df = self.__readSkymapData__(dataDir, dataFile)
+
+		if not usePtot:
+			self.df = self.integratePtot()
+
+		# Initialize Norm
+		self.norm = 1
+
+		# Set flux_map
+		self.setFluxMap()
+
+		# Set norm
+		try:
+			self.norm = np.sum(self.getFlux(grid['lon'].values, grid['lat'].values, 
+											grid['Ptot'].values, norm = False))
+		except KeyError:
+			print('Ptot has been deleted')
+			self.norm = np.sum(self.getFlux(grid['lon'].values, grid['lat'].values, norm = False))
+
+		return
+
+	def getGrid(self):
+		""" Returns our Grid """
+		grid_lon = np.arange(-179, 181, 2)
+		grid_lat = np.arange(-89, 91, 2)
+		grid_Ptot = np.asarray([1e-7, 5e-7, 1e-6, 5e-6, 
+								1e-5, 5e-5, 1e-4, 5e-4, 1e-3]) * 10 ** 6 # Micro Ns
+
+		lon = []
+		lat = []
+		Ptot = []
+		for i in grid_lon:
+			for j in grid_lat:
+				# Includes Momentum
+				if self.usePtot:
+					for p in grid_Ptot:
+						lon.append(i)
+						lat.append(j)
+						Ptot.append(p)
+				else:
+					lon.append(i)
+					lat.append(j)
+		flux = np.zeros(len(lon))
+		
+		if self.usePtot:
+			grid = {'lon' : lon, 'lat' : lat, 'Ptot' : Ptot, 'flux' : flux}
+		else:
+			grid = {'lon' : lon, 'lat' : lat, 'flux' : flux}
+
+		df_grid = pd.DataFrame(grid)
+
+		return df_grid
+
+	def __readSkymapData__(self, dataDir, dataFile = "JFC_30um"):
+		"""
+			dataDir = directory where file is located
+			datafile = filename (JFC_30um or HTC_30um)
+		"""
+		# modules
+		import numpy as np
+
+		# Creates dataframe with Ptot in it
+		df = pd.read_csv(str(dataDir) + '/' + dataFile, 
+						names = ['lon', 'lat', 'Ptot', 'flux'], sep = '\s+')
+		
+		df['rads'] = np.deg2rad(df['lat'])
+
+		# Converts to MicroNs
+		df.eval('Ptot = Ptot * (10 ** 6)', inplace=True)
+		# Calculates flux 
+		df.eval('flux = flux * 1 / cos(rads)', inplace=True)
+
+		del df['rads']
+
+		return df
+
+	def integratePtot(self, df = None):
+		if df is None:
+			df = self.df
+
+		try:
+			del df['Ptot']
+		except KeyError:
+			print('Ptot has already been deleted!')
+		# All have the same lon, lat so dont have to 1/cos(lat) for flux
+		grouped = df.groupby(['lon', 'lat'])['flux'].sum().reset_index()
+		df = grouped
+
+		return df
+
+	def getP_n1(self):
+		''' 
+		Gets probability p( n = 1 | theta_p)
+		ie) Integrate over grid
+		'''
+
+		return np.sum(self.df['flux'].values )
+				
+
+
+	def interpolate(self, integrate_mom = False):
+
+		# Integrated map
+		df_int = self.integratePtot(self.df.copy())
+		self.flux_map_int = scp.interpolate.NearestNDInterpolator((df_int['lon'].values,
+															  df_int['lat'].values),
+															  df_int['flux'].values)
+		if self.usePtot and not integrate_mom:
+			try:
+				self.flux_map = scp.interpolate.NearestNDInterpolator((self.df['lon'].values,
+														  self.df['lat'].values,
+														  self.df['Ptot'].values),
+														  self.df['flux'].values)
+
+			except KeyError:
+				print("Could not interpolate with Momentum")
+				print("Ptot has been integrated out")
+			else:
+				return
+
+
+		if not self.usePtot:
+			self.flux_map = self.flux_map_int
+
+		return
+
+	def setFluxMap(self):
+		"""
+			Sets the flux map by interpolating data
+		"""
+		if self.pop_type == 'Uniform':
+			df_grid = self.getGrid()
+			self.df = df_grid.copy()
+
+			# Creates a uniform flux (TODO: Divide or multiply cos?)
+			self.df['flux'] = 1.0 / (np.cos(np.deg2rad(df_grid['lat'].values)) * len(df_grid.index))
+
+			# Interpolate uniform flux map
+			self.interpolate()
+		else:
+			self.interpolate()
+		return
+
+	def getFlux(self, lon, lat, Ptot = None, norm = True):
+		"""
+		Returns nearest flux value for the set of longitudes and latitudes
+		lon - scalar or arraylike, set of longitudes
+		lat - scalar or arraylike, set of lattitudes
+		Ptot -> only used if self.usePtot, set of Momenta
+
+		"""
+		if Ptot is None:
+			# Uses map not interpolated with momentum
+			if norm:
+				return self.flux_map_int(lon, lat) / self.norm
+			else: 
+				return self.flux_map_int(lon, lat)  
+
+		# Used map interpolated with momentum
+		if self.usePtot:
+			if norm:
+				return self.flux_map(lon, lat, Ptot) / self.norm
+			else:
+				return self.flux_map(lon, lat, Ptot)
+
+	def calc_like_impact(self, impact, norm = True):
+		"""
+		Calculates likelihood that impact came from 1 population
+
+			pop = populationClass instance
+			impact = impactClass instance
+
+		returns likelihood of impact (scalar)
+		"""
+
+
+		# Get impact in right coordinates
+		impact = impact.findSkyAngles()
+		impact = impact.SCtoSun()
+		impact = impact.SuntoMicro()
+
+		# Gets lon lat in correct frame
+		lons = impact.lon_sun
+		lats = impact.lat_sun
+		Ptots = impact.Ptot
+
+		#TODO Add n == 1 and n == 0 part , change all N_X
+		N_tot = len(lons)
+
+		# ------- For n == 1 -------
+		# Calculates f_pop = p(n = 1, psi | theta_p) 
+		N_1 = N_tot # change this! 
+		p_hat_1 = 0.5
+		if self.usePtot:
+			f_pop = self.getFlux(lons, lats, Ptots, norm = norm) / p_hat_1
+		else:
+			f_pop = self.getFlux(lons, lats, norm = norm) / p_hat_1
+
+		# NOT CORRECT !!!!!!! 
+		# ----- For n == 0 -------
+		p_hat_0 = 0.5
+		N_0 = 0 # Change this !!
+		# p(n = 0 | theta_p)
+		# p(n = 0| theta_p) = 1 - p(n=1|theta_p) 
+		# Sum over all space
+		f_pop_1 = np.sum(self.getFlux(self.df['lon'].values, self.df['lat'].values, 
+						 self.df['Ptot'].values, norm = norm))
+		f_pop_0 = (1 - f_pop_1) / p_hat_0
+
+		# (1 / N1) * Sum p(n = 1, psi | theta_p)
+		sum_pop = np.sum(f_pop)
+
+		likelihood = (N_0 / N_tot) * f_pop_0 + sum_pop / N_1
+
+		return likelihood
+
+
+
+	
+
