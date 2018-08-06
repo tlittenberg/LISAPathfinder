@@ -481,6 +481,7 @@ def makeIndex():
 
 	#Links to Impact pages
 	table = makeParamTable(param_list, ["face"], link =  'page')
+	print(table)
 
 	body = ""
 	body += '''<h2>List of Impacts</h2> \n''' + table

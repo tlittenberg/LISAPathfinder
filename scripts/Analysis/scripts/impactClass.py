@@ -24,7 +24,8 @@ import scipy as sp
 import scipy.stats
 from scipy import stats
 
-import os, sys
+import os
+import sys
 import glob
 from os import listdir
 from os.path import isfile, join
@@ -46,12 +47,13 @@ from scipy.optimize import curve_fit
 
 
 class impactClass:
-	def __init__(self, chainFile = None, chainDir = None, GRS_num = 1, burnIn = 0.5, outDir = 'data'): 
+	def __init__(self, chainFile = None, BASE_DIR = None, chainDir = None, GRS_num = 1, burnIn = 0.5, outDir = 'data'): 
 		"""
 			if ChainFile is specified, reads in from pickle data
 			if chainDir os specified, writes pickle data
 		"""
 		if chainDir is not None:
+			print('ERROR, THIS FUNCTION IS UNTESTED')
 			""" THIS FUNCTION IS UNTESTED """
 			"""
 			Function to read micrometeoroite MCMC chain files. Assumes directory structure 
@@ -82,6 +84,7 @@ class impactClass:
 			N = np.shape(dat)[0]
 			trim = int(float(N) * burnIn);
 			dat = np.delete(dat, slice(0, trim), axis=0)
+
 			
 			# build into a dictionary
 			t0 = np.median(dat[:, 3])
@@ -120,7 +123,8 @@ class impactClass:
 			}
 
 			df_veto = self.getVetoList()
-			self.isValid = self.isValid(df_veto, checkReal = True)
+			self.isImpact = self.getisImpact(df_veto)
+			self.isValidSearch = self.getisValidSearch()
 
 			# load log likelihood chain
 			logLfile = chainDir +'/logLchain.dat'
@@ -139,8 +143,14 @@ class impactClass:
 
 		else:
 			import pickle
-			"Converts Ira's dictionary into a class"
+			"""Converts Ira's dictionary into a class"""
+			import os
 
+			if BASE_DIR is None:
+				p = pathlib.PurePath(os.getcwd())
+				self.BASE_DIR = str(p.parent)
+			else:
+				self.BASE_DIR = str(BASE_DIR)
 
 			fid = open(chainFile,'rb')
 			data = pickle.load(fid)
@@ -148,24 +158,45 @@ class impactClass:
 			
 			# Loads dictionary into data
 			self.data = data
-			
 			self.segment = data['segment']
-			self.gps     = data['gps']
 			self.N       = data['N']
 			self.logL    = data['logL']
 			self.snr     = data['snr']
 			self.t0      = data['t0']
-			self.Ptot    = data['Ptot'] * 10 ** 6 # Micro Ns
 			self.lat     = data['lat']
 			self.lon     = data['lon']
 			self.rx      = data['rx']
 			self.ry      = data['ry']
 			self.rz      = data['rz']
 			self.face    = data['face']
+			self.dfrac   = data['dfrac']
 			self.grs     = GRS_num
 
+
+			if self.lon is None or len(self.lon) == 0:
+				self.isEmpty = True
+			else:
+				self.isEmpty = False
+
+			try:
+				self.run = data['run']
+			except:
+				pass
+
+			# Exceptions for when we have 0 impacts
+			if data['gps'] is None:
+				self.gps     = data['segment']
+			else:
+				self.gps     = data['gps']
+
+			if data['Ptot'] is not None:
+				self.Ptot    = data['Ptot'] * 10 ** 6 # Micro Ns
+			else:
+				self.Ptot = None
+
+
 			df_veto = self.getVetoList()
-			self.isValid = self.isValid(df_veto, checkReal = True)
+			self.isImpact = self.getisImpact(df_veto)
 			self.define_coords()
 
 	# ---------------------------------------#
@@ -207,8 +238,8 @@ class impactClass:
 			return self.face
 		elif param == 'grs':
 			return self.grs
-		elif param == 'isValid':
-			return self.isValid
+		elif param == 'isImpact':
+			return self.isImpact
 		else: 
 			print("Invaid Input: given,", param)
 
@@ -243,12 +274,14 @@ class impactClass:
 			return stats.mode(self.face)
 		elif param == 'grs':
 			return self.grs
-		elif param == 'isValid':
-			return self.isValid
+		elif param == 'isImpact':
+			return self.isImpact
 		else: 
 			print("Invaid Input: given,", param)
 
 	def getVetoList(self):
+		names = ['segment', 'isImpact','isValidSearch']
+		"""
 		names = ['isImpact', 't', 'UTC', 'run', 'dt',
 				'prob',
 				'p', 'dp',
@@ -257,28 +290,47 @@ class impactClass:
 				'x', 'dx',
 				'y', 'dy',
 				'z', 'dz']
-		df_veto = pd.read_csv('Impacts/impact_cat.csv', header = None, names = names)
+		"""
+		df_veto = pd.read_csv(self.BASE_DIR + '/data/impact_list.txt', header = 'infer', sep='\t')
+				#delim_whitespace = True)
+
 		df_veto['isImpact'] = df_veto['isImpact'].map(
-			{'TRUE': True, 'FALSE': False, 'M':True})
+			{'TRUE': True, 'FALSE': False, 'UNSURE':True})
+		df_veto['isValidSearch'] = df_veto['isValidSearch'].map(
+			{'TRUE': True, 'FALSE': False, 'UNSURE':True})
 
 		return df_veto
 
 	
-	def isValid(self, df_veto, checkReal = True):
-		for i in range(len(df_veto['t'])):
-			diff = np.abs(self.gps - df_veto['t'][i])
-			if diff < 1:
-				# Only Counts if it's a real impact
+	def getisImpact(self, df_veto):
+		for i in range(len(df_veto['segment'])):
+			if self.segment in df_veto['segment']:
 				return df_veto['isImpact'][i]
-		# if it's not in my list return True
-		return True
+			else:
+				return True
 
+	def getisValidSearch(self):
+		search_times = pd.read_csv(self.BASE_DIR + '/data/searchTimes0726.txt',
+				header = None, names = ['segment'], delim_whitespace = True)
+		
+		# Jakes list does not cover all time, keep segments only within list
+		if self.segment > max(search_times['segment'].values):
+			return True
+		elif int(self.segment) in search_times['segment']:
+			return True
+		else:
+			return False
+		
 	def summaryString(self,
 			keys = ['Ptot','lat','lon','rx','ry','rz'],
 			scale = [1.0, 1.0, 1.0, 100.0, 100.0, 100.0]):
 		"""
 		function to produce a string for use in a ApJ style fancy table
 		"""
+
+		if self.isEmpty:
+			return ""
+
 		p = np.zeros([np.shape(keys)[0],3])
 
 		for idx, kk in enumerate(keys) :
@@ -378,7 +430,12 @@ class impactClass:
 	def ECI_to_SUN(self):
 		"""
 		returns rotation quaternion from ECI to SUN coordinates
-
+		ECI = J200, SUN = HEEQ
+		
+		Sun coords
+		sun = 0,0
+		prograde = -90
+		retrograde = +90
 		"""
 		import numpy as np, quaternion
 		import os
@@ -427,6 +484,19 @@ class impactClass:
 		import healpy as hp
 		import numpy as np
 		import matplotlib.pyplot as plt
+
+		if self.isEmpty:
+			self.lat_c = None
+			self.lon_c = None
+			self.skyArea = None
+			self.healPix = None
+
+			self.lat_c_sun = None
+			self.lon_c_sun = None
+			self.skyArea_sun = None
+			self.healPix_sun = None
+
+			return self
 
 		# Build the HEALPIX map
 		npix = hp.nside2npix(nside)
@@ -478,29 +548,6 @@ class impactClass:
 			self.skyArea_sun = area
 			self.healPix_sun = cnt_hp / float(self.N)
 
-		# if Micro angles are present, repeat for them
-		if hasattr(self, 'lon_micro'):
-			# Convert data to HEALPIX
-			dat_hp = hp.pixelfunc.ang2pix(nside, self.lon_micro, self.lat_micro, nest = False, lonlat = True)
-
-			# Make the histogram
-			cnt_hp, bins = np.histogram(dat_hp, bin_edges)
-		
-			# Measure sky area
-			cdf = np.cumsum(cnt_hp.astype('float')) / float(self.N)        
-			ilb = (np.abs(cdf - ((1.0 - CI) / 2.0))).argmin()
-			iub = (np.abs(cdf - (1.0 - ((1.0 - CI) / 2.0)))).argmin()
-			imed = (np.abs(cdf - 0.5)).argmin()
-			area = 41253.0 * float(iub - ilb) / float(npix)
-			lon_c, lat_c = hp.pixelfunc.pix2ang(nside, imed, nest = False, lonlat = True)
-			lon_c = np.mod(180 + lon_c, 360) - 180
-			
-			# put into dictionary
-			self.lat_c_micro = lat_c
-			self.lon_c_micro = lon_c
-			self.skyArea_micro = area
-			self.healPix_micro = cnt_hp / float(self.N)
-
 		return self
 		
 	# function to convert angles from SC frame to Sun-center frame (in degrees)
@@ -518,7 +565,12 @@ class impactClass:
 		from microTools import getSCquats
 		from astropy.time import Time
 		from astropy.coordinates import get_body
-		
+
+		if self.isEmpty:
+			self.lon_sun = None
+			self.lat_sun = None
+			return self
+
 		# make quaternion array from SC latitude and longitude
 		lon_sc_rad = self.lon * np.pi / 180
 		lat_sc_rad = self.lat * np.pi / 180
@@ -547,52 +599,10 @@ class impactClass:
 		lat_sun = 180 / np.pi * np.arctan2(q_coord_sun_n[:, 3],
 								np.sqrt(np.square(q_coord_sun_n[:, 1]) + np.square(q_coord_sun_n[:, 2])))
 		
-		# add to dictionary
+		# add to class
 		self.lon_sun = lon_sun
 		self.lat_sun = lat_sun
 		return self
-	
-	def SuntoMicro_OLD(self):
-		"""
-		Rotates from sun centered frame to strange micrometeoroid frame
-				
-				(sun)  (direction of motion around sun)   (earth)
-				 -90                 0                      +90
-				  o                  x                       .
-
-		"""
-		self.lon_micro = np.copy(self.lon_sun)
-		self.lat_micro = np.copy(self.lat_sun)
-
-		for i, lon in enumerate(self.lon_micro):
-			if lon - 90 < -180:
-				self.lon_micro[i] = 180 + 90 + lon
-			else:
-				self.lon_micro[i] -= 90
-		return self
-
-
-	def SuntoMicro(self):
-		"""
-		Rotates from sun centered frame to strange micrometeoroid frame
-				
-	(direction of motion around sun)                    (anti-earth around sun)
-				 -90                sun                      +90
-				  o                  x                       .
-
-		"""
-		self.lon_micro = -1 * np.copy(self.lon_sun)
-		self.lat_micro = np.copy(self.lat_sun)
-		"""
-
-		for i, lon in enumerate(self.lon_micro):
-			if lon - 90 < -180:
-				self.lon_micro[i] = 180 + 90 + lon
-			else:
-				self.lon_micro[i] -= 90
-		"""
-		return self
-
 	
 	# function to convert angles from SC frame to Sun-center frame (in degrees)
 	def SuntoSC(self):
@@ -609,6 +619,11 @@ class impactClass:
 		from microTools import getSCquats
 		from astropy.time import Time
 		from astropy.coordinates import get_body
+
+		if self.isEmpty:
+			self.lon = None
+			self.lat = None
+			return self
 		
 		# get longitude and latitude in radians
 		try:
@@ -793,8 +808,7 @@ class impactClass:
 		"""
 			frame: string, defines coordinates
 			None    = SC data
-			'sun'   = sun centered data 
-			'micro' = sun at -90 data
+			'sun'   = sun at 0, -90 prograde, +90 retrograde
 		"""
 
 		from astropy.coordinates import SkyCoord
@@ -811,13 +825,7 @@ class impactClass:
 
 		title = ('GRS%s Impact direction posterior for '%(self.grs) + 
 					str(int(self.gps)))
-		if frame == 'micro':
-			self = self.SCtoSun()
-			self = self.SuntoMicro()
-			self = self.findSkyAngles()
-			ax.imshow_hpx(self.healPix_micro, cmap='cylon')
-			title += " [Micrometeroid]"
-		elif frame == 'sun':
+		if frame == 'sun':
 			self = self.SCtoSun()
 			self = self.findSkyAngles()
 			ax.imshow_hpx(self.healPix_sun, cmap='cylon')
@@ -1490,7 +1498,7 @@ class impactClassList(list):
 	A Class for dealing with a list of impact Class instances
 	"""
 
-	def __init__(self, grs = 1, getValid = True, BASE_DIR = None):
+	def __init__(self, grs = 1, getValid = True, BASE_DIR = None, directory = '/data/ONLY_IMPACTS'):
 		"""
 		Assumes we are running program from Analysis/scripts
 
@@ -1501,9 +1509,9 @@ class impactClassList(list):
 			p = pathlib.PurePath(os.getcwd())
 			self.BASE_DIR = str(p.parent)
 		else:
-			self.BASE_DIR = pathlib.PurePath(BASE_DIR)
+			self.BASE_DIR = str(BASE_DIR)
 
-		self.dataPath = pathlib.Path(self.BASE_DIR + '/data')
+		self.dataPath = pathlib.Path(self.BASE_DIR + directory)
 		
 		pickles = list(self.dataPath.glob('*_grs1.pickle'))
 		print("Reading through pickle files")
@@ -1513,14 +1521,13 @@ class impactClassList(list):
 		for p in pickles:
 			# identify segment
 			segment = str(p.stem[0:10])
-			chainFile = self.BASE_DIR + '/data/' + str(segment) +'_grs%i'%grs + '.pickle'
+			chainFile = str(self.dataPath) + '/' + str(segment) +'_grs%i'%grs + '.pickle'
 
 			impact = impactClass(chainFile)
 			impact = impact.SCtoSun()
-			impact = impact.SuntoMicro()
 			impact = impact.findSkyAngles()
 			if getValid:
-				if impact.isValid:
+				if impact.isImpact:
 					impact_list.append(impact)
 					self.impact_list = impact_list
 				else:
@@ -1531,6 +1538,7 @@ class impactClassList(list):
 		impact_list.sort(key=operator.attrgetter('gps'))
 
 		self.impact_list = impact_list
+
 
 	def summaryTable(self, keys = ['Ptot','lat','lon','rx','ry','rz']):
 		tableStr = r"""
@@ -1725,7 +1733,7 @@ class impactClassList(list):
 		ax.plot(xdata, self.power_func(xdata, *popt),
 				color = fit_color,
 				linestyle = ':',
-				label = r'%1.3e$(\frac{P}{[\mu N s]})^{%1.3e}$'%(popt[0], popt[1]))
+				label = r'%1.2f$(\frac{P}{[\mu N s]})^{%1.2f}$'%(popt[0], popt[1]))
 
 
 		# Credible Intervals

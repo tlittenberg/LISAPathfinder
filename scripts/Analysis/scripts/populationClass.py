@@ -23,7 +23,7 @@ class population:
 	def __init__(self, dataDir, pop_type, usePtot = True):
 		"""
 			dataDir = directory where file is located
-			pop_type = String, Population type, one of 'JFC', 'HTC', 'Uniform'
+			pop_type = String, Population type, one of 'JFC', 'HTC', 'Uniform', 'AST', 'OCC'
 			usePtot = Whether to integrate momentum out
 		"""
 
@@ -40,7 +40,8 @@ class population:
 			print('Please use one of : \n\t-JFC\n \n\t-HTC\n \n\t-AST \n\t-OCC \n\t-Uniform\n')
 			raise(ValueError)
 
-		grid = self.getGrid()
+		self.grid = self.getGrid()
+		
 		# For uniform just take the Given Grid
 		if pop_type == 'Uniform':
 			self.df = self.getGrid()
@@ -65,11 +66,11 @@ class population:
 
 		# Set norm
 		try:
-			self.norm = np.sum(self.getFlux(grid['lon'].values, grid['lat'].values, 
-											grid['Ptot'].values, norm = False))
+			self.norm = np.sum(self.getFlux(self.grid['lon'].values, self.grid['lat'].values, 
+											self.grid['Ptot'].values, norm = False))
 		except KeyError:
 			print('Ptot has been deleted')
-			self.norm = np.sum(self.getFlux(grid['lon'].values, grid['lat'].values, norm = False))
+			self.norm = np.sum(self.getFlux(self.grid['lon'].values, self.grid['lat'].values, norm = False))
 
 		return
 
@@ -121,8 +122,9 @@ class population:
 
 		# Converts to MicroNs
 		df.eval('Ptot = Ptot * (10 ** 6)', inplace=True)
-		# Calculates flux 
-		df.eval('flux = flux * 1 / cos(rads)', inplace=True)
+
+		# DO not divide by cos, gets even flux for each term
+		#df.eval('flux = flux * 1 / cos(rads)', inplace=True)
 
 		del df['rads']
 
@@ -183,11 +185,17 @@ class population:
 			Sets the flux map by interpolating data
 		"""
 		if self.pop_type == 'Uniform':
+			# Create a power law for momentum
+			def power_func(x, a = 1e-07, b = -1):
+				# a and b are 
+				# average fit for flux vs momentum
+				return a * (x ** b)
+
 			df_grid = self.getGrid()
 			self.df = df_grid.copy()
 
-			# Creates a uniform flux (TODO: Divide or multiply cos?)
-			self.df['flux'] = 1.0 / (np.cos(np.deg2rad(df_grid['lat'].values)) * len(df_grid.index))
+			# Creates a uniform flux
+			self.df['flux'] = (power_func(self.df['Ptot'].values) / len(self.df.index))
 
 			# Interpolate uniform flux map
 			self.interpolate()
@@ -223,52 +231,67 @@ class population:
 
 			pop = populationClass instance
 			impact = impactClass instance
+			
+			norm says whether or not to use normed probabiliy
+			normed probability will not give us a rate
 
 		returns likelihood of impact (scalar)
 		"""
 
 
 		# Get impact in right coordinates
-		impact = impact.findSkyAngles()
-		impact = impact.SCtoSun()
-		impact = impact.SuntoMicro()
+		#impact = impact.findSkyAngles()
+		#impact = impact.SCtoSun()
+		#impact = impact.SuntoMicro()
 
 		# Gets lon lat in correct frame
-		lons = impact.lon_sun
-		lats = impact.lat_sun
+		lons = impact.lat_sun
+		lats = impact.lon_sun
 		Ptots = impact.Ptot
 
-		#TODO Add n == 1 and n == 0 part , change all N_X
-		N_tot = len(lons)
+		if Ptots is None:
+			print('None')
+
+		try:
+			N_1 = len(lons)
+		except:
+			N_1 = 0
 
 		# ------- For n == 1 -------
 		# Calculates f_pop = p(n = 1, psi | theta_p) 
-		N_1 = N_tot # change this! 
+		N_tot = impact.N
 		p_hat_1 = 0.5
-		if self.usePtot:
+
+		# Integral over parameters 
+		if lons is None:
+			# Very small number, can't be zero
+			f_pop = 1e-218
+		elif self.usePtot:
 			f_pop = self.getFlux(lons, lats, Ptots, norm = norm) / p_hat_1
 		else:
 			f_pop = self.getFlux(lons, lats, norm = norm) / p_hat_1
+		
 
-		# NOT CORRECT !!!!!!! 
 		# ----- For n == 0 -------
 		p_hat_0 = 0.5
-		N_0 = 0 # Change this !!
+		N_0 = N_tot - N_1
+
 		# p(n = 0 | theta_p)
-		# p(n = 0| theta_p) = 1 - p(n=1|theta_p) 
+		# p(n = 0 | theta_p) = 1 - p(n=1|theta_p) 
 		# Sum over all space
-		f_pop_1 = np.sum(self.getFlux(self.df['lon'].values, self.df['lat'].values, 
-						 self.df['Ptot'].values, norm = norm))
+		f_pop_1 = np.sum(self.getFlux(self.grid['lon'].values, self.grid['lat'].values, 
+						 Ptot = self.grid['Ptot'].values, norm = norm))
 		f_pop_0 = (1 - f_pop_1) / p_hat_0
 
-		# (1 / N1) * Sum p(n = 1, psi | theta_p)
+		# Sum p(n = 1, psi | theta_p)
 		sum_pop = np.sum(f_pop)
-
-		likelihood = (N_0 / N_tot) * f_pop_0 + sum_pop / N_1
+		
+		if N_1 == 0:
+			likelihood = (N_0 / N_tot) * f_pop_0
+		else:	
+			likelihood = (N_0 / N_tot) * f_pop_0 + sum_pop / N_1
 
 		return likelihood
 
-
-
-	
+		
 
