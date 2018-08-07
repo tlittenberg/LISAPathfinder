@@ -124,6 +124,7 @@ class impactClass:
 
 			df_veto = self.getVetoList()
 			self.isImpact = self.getisImpact(df_veto)
+			self.isGlitch = self.getisGlitch(df_veto)
 			self.isValidSearch = self.getisValidSearch()
 
 			# load log likelihood chain
@@ -197,6 +198,7 @@ class impactClass:
 
 			df_veto = self.getVetoList()
 			self.isImpact = self.getisImpact(df_veto)
+			self.isGlitch = self.getisGlitch(df_veto)
 			self.isValidSearch = self.getisValidSearch()
 			self.define_coords()
 
@@ -241,6 +243,8 @@ class impactClass:
 			return self.grs
 		elif param == 'isImpact':
 			return self.isImpact
+		elif param == 'isGlitch':
+			return self.isGlitch
 		elif param == 'isValidSearch':
 			return self.isValidSearch
 		else: 
@@ -279,40 +283,37 @@ class impactClass:
 			return self.grs
 		elif param == 'isImpact':
 			return self.isImpact
+		elif param == 'isGlitch':
+			return self.isGlitch
 		elif param == 'isValidSearch':
 			return self.isValidSearch
 		else: 
 			print("Invaid Input: given,", param)
 
 	def getVetoList(self):
-		names = ['segment', 'isImpact','isValidSearch']
-		"""
-		names = ['isImpact', 't', 'UTC', 'run', 'dt',
-				'prob',
-				'p', 'dp',
-				'c', 'dc',
-				'phi', 'dphi',
-				'x', 'dx',
-				'y', 'dy',
-				'z', 'dz']
-		"""
-		df_veto = pd.read_csv(self.BASE_DIR + self.dataDir + '/impact_list.txt', header = 'infer', sep='\t')
-				#delim_whitespace = True)
-
-		df_veto['isImpact'] = df_veto['isImpact'].map(
-			{'TRUE': True, 'FALSE': False, 'UNSURE':True})
-		df_veto['isValidSearch'] = df_veto['isValidSearch'].map(
-			{'TRUE': True, 'FALSE': False, 'UNSURE':True})
-
+		df_veto = pd.read_csv(self.BASE_DIR + self.dataDir + '/impact_list.txt', header = 'infer',
+				delim_whitespace = True)
 		return df_veto
 
 	
 	def getisImpact(self, df_veto):
-		for i in range(len(df_veto['segment'])):
-			if self.segment in df_veto['segment']:
-				return df_veto['isImpact'][i]
-			else:
-				return True
+
+		try:
+			index = df_veto.index[df_veto['segment'] == self.segment][0]
+		except IndexError:
+			# if not in the list, its not an Impact
+			return False
+		else:
+			return df_veto['isImpact'].values[index]
+
+	def getisGlitch(self, df_veto):
+		try:
+			index = df_veto.index[df_veto['segment'] == self.segment][0]
+		except IndexError:
+			# if not in the list, its not an Impact
+			return False
+		else:
+			return df_veto['isGlitch'].values[index]
 
 	def getisValidSearch(self):
 		search_times = pd.read_csv(self.BASE_DIR + self.dataDir + '/segment_list.txt',
@@ -326,7 +327,7 @@ class impactClass:
 		else:
 			return False
 		
-	def summaryString(self,
+	def summaryString(self, percent_sky = 0.1,
 			keys = ['Ptot','lat','lon','rx','ry','rz'],
 			scale = [1.0, 1.0, 1.0, 100.0, 100.0, 100.0]):
 		"""
@@ -349,7 +350,7 @@ class impactClass:
 		else:
 			faceText = '-'
 
-		if self.skyArea < 5000:#(0.1*41253) :
+		if self.skyArea < (percent_sky * 41253) :
 			areaText = str('{0:.0f}'.format(self.skyArea))
 			SClatText = str('{0:.0f}'.format(self.lat_c))
 			SClonText = str('{0:.0f}'.format(self.lon_c))
@@ -1529,10 +1530,13 @@ class impactClassList(list):
 			impact = impact.SCtoSun()
 			impact = impact.findSkyAngles()
 			if getValid:
-				if impact.isImpact:
+				if impact.isGlitch:
+					continue
+				elif impact.isImpact:
 					impact_list.append(impact)
 					self.impact_list = impact_list
 				else:
+					print('This is neither an impact nor a glitch, \n segment?')
 					continue
 			else:
 				impact_list.append(impact)
@@ -1540,6 +1544,8 @@ class impactClassList(list):
 		impact_list.sort(key=operator.attrgetter('gps'))
 
 		self.impact_list = impact_list
+
+		return
 
 	def getImpact(self, segments):
 		if type(segments) != list:
@@ -1552,8 +1558,7 @@ class impactClassList(list):
 					imp_list.append(imp)
 		return imp_list
 
-
-	def summaryTable(self, keys = ['Ptot','lat','lon','rx','ry','rz']):
+	def summaryTable(self, percent_sky = 0.1, keys = ['Ptot','lat','lon','rx','ry','rz']):
 		tableStr = r"""
 		\begingroup
 		\renewcommand\arraystretch{2}
@@ -1593,7 +1598,7 @@ class impactClassList(list):
 		\endlastfoot""" + '\n'
 				
 		for impact in self.impact_list:
-			tableStr += '\t' + impact.summaryString() + '\n'
+			tableStr += '\t' + impact.summaryString(percent_sky) + '\n'
 		
 		
 		tableStr += '\t' + r'\hline' + '\n'
