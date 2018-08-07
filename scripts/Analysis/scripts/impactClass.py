@@ -47,7 +47,7 @@ from scipy.optimize import curve_fit
 
 
 class impactClass:
-	def __init__(self, chainFile = None, BASE_DIR = None, chainDir = None, GRS_num = 1, burnIn = 0.5, outDir = 'data'): 
+	def __init__(self, chainFile = None, BASE_DIR = None, chainDir = None, GRS_num = 1, burnIn = 0.5, dataDir = '/data'): 
 		"""
 			if ChainFile is specified, reads in from pickle data
 			if chainDir os specified, writes pickle data
@@ -63,7 +63,7 @@ class impactClass:
 			   chainDir = directory corresponding to the MCMC output is found
 			   GRS_num = index of the grs for this chain (1 or 2)
 			   burnIn = fraction of chain to throw out for burn in
-			   outDir = output directory for pickle file (name will be generated automatically)
+			   dataDir = output directory for pickle file (name will be generated automatically)
 			   
 			Ira Thorpe
 			2018-05-12 
@@ -137,8 +137,8 @@ class impactClass:
 			self.dfrac = dfrac
 			
 			# save data in processed directory
-			pickle.dump(data, open(str(os.cwd) + '/' + 
-						outDir + '/' + str(int(gpsTime)) + '_grs' + 
+			pickle.dump(data, open(str(os.cwd) +  
+						dataDir + '/' + str(int(gpsTime)) + '_grs' + 
 						str(int(GRS_num)) + '.pickle','wb'))
 
 		else:
@@ -151,6 +151,7 @@ class impactClass:
 				self.BASE_DIR = str(p.parent)
 			else:
 				self.BASE_DIR = str(BASE_DIR)
+			self.dataDir = dataDir
 
 			fid = open(chainFile,'rb')
 			data = pickle.load(fid)
@@ -194,9 +195,9 @@ class impactClass:
 			else:
 				self.Ptot = None
 
-
 			df_veto = self.getVetoList()
 			self.isImpact = self.getisImpact(df_veto)
+			self.isValidSearch = self.getisValidSearch()
 			self.define_coords()
 
 	# ---------------------------------------#
@@ -240,6 +241,8 @@ class impactClass:
 			return self.grs
 		elif param == 'isImpact':
 			return self.isImpact
+		elif param == 'isValidSearch':
+			return self.isValidSearch
 		else: 
 			print("Invaid Input: given,", param)
 
@@ -276,6 +279,8 @@ class impactClass:
 			return self.grs
 		elif param == 'isImpact':
 			return self.isImpact
+		elif param == 'isValidSearch':
+			return self.isValidSearch
 		else: 
 			print("Invaid Input: given,", param)
 
@@ -291,7 +296,7 @@ class impactClass:
 				'y', 'dy',
 				'z', 'dz']
 		"""
-		df_veto = pd.read_csv(self.BASE_DIR + '/data/impact_list.txt', header = 'infer', sep='\t')
+		df_veto = pd.read_csv(self.BASE_DIR + self.dataDir + '/impact_list.txt', header = 'infer', sep='\t')
 				#delim_whitespace = True)
 
 		df_veto['isImpact'] = df_veto['isImpact'].map(
@@ -310,13 +315,13 @@ class impactClass:
 				return True
 
 	def getisValidSearch(self):
-		search_times = pd.read_csv(self.BASE_DIR + '/data/searchTimes0726.txt',
+		search_times = pd.read_csv(self.BASE_DIR + self.dataDir + '/segment_list.txt',
 				header = None, names = ['segment'], delim_whitespace = True)
 		
 		# Jakes list does not cover all time, keep segments only within list
 		if self.segment > max(search_times['segment'].values):
 			return True
-		elif int(self.segment) in search_times['segment']:
+		elif int(self.segment) in search_times['segment'].values:
 			return True
 		else:
 			return False
@@ -404,16 +409,13 @@ class impactClass:
 		import os
 		import pathlib
 		
-		# get current working directory
-		p = pathlib.PurePath(os.getcwd())
-		baseDir = str(p.parent)
 		
 		# load Quaternion data
 		if doText:
-			quatFile = baseDir +'/rawData/allQuats.txt'
+			quatFile = self.BASE_DIR + '/rawData/allQuats.txt'
 			dat = np.loadtxt(quatFile)
 		else :
-			quatFile = baseDir + '/data/quats.npy'
+			quatFile = self.BASE_DIR + self.dataDir + '/quats.npy'
 			dat = np.load(quatFile)
 			
 		# separate out gps time (1st column) from quaternions (columns 2-5)
@@ -1498,7 +1500,7 @@ class impactClassList(list):
 	A Class for dealing with a list of impact Class instances
 	"""
 
-	def __init__(self, grs = 1, getValid = True, BASE_DIR = None, directory = '/data/ONLY_IMPACTS'):
+	def __init__(self, grs = 1, getValid = True, BASE_DIR = None, dataDir = '/data', directory = '/data/ONLY_IMPACTS'):
 		"""
 		Assumes we are running program from Analysis/scripts
 
@@ -1523,7 +1525,7 @@ class impactClassList(list):
 			segment = str(p.stem[0:10])
 			chainFile = str(self.dataPath) + '/' + str(segment) +'_grs%i'%grs + '.pickle'
 
-			impact = impactClass(chainFile)
+			impact = impactClass(chainFile, BASE_DIR = BASE_DIR, dataDir = dataDir)
 			impact = impact.SCtoSun()
 			impact = impact.findSkyAngles()
 			if getValid:
@@ -1538,6 +1540,17 @@ class impactClassList(list):
 		impact_list.sort(key=operator.attrgetter('gps'))
 
 		self.impact_list = impact_list
+
+	def getImpact(self, segments):
+		if type(segments) != list:
+			segments = [segments]
+		imp_list = []
+		for s in segments:
+			for imp in self.impact_list:
+				#print(imp.segment, imp.gps, s)
+				if imp.segment == s:
+					imp_list.append(imp)
+		return imp_list
 
 
 	def summaryTable(self, keys = ['Ptot','lat','lon','rx','ry','rz']):
@@ -1697,65 +1710,79 @@ class impactClassList(list):
 		ax.legend()
 		return fig
 
-	def plotPowerLaw(self, param = 'Ptot', credible = 0.9, weight = True, show_credible = True):
-		fit_color = "#ffd27a"#92cac6"
-		error_color = "#e86e66"
-		data_color = "#6b9bb9"
+	def plotPowerLaw(self, param = 'Ptot', credibles = [0.9], weight = True,
+					 drop_max = True):
+		"""
+		self = impactClassList instance
+		param = parameter plotted on x we fit for
+		credibles = credible intervals we want on the plot (list type)
+		weight = boolean, whether we want the plot weighted
+		drop_max = Boolean, wheteher to drop the max momentum in our impact list
+		"""
+		error_color = plt.cm.PuBu(np.linspace(.5, 1, len(credibles)))
+		fit_color = "#e86e66"
+		data_color = '#ffd27a'#'#92cac6'#"#6b9bb9"
 		import matplotlib as mpl
-		mpl.rcParams['lines.linewidth'] = 3
-
-		# Sort data
-		sortlist = sorted(self.impact_list, key=lambda x: x.getMedian(param))
-
-		xdata = np.asarray([i.getMedian(param) for i in sortlist]) #makeArray(sortlist, param, np.median))
-		ydata = np.arange(1, len(sortlist) + 1, 1.0)[::-1]
-
-		# Get Credible Intervals and stdev
-		cred_up, cred_down, stdev, median = self.getCredibleIntervals(sortlist, param, credible, getMedian = True)
-
-		#Get power Law fit
-		if weight:
-			popt, pcov = self.fitPowerlaw(sortlist, param, sigma = 1 / (cred_up - cred_down))
-		else:
-			popt, pcov = self.fitPowerlaw(sortlist, param, sigma = None)
-
-		print('Optimized: a = ', popt[0], 'b =', popt[1] )
-
-		# Get credible intervals
+		mpl.rcParams['lines.linewidth'] = 4
+		mpl.rcParams['font.size'] = 15
+		mpl.rcParams['font.family'] = 'sans-serif'
 
 		fig, ax = plt.subplots(figsize = (10,10))
 
-		y = np.exp(self.lin_func(np.log(xdata), *popt))
+		# Sort data
+		sortlist = sorted(self.impact_list, key=lambda x: x.getMedian(param))
+		# Drops the largest number
+		shift = 0
+		if drop_max:
+			imp_max = sortlist[-1]
+			sortlist = sortlist[:-1]
+			shift = 1
+			# Replot the highest point
+			ax.scatter(imp_max.getMedian('Ptot'), 1, color = data_color)
+
+		xdata = np.asarray([i.getMedian(param) for i in sortlist]) #makeArray(sortlist, param, np.median))
+		ydata = np.arange(1 + shift, len(sortlist) + 1 + shift, 1.0)[::-1]
+		
 
 		# Plot the data
-		ax.scatter(xdata, ydata, color = data_color, zorder = 10, label = 'Median Momentum')
+		ax.scatter(xdata, ydata, color = data_color, zorder = 10,
+				   label = 'Median Momentum', marker = 'o', s = 50)
+		lines = []
+		for i, credible in enumerate(credibles):
+			# Get Credible Intervals and stdev
+			cred_up, cred_down, stdev, median = self.getCredibleIntervals(sortlist, param,
+																		  credible, getMedian = True)
 
-		ax.plot(xdata, self.power_func(xdata, *popt),
-				color = fit_color,
-				linestyle = ':',
-				label = r'%1.2f$(\frac{P}{[\mu N s]})^{%1.2f}$'%(popt[0], popt[1]))
+			#Get power Law fit
+			if weight:
+				popt, pcov = self.fitPowerlaw(sortlist, param, sigma = 1 / (cred_up - cred_down))
+			else:
+				popt, pcov = self.fitPowerlaw(sortlist, param, sigma = None)
 
+			print('Optimized: a = ', popt[0], 'b =', popt[1] )
 
-		# Credible Intervals
-		if show_credible:
+			# Sets up points to plot for fit
+			plot_x = np.logspace(np.log10(min(xdata)), np.log10(max(xdata)), 1000)
+
+			if credible == .90:
+				ax.plot(plot_x, self.power_func(plot_x, *popt),
+						color = fit_color,
+						label = r'Data Fit: %1.2f$(\frac{P}{[\mu N s]})^{%1.2f}$'%(popt[0], popt[1]))
+
+			# Credible Intervals
 			ax.errorbar(xdata, ydata, xerr = [median - cred_down, cred_up - median],
-						 fmt = 'o', color = error_color, label = '%i%% Credible'%(credible * 100))
-			"""
-			ax.plot(cred_up, ydata, color = 'hotpink', zorder = 2)
-			ax.plot(cred_down, ydata, color = 'hotpink', zorder = 3)
-			ax.fill_betweenx(ydata, cred_up, cred_down,
-							 where = cred_up >= cred_down,
-							 facecolor='pink',
-							 zorder = 1,
-							 label = '%i%% Credible'%(100 * credible))
-			"""
-		else:
-			ax.errorbar(xdata, ydata, xerr = stdev,
-					fmt = '', color = error_color,  label = '1 Stdev')
+				 fmt = 'o',
+						color = 'none',
+						ecolor = error_color[i], label = '%i%% Credible'%(credible * 100),
+				 alpha = .75)
 
-
+			#else:
+			#	ax.errorbar(xdata, ydata, xerr = stdev,
+			#			fmt = '', color = error_color,  label = '1 Stdev')
 		ax.set_xscale('log')
-		ax.set_ylabel('rank')
+		ax.set_yscale('log')
+		ax.set_ylabel('Cumulative Number of Impacts')
+
 		if param == 'Ptot':
 			ax.set_xlabel('$p_{tot}\,[\mu N s]$')
 		else:
@@ -1763,8 +1790,7 @@ class impactClassList(list):
 
 
 		ax.legend()
-
-		return fig
+		return fig, ax
 
 
 

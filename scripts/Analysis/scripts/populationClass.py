@@ -20,9 +20,9 @@ class population:
 		- Add Probability function
 	"""
 	## Private Functions ## 
-	def __init__(self, dataDir, pop_type, usePtot = True):
+	def __init__(self, modelDir, pop_type, usePtot = True):
 		"""
-			dataDir = directory where file is located
+			modelDir = directory where file is located
 			pop_type = String, Population type, one of 'JFC', 'HTC', 'Uniform', 'AST', 'OCC'
 			usePtot = Whether to integrate momentum out
 		"""
@@ -53,7 +53,7 @@ class population:
 			return
 
 		# Read in data and convert to dataframe
-		self.df = self.__readSkymapData__(dataDir, dataFile)
+		self.df = self.__readSkymapData__(modelDir, dataFile)
 
 		if not usePtot:
 			self.df = self.integratePtot()
@@ -106,16 +106,16 @@ class population:
 
 		return df_grid
 
-	def __readSkymapData__(self, dataDir, dataFile = "JFC_30um"):
+	def __readSkymapData__(self, modelDir, dataFile = "JFC_30um"):
 		"""
-			dataDir = directory where file is located
+			modelDir = directory where file is located
 			datafile = filename (JFC_30um or HTC_30um)
 		"""
 		# modules
 		import numpy as np
 
 		# Creates dataframe with Ptot in it
-		df = pd.read_csv(str(dataDir) + '/' + dataFile, 
+		df = pd.read_csv(str(modelDir) + '/' + dataFile, 
 						names = ['lon', 'lat', 'Ptot', 'flux'], sep = '\s+')
 		
 		df['rads'] = np.deg2rad(df['lat'])
