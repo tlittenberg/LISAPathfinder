@@ -736,9 +736,9 @@ class impactClass:
 					# 2D histogram and plot
 					# Handleing strange binning error, bins were too small
 					try:
-						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, [xbins, ybins], normed = True)
+						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, [xbins, ybins], density = True)
 					except:
-						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, normed = True)
+						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, density = True)
 					plt.subplot(Nkeys, Nkeys, kk)
 					plt.contourf(c_x1y1, extent = [y2e.min(), y2e.max(), x2e.min(), x2e.max()], cmap=matplotlib.cm.Reds)
 					ax = plt.gca()
@@ -747,8 +747,8 @@ class impactClass:
 				# diagonals
 				elif jj == ii:
 					# histograms
-					c_x1x1, x1e = np.histogram(x1, xe, normed = True)
-					c_x2x2, x1e = np.histogram(x2, xe, normed = True)
+					c_x1x1, x1e = np.histogram(x1, xe, density = True)
+					c_x2x2, x1e = np.histogram(x2, xe, density = True)
 
 					# plot
 					kk = kk + 1
@@ -774,9 +774,9 @@ class impactClass:
 
 					# Handleing strange binning error, bins were too small
 					try:
-						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, [xbins, ybins], normed = True)
+						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, [xbins, ybins], density = True)
 					except:	
-						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, normed = True)
+						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, density = True)
 					plt.subplot(Nkeys, Nkeys, kk)
 					plt.contourf(c_x2y2, extent = [y2e.min(), y2e.max(), x2e.min(), x2e.max()], cmap = matplotlib.cm.Blues)
 					ax = plt.gca()
@@ -843,6 +843,181 @@ class impactClass:
 		ax.coords[1].set_ticks(exclude_overlapping = True, spacing = 30 * u.deg)
 
 		return fig
+
+	def gimme_mesh(self, N_lon, N_lat):
+		"""
+			auxiliary function for mesh generation
+		"""
+		minval_lon = -180
+		maxval_lon =  180
+
+		minval_lat = -90
+		maxval_lat =  90
+		# produce an asymmetric shape in order to catch issues with transpositions
+		return np.meshgrid(np.linspace(minval_lon, maxval_lon, N_lon),
+						   np.linspace(minval_lat, maxval_lat, N_lat))
+
+	def param_table(self, params, all_rows, ax):
+		if all_rows is None:
+			all_rows = ('JFC', 'HTC', 'AST', 'OCC')
+		all_cols = all_rows
+		rows = []
+		data = [[''  for x in range(len(all_cols))] for y in range(len(all_cols))]
+		for i, r in enumerate(all_rows):
+			for j, c in enumerate(all_cols):
+				if i == j:
+					data[i][j] = '%1.3e'%params[i]
+				else:
+					data[i][j] = '%1.3e'%(params[j] / params[i])
+			rows.append(r)
+
+		ax.axis('off')
+		
+		# Get some pastel shades for the colors
+		colors = plt.cm.BuPu(np.linspace(0, 0.5, len(rows)))
+		n_rows = len(data)
+
+		# Plot bars and create text labels for the table
+		cell_text = []
+		for row in range(n_rows):
+			cell_text.append(data[row])
+
+		# Reverse colors and text labels to display the last value at the top.
+		colors = colors[::-1]
+
+		# Add a table at the bottom of the axes
+		the_table = ax.table(cellText = cell_text,
+							rowLabels = rows,
+							colLabels = rows,
+							rowLoc = 'center',
+							rowColours = colors,
+							colColours = colors,
+							loc = 'center')
+		the_table.auto_set_column_width(0)
+		the_table.auto_set_font_size(value = True)
+		
+		table_props = the_table.properties()
+		table_cells = table_props['child_artists']
+		for cell in table_cells: cell.set_height(0.15)
+
+
+	def plot_populations(self, populations, norm = True, scale = 'lin', show_impact = True):
+		import matplotlib.gridspec as gridspec
+
+		"""
+		Creates 2 x 2 population map
+		"""
+
+		if show_impact:
+			fig, ax = plt.subplots(figsize = (13,10))
+			ax.set_visible(False)
+			lons = self.lon_sun
+			lats = self.lat_sun
+			Ptots = self.Ptot
+
+			spec = gridspec.GridSpec(ncols=2, nrows=3)
+		else:
+			fig, ax = plt.subplots(figsize = (13, 7))
+			ax.set_visible(False)
+			spec = gridspec.GridSpec(ncols=2, nrows=2)
+
+		i = 0
+		j = 0
+		for k, p in enumerate(populations):
+			if p.pop_type == 'Uniform':
+				continue
+
+			ax = fig.add_subplot(spec[j, i])
+			ax.set_aspect('equal')
+			ax.set_title(p.pop_type)
+			if i == 0:
+				ax.set_ylabel('Latitude')
+			if j == 1:
+				ax.set_xlabel('Longitude')
+			# Plot cmap for Population
+			if norm:
+				min_ = 1e-14
+				max_ = 1e-3
+			else:
+				min_ = 1e-14
+				max_ = 1e-8
+
+			if scale == 'log':
+				levels = np.logspace(np.log10(min_), np.log10(max_), 15)
+				norm_plot = LogNorm(min_, max_)
+
+			else:
+				levels = np.linspace(min_, max_, 15)
+				norm_plot = None
+
+			lon, lat = self.gimme_mesh(80, 40)
+
+
+			palette = 'viridis'
+
+			im = ax.contourf(lon, lat, p.getFlux(lon, lat, norm = norm),
+					levels = levels, norm = norm_plot,
+					cmap = palette, alpha = 0.75)
+			im.cmap.set_under('r')
+			im.cmap.set_over('b')
+			im.cmap.set_bad('g')
+
+			# Plot impact
+			if show_impact:
+				counts, lonbins, latbins = np.histogram2d(lons, lats,
+									bins = (np.linspace(-180, 180, 80),
+											np.linspace(-90, 90, 30)),
+									density = True)
+				imp = ax.contour(counts.transpose(),
+					extent=[lonbins.min(), lonbins.max(),
+							latbins.min(), latbins.max()],
+					levels = np.linspace(1e-14, 1e-3, 15), cmap = 'Reds')
+
+			if i == 0:
+				i = 1
+			else:
+				i = 0
+				j += 1
+
+		if show_impact:
+			fig.subplots_adjust(right=0.75)
+			# Add Colorbars
+			cbar_ax1 = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+		else:
+			# Add Colorbars
+			cbar_ax1 = fig.add_axes([0.8, 0.15, 0.05, 0.7])
+		fig.colorbar(im, cax = cbar_ax1)
+
+		if norm:
+			cbar_ax1.set_ylabel(ylabel = 'Norm Flux', rotation = -90, va="bottom")
+		else:
+			cbar_ax1.set_ylabel(ylabel = 'Flux', rotation=-90, va="bottom")
+
+		if show_impact:
+			cbar_ax2 = fig.add_axes([0.78, 0.15, 0.05, 0.7])
+			cbar_ax2.set_ylabel(ylabel = 'MCMC Normed Density', rotation = -90, va="bottom")
+
+			fig.colorbar(imp, cax=cbar_ax2, ticks = [0])
+			cbar_ax2.set_xticklabels([''])
+
+			rows = [] #[p.pop_type for p in populations]
+
+			sums = []
+			for i, p in enumerate(populations):
+				f_pop = p.getFlux(lons, lats, Ptots)
+				sum_pop = np.sum(f_pop) / len(f_pop)
+				sums.append(sum_pop)
+				rows.append(p.pop_type)
+				#probs[i] += np.log(sum_pop)
+				#print('Prob', p.pop_type, ' : ', sum_pop)
+				#print('\n')
+			#print(sums)
+			#print(rows)
+			ax = fig.add_subplot(spec[2, 0:2])
+			self.param_table(sums, rows, ax)
+
+		return fig
+
 
 	# ---------------------------------------#
 	#            3D LPF Functions            #
