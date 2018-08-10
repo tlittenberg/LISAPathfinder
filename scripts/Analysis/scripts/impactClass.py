@@ -174,6 +174,8 @@ class impactClass:
 			self.dfrac   = data['dfrac']
 			self.grs     = GRS_num
 
+			self.N_1 = int(self.dfrac * self.N)
+
 
 			if self.lon is None or len(self.lon) == 0:
 				self.isEmpty = True
@@ -514,7 +516,7 @@ class impactClass:
 		cnt_hp, bins = np.histogram(dat_hp, bin_edges)
 		
 		# Measure centroid and sky area
-		cdf = np.cumsum(cnt_hp.astype('float')) / float(self.N)        
+		cdf = np.cumsum(cnt_hp.astype('float')) / float(self.N_1)        
 		ilb = (np.abs(cdf - ((1.0 - CI) / 2.0))).argmin()
 		iub = (np.abs(cdf - (1.0 - ((1.0 - CI) / 2.0)))).argmin()
 		imed = (np.abs(cdf - 0.5)).argmin()
@@ -526,7 +528,7 @@ class impactClass:
 		self.lat_c = lat_c
 		self.lon_c = lon_c
 		self.skyArea = area
-		self.healPix = cnt_hp / float(self.N)
+		self.healPix = cnt_hp / float(self.N_1)
 		
 		# if Sun angles are present, repeat for them
 		if hasattr(self, 'lon_sun'):
@@ -537,7 +539,7 @@ class impactClass:
 			cnt_hp, bins = np.histogram(dat_hp, bin_edges)
 		
 			# Measure sky area
-			cdf = np.cumsum(cnt_hp.astype('float')) / float(self.N)        
+			cdf = np.cumsum(cnt_hp.astype('float')) / float(self.N_1)        
 			ilb = (np.abs(cdf - ((1.0 - CI) / 2.0))).argmin()
 			iub = (np.abs(cdf - (1.0 - ((1.0 - CI) / 2.0)))).argmin()
 			imed = (np.abs(cdf - 0.5)).argmin()
@@ -549,7 +551,7 @@ class impactClass:
 			self.lat_c_sun = lat_c
 			self.lon_c_sun = lon_c
 			self.skyArea_sun = area
-			self.healPix_sun = cnt_hp / float(self.N)
+			self.healPix_sun = cnt_hp / float(self.N_1)
 
 		return self
 		
@@ -565,7 +567,6 @@ class impactClass:
 		
 		# libraries & modules
 		import numpy as np, quaternion
-		from microTools import getSCquats
 		from astropy.time import Time
 		from astropy.coordinates import get_body
 
@@ -584,7 +585,7 @@ class impactClass:
 		q_coord_sc = quaternion.as_quat_array(np.transpose(n))
 
 		# read SC quaternion (rotate from SC to ECI)
-		qr_ECI_SC = getSCquats(int(self.gps))
+		qr_ECI_SC = self.getSCquats()
 		
 		# perform first rotation
 		q_coord_ECI = qr_ECI_SC * q_coord_sc * quaternion.np.conjugate(qr_ECI_SC)
@@ -619,7 +620,6 @@ class impactClass:
 		
 		# libraries & modules
 		import numpy as np, quaternion
-		from microTools import getSCquats
 		from astropy.time import Time
 		from astropy.coordinates import get_body
 
@@ -650,7 +650,7 @@ class impactClass:
 		q_coord_ECI = quaternion.np.conjugate(qr_ECIx_sun) * q_coord_sun * qr_ECIx_sun
 
 		# read SC quaternion (get rotation q from ECI to SC)
-		qr_ECI_SC = getSCquats(int(self.gps))
+		qr_ECI_SC = self.getSCquats()
 
 		# rotate from ECI to SC
 		q_coord_sc = quaternion.np.conjugate(qr_ECI_SC) * q_coord_ECI * qr_ECI_SC
@@ -1676,7 +1676,9 @@ class impactClassList(list):
 	A Class for dealing with a list of impact Class instances
 	"""
 
-	def __init__(self, grs = 1, getValid = True, BASE_DIR = None, dataDir = '/data', directory = '/data/ONLY_IMPACTS'):
+	def __init__(self, grs = 1, 
+				getValid = True, BASE_DIR = None, dataDir = '/data', directory = '/data/ONLY_IMPACTS', 
+				include_marginal = True):
 		"""
 		Assumes we are running program from Analysis/scripts
 
@@ -1708,8 +1710,15 @@ class impactClassList(list):
 				if impact.isGlitch:
 					continue
 				elif impact.isImpact:
-					impact_list.append(impact)
-					self.impact_list = impact_list
+					if include_marginal:
+						impact_list.append(impact)
+						self.impact_list = impact_list
+					else:
+						if impact.dfrac < 0.7:
+							continue
+						else:
+							impact_list.append(impact)
+							self.impact_list = impact_list
 				else:
 					print('This is neither an impact nor a glitch, \n segment?')
 					continue
@@ -1717,7 +1726,6 @@ class impactClassList(list):
 				impact_list.append(impact)
 
 		impact_list.sort(key=operator.attrgetter('gps'))
-
 		self.impact_list = impact_list
 
 		return

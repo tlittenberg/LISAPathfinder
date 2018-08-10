@@ -20,6 +20,9 @@ parser.add_argument("-g", "--gif",
 
 args = parser.parse_args()
 
+if not args.gif:
+	print('WARNING: You are not creating gifs\n \tto create: python readCatalog.py -g')
+
 
 # list all of the data files and initialize the catalog LaTeX
 # setup directory structure

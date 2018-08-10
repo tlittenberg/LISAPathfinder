@@ -1,14 +1,14 @@
 import os
 import re
 import numpy as np
-import microTools as mT
 from impactClass import impactClass
 import pathlib
 
 ##### Constants ####
-BASE_DIR = "/Users/shouriha/LISAPathfinder/scripts/Analysis" ##"/home/sophie.hourihane/public_html/viterbi"
-WEB_ADDRESS = BASE_DIR #"https://ldas-jobs.ligo-wa.caltech.edu/~sophie.hourihane/viterbi" 
-img_directory = BASE_DIR + "/data"
+BASE_DIR = '..' #"/Users/shouriha/LISAPathfinder/scripts/Analysis" ##"/home/sophie.hourihane/public_html/viterbi"
+WEB_ADDRESS = '..' #BASE_DIR #"https://ldas-jobs.ligo-wa.caltech.edu/~sophie.hourihane/viterbi" 
+DATA_DIR = '/data/ONLY_IMPACTS'
+
 
 ################# COLORS ###############
 #complementary
@@ -284,7 +284,7 @@ def makeParamTable(params, ignore = "VOID", class_name = "params", link = "VOID"
 	
 	#had vary table id or else sort doesnt work
 	table_script = '''<table id="%s"> \n'''%(class_name)
-	all_cols = ['isValid', 'segment', 'gps', 'N', 'snr', 't0', 'Ptot', 
+	all_cols = ['isImpact', 'segment', 'gps', 'N', 'snr', 't0', 'Ptot', 
 				'lat', 'lon', 'rx', 'ry', 'rz', 'face']
 
 	headers = []
@@ -363,13 +363,10 @@ def findParamPlots(param, find = 'VOID', ignore = "VOID", directory = BASE_DIR +
 
 def makeParamPage(params, next_param, prev_param):
 	print(params.filename(), "Make Param Page")
-	print(BASE_DIR)
 	filename = params.filename() + ".html"
 	table = makeParamTable(params, class_name = "header", ignore = ["face"], link = 'page' )
 
-	p = pathlib.PurePath(os.getcwd())
-	baseDir = str(p.parent)
-	dataPath = pathlib.Path(baseDir + '/data')
+	dataPath = pathlib.Path(BASE_DIR + DATA_DIR)
 	pickles = list(dataPath.glob('*_grs1.pickle'))
 
 	galleries = ''
@@ -423,15 +420,13 @@ def makeLevelCurves():
 
 def makeIndex():
 
-	p = pathlib.PurePath(os.getcwd())
-	baseDir = str(p.parent)
-	dataPath = pathlib.Path(baseDir + '/data')
+	dataPath = pathlib.Path(BASE_DIR + DATA_DIR)
 	pickles = list(dataPath.glob('*_grs1.pickle'))
 
 	onlyfiles = getFiles(BASE_DIR + "/plots")
 
 	#Lists every family of max_viterbi runs i've done
-	directories = getDirs(BASE_DIR + '/data')
+	directories = getDirs(BASE_DIR + DATA_DIR)
 	param_list = []
 
 
@@ -449,10 +444,10 @@ def makeIndex():
 
 
 		# load GRS1 data
-		chainFile = baseDir + '/data/' + str(segment) +'_grs1.pickle'
+		chainFile = BASE_DIR + DATA_DIR + '/' + str(segment) +'_grs1.pickle'
 		try:
 			param = impactClass(chainFile)
-			if not os.path.isdir(baseDir + '/plots/' + param.filename()):
+			if not os.path.isdir(BASE_DIR + '/plots/' + param.filename()):
 				continue
 
 		except ValueError:
@@ -470,8 +465,8 @@ def makeIndex():
 			else:
 				next_seg = segments[i + 1]
 
-			chainFilenext = baseDir + '/data/' + str(next_seg) +'_grs1.pickle'
-			chainFileprev = baseDir + '/data/' + str(prev_seg) +'_grs1.pickle'
+			chainFilenext = BASE_DIR + DATA_DIR + '/' + str(next_seg) +'_grs1.pickle'
+			chainFileprev = BASE_DIR + DATA_DIR + '/' + str(prev_seg) +'_grs1.pickle'
 			next_param = impactClass(chainFilenext)
 			prev_param = impactClass(chainFileprev)
 
@@ -481,7 +476,6 @@ def makeIndex():
 
 	#Links to Impact pages
 	table = makeParamTable(param_list, ["face"], link =  'page')
-	print(table)
 
 	body = ""
 	body += '''<h2>List of Impacts</h2> \n''' + table
