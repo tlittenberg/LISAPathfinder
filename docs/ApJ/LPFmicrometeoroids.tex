@@ -39,11 +39,14 @@
 \usepackage{color}
 
 %% MACROs
+\newcommand{\nwip}[2]{\langle #1|#2\rangle} % noise weighted inner product
 \newcommand{\vdag}{(v)^\dagger}
 \newcommand\aastex{AAS\TeX}
 \newcommand\latex{La\TeX}
 \newcommand{\red}[1]{\textcolor{red}{#1}}
 \newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\nhits}{54 } % macro to keep number of impacts the same everywhere
+\newcommand{\nhours}{4348 }
 
 %% Dates
 \received{\today}
@@ -84,7 +87,7 @@
 %% If you wish, you may supply running head information, although
 %% this information may be modified by the editorial offices.
 \shorttitle{Micrometeoroid Impacts in LISA Pathfinder}
-\shortauthors{Thorpe et al.}
+\shortauthors{Thorpe, et al.}
 %%
 %% You can add a light gray and diagonal water-mark to the first page 
 %% with this command:
@@ -345,8 +348,7 @@ Sezione di Napoli, I-80126, Napoli, Italy}
 
 %% Mark off the abstract in the ``abstract'' environment. 
 \begin{abstract}
-
-LISA Pathfinder was a technology demonstration mission for future space-based gravitational wave observatories which launched on December 3rd, 2015 and conducted science operations near Earth-Sun L1 until July of 2017 when it was deliberately decommissioned after a successful mission. Pathfinder's principal objective was to demonstrate a technique known as drag-free flight in which the spacecraft was controlled to fly around a pair of freely-flying reference masses located within one of its instruments. To achieve drag-free flight, the control system had to reject external disturbances on the spacecraft using a one of two micropropulsion systems. One such disturbance was impacts of micrometeoroids, which left a unique signature in the control system data. Using a simple model of the impacts, this signature can also be used to measure properties such as the transferred momentum (related to the particle's mass and velocity), direction of travel, and location of impact on the spacecraft. In this paper, we present the results of a systematic search for impacts during a large fraction of the Pathfinder data. We report a total of XXX candidates with momenta ranging from XXX to XXX.  We furthermore make a comparison of these candidates with models of two distinct  micrometeoroid populations in the inner solar system, those resulting from Jupiter-family comets and those resulting from Hailey-type comets. 
+The zodiacal dust complex, a population of dust and small particles that pervades the Solar System, provides important insight into the formation and dynamics of planets, comets, asteroids, and other bodies.  Efforts to understand this system have relied on analytic and numerical models anchored by observational data.  Much of this observational data is concentrated in the near-Earth regime, where the planet's gravitational effects mask some of the subtle but important differences between different models. Here we present a new set of data obtained using a novel technique: direct measurements of momentum transfer to a spacecraft from individual particle impacts. This technique is made possible by the extreme precision of the instruments flown on the LISA Pathfinder spacecraft, a technology demonstrator for a future space-based gravitational wave observatory that operated near the first Sun-Earth Lagrange point from early 2016 through Summer of 2017. Pathfinder employed a technique known as drag-free control whereby the spacecraft was commanded to maintain a constant position and attitude relative to a free-flying test mass within the instrument. This required rejection of external disturbances, including particle impacts, using a micropropulsion system. Using a simple model of the impacts and knowledge of the control system, we show that it is possible to detect impacts and measure properties such as the transferred momentum (related to the particle's mass and velocity), direction of travel, and location of impact on the spacecraft. In this paper, we present the results of a systematic search for impacts during \nhours hours of Pathfinder data. We report a total of \nhits candidates with momenta ranging from 0.2$\,\mu\textrm{Ns}$ to 230$\,\mu\textrm{Ns}$.  We furthermore make a comparison of these candidates with models of micrometeoroid populations in the inner solar system, those resulting from Jupiter-family comets, Oort-cloud comets, and Hailey-type comets. We find weak evidence suggesting that our observed population is most consistent with the properties of the Hailey-type comets although the statistics with this limited data set are modest.
 \end{abstract}
 
 %% Keywords should appear after the \end{abstract} command. 
@@ -371,17 +373,19 @@ miscellaneous}
 %% to the KEY in the \bibitem in the reference list below. 
 
 \section{Introduction} \label{sec:intro}
-\begin{itemize}
-    \item Motivate problem of dust population. What do we know and how? What don't we know? Why is it important?
-    \item Introduce LPF. What is it? Basic idea of how we do micrometeoroid science
-    \item Describe organization of the remainder of paper
-\end{itemize}
-    
-    
+Our Solar System hosts a population of dust and small particles that originate as debris from asteroids, comets, and other bodies.  Understanding these particles is important both for gaining insight into the formation of our Sun and its planets as well as for the dust population around other stars. More practically, dust and micrometeoroids are a critical component of the environment in which our spacecraft operate and against whose hazards they must be designed.  Like many fields in astrophysics, the behavior of the Solar System dust complex has been addressed from both theoretical and observational perspectives. Theorists have developed models of the production of dust from comets and asteroids,  its evolution under the effects of gravity and the solar environment, and its destruction through accretion and other processes. Observationally, this population has been constrained through measurements of its interaction with Earth's atmosphere (photographic, visual, and radio meteors, e.g. \cite{Halliday1984, Hawkes2007, Trigo-Rodriguez2008}), observations of zodiacal light (e.g.,  \cite{Krick2012, Durmont1980}), analysis of microcraters in Apollo lunar samples (e.g.  \cite{Allison1982}), and in-situ measurements made with ionization and penetration detectors on spacecraft (e.g.,  \cite{Weiden1978, Zhang1995}).  These theoretical and observational models are broadly consistent with one another, although important questions remain. One issue is that the bulk of the observational data is from the environment near Earth, a region in which some of the more subtle differences in the models of the underlying population are masked by the influence of the planet itself. Data taken far from Earth could in principle be used to distinguish such subtleties.
+\\
+LISA Pathfinder (LPF), A European Space Agency (ESA) mission which operated near the first Sun-Earth Lagrange point (L1) from January 2016 through July of 2017, is in an ideal orbit to make such measurements. However, LPF flew no instrumentation dedicated to micrometeoroid or dust detection.  LPF's primary objective was to demonstrate technologies for a future space-based observatory of milliHertz-band gravitational waves. The key achievement of LPF was placing two gold-platinum cubes known as `test masses' into a free-fall so pure it was characterized by accelerations at the femto-g level (e.g., \cite{LPF_PRL_2016, LPF_PRL_2018}), the level required to detect the minute disturbances caused by passing gravitational waves. In order to reach this level of performance, the test masses were released into cavities inside the spacecraft and a control system was employed to keep the spacecraft centered on the test masses.  This control system was designed to counteract disturbances on the spacecraft, including those caused by impacts from micrometeoroids. Shortly before LPF's launch, it was realized that data from the control system, if properly calibrated, could be used to detect and characterize these impacts and infer information about the impacting particles (e.g., \cite{Thorpe:2015cxa}). Early results from the first few months of LPF operations suggested that such events could indeed be identified and were roughly consistent with the pre-launch predictions of their effect on the control system (e.g., \cite{Thorpe2017a}). In this paper we present results from the first systematic search for micrometeoroid impacts in the LPF data set.  Our data set consists of \nhours hours of data in both the nominal LPF configuration as well as the "Disturbance Reduction System" (DRS) configuration, in which a NASA-supplied controller and thruster system took over control of the spacecraft. This data set corresponds to the times when LPF was operating in a `quiet' mode, without any intentional signal injections or other disturbances. During this period, we have identified \nhits impact candidates using our detection pipeline and manual vetoing. We characterized the properties of this data set and compared it to several theoretical models for the underlying dust population. 
+\\
+The remainder of the paper is organized as follows. In Section \ref{sec:models} we summarize the dust population models to which we compare our data set and their relevant properties. In Section \ref{sec:methods} we describe our detection technique, including initial calibration, search, parameter estimation, and vetoing. Section \ref{sec:results} summarizes our results, including examples of individual events, properties of the observed population, and statistical comparisons with the theoretical models. Conclusions from this work and implications for future work are contained in Section \ref{sec:conclusions}. A complete list of the impact candidates is included in Appendix A. 
+
 
 \FloatBarrier
 \section{Population Models}\label{sec:models}
-Description of Models that we are looking at.  How are they motivated?  What are the differences between them. Describe their basic predictions for LPF orbit (rate, momentum distribution, and Sky Position). We should draft this and then get Petr/Diego to take a look at it and modify. See Figure \ref{fig:models}.
+Description of Models that we are looking at.  How are they motivated?  What are the differences between them. Describe their basic predictions for LPF orbit (rate, momentum distribution, and Sky Position). We should draft this and then get Petr/Diego to take a look at it and modify. 
+
+
+See Figure \ref{fig:models}.
 
 \begin{figure}
 \gridline{\fig{figures/HTC.png}{0.3\textwidth}{(a) Halley-Type Comets (HTCs)}
@@ -393,47 +397,88 @@ Description of Models that we are looking at.  How are they motivated?  What are
 
 \FloatBarrier
 \section{Methods} \label{sec:methods}
-Overall intro of the three steps
+The process of extracting micrometeoroid impact events from the LPF data stream can be divided into three distinct steps: calibration to equivalent free-body acceleration, detection and parameter estimation, and post-processing.  The following three subsections describe these three steps in more detail, the end result of which is a catalog of impact candidates.
+
+
 \subsection{Calibration of LPF data}\label{sec:calibration}
-Description of how LPF uses a control loop and we "unfold" the loop to get the equivalent free-body reaction.  Also describe the rotating-frame effects and requirements for calibraiton of actuators, S/C mass properties, etc. Reference LPF papers. 
+As mentioned in the introduction, LPF uses a sophisticated control system to maintain the positions and attitudes of the spacecraft (S/C) and the two test masses (TMs) such that a number of constraints are satisfied.  Example constraints include maintaining the positions and orientations of the TMs at constant values relative to the S/C and maintaining the S/C attitude relative to the Sun and Earth. In total, the control system takes measurements of 15 kinematic degrees of freedom (DoFs), 3 positions + 3 attitudes for both test masses and 3 attitudes for the spacecraft, and generates actuation commands for 18 DoFs, 3 forces and 3 torques for the two test masses and the spacecraft.  Positions and angles are measured using a star tracker, a capacitive sensing system, and an optical interferometric sensing system. An electrostatic actuation system applies forces and torques to each TM and a micropropulsion system applies forces and torques to the S/C. 
 
 \begin{figure}
 \gridline{\fig{figures/rawImpact.eps}{0.5\textwidth}{(a) LPF Telemetry}
           \fig{figures/reconstructedImpact.eps}{0.5\textwidth}{(b) Equivalent free-body acceleration }}
-\caption{Example of x-axis telemetry for impact candidate at GPS time XXX and the equivalent free-body acceleration estimated through the calibration procedure.\label{fig:models} \red{This is stolen from our LISA11 proceedings. We need to make a new version, perhaps showing additional DoFs?}}
+\caption{Example of x-axis telemetry for impact candidate at GPS time XXX and the equivalent free-body acceleration estimated through the calibration procedure.\label{fig:models} \red{This is stolen from our LISA11 proceedings. We need to make a new version, maybe try the impact that we used for the first example of the MCMC results.}}
 \end{figure}
 
-Also describe the basic noises and expected SNR.
+One effect of the control system is to split the effect of a micrometeoroid impact into both the measured position and commanded force signals, both of which are telemetered down to ground. Figure \ref{fig:models}(a) shows an example of this for an impact candidate observed on 2016-05-16.  The top panel shows the measured position of one TM relative to the S/C along the x-axis, as measured using the optical interferometer.  For the first $\sim50\,$s, the signal exhibits random fluctuations with an RMS amplitude of a few nanometers. Just after 50$\,$s, the signal shows a steep upwards ramp, reaching more than $50\,$nm in a few seconds.  The bottom panel of Figure \ref{fig:models}(a) shows the force commands on the S/C in the x-direction, which are used to maintain the TM-S/C distance in this control mode. Shortly after the observed ramp in the motion, the controller commands a thrust of a few $\mu$N in the +x direction to compensate this motion.  The resulting acceleration of the S/C causes the TM-S/C separation to stop increasing, turn around, a return towards zero. In response, the controller reduces the applied force on the S/C. After two oscillations and roughly a minute, the system is back in its quiescent state.  By combining the force telemetry and the position telemetry with appropriate constants such as the calibration of the force actuators and the mass of the S/C, the equivalent free-body acceleration can be constructed. This is shown in Figure \ref{fig:models}(b) and exhibits the classic impulse response in acceleration that is expected for an impact. For this particular signal, which is one of the larger momentum impacts in our data set, a small overshoot in our reconstructed free-body acceleration can also be seen. This is likely to be due to errors in calibration factors or the relative timing of the various telemetries rather than an feature of the impact event itself, which occurs on timescales far shorter than the $0.1\,$s cadence of the telemetry. 
+
+The basic process illustrated in Figure \ref{fig:models} can be repeated along the other DoFs of the S/C in order to develop a data set of the equivalent free-body acceleration of the S/C in all six DoFs. In doing so, a number of considerations must be addressed. First, the fact that the TMs are not located at the center of mass of the S/C means that torques applied to the S/C lead to accelerations in the linear DoFs of the S/C.  Secondly, the `topology' of the control system, or which actuations are used to control which displacements, is different for each DoF and also for the various operational modes of the control system. Lastly, generating the free-body accelerations requires knowledge of a number of calibration factors such as S/C and TM mass properties, location of the TMs in the S/C frame, locations of the thrusters on the spacecraft and their orientations, calibration and cross-talk in both sensors and actuators, and relative timing/phase information between the various telemetry.  Some of these effects and calibration factors were measured in-flight during dedicated experiments designed to calibrate the LPF hardware for its primary mission. Examples include calibration of the x-axis electrostatic TM actuation (e.g. \red{cal. paper}) and calibration of the thruster response (e.g. \red{ST7 paper, maybe Cold Gas paper}). For quantities that were not measured in flight, our models were built using the nominal values provided by the equipment manufacturers. 
+\\
+The end result of this calibration step was a set of twelve timeseries corresponding to the equivalent free-body acceleration of the S/C in each of 6 DoFs as measured by each of the two TMs. We denote these as $g_{1i}(t)$ and $g_{2i}(t)$ where $i=\left(x,\,y,\,z,\,\theta,\eta,\,\phi\right)$ for TM1 and TM2 respectively. The S/C coordinates are defined such that $z$ is the direction of the top deck (oriented at the Sun), $x$ is the direction along the two test masses with +x pointing from TM1 towards TM2, and $y$ completes a right-handed triad. The angles $\theta,\,\eta,\,\phi$ represent right-hand rotations around $x,\,y,\,z$ respectively.
+\FloatBarrier
+
+\subsection{Impact Model and Sensitivity}
+\label{sec:sensitivity}
+The characteristic timescales of the impact process are short relative the sample cadence of the LPF data (typically $0.1\,\textrm{s}$). Consequently, we model the impact as a delta-function impulse in acceleration for each DoF.  These impulses occur at the same time for each DoF but have different amplitudes which encode information about the impact direction and location on the spacecraft. The modeling of the impact is performed in two steps. First, the acceleration in the S/C body frame is computed for both linear and angular DoFs:
+\begin{eqnarray}
+\vec{a}_{x,B}(t) = P\:M^{-1}\delta(t-\tau) \hat{e},\label{eq:axB} \\
+\vec{a}_{\theta}(t)= P\:\mathbf{I}^{-1}\delta(t-\tau)\left(\vec{r}\times\hat{e}\right), \label{eq:aq}
+\end{eqnarray}
+where $\vec{a}_{x,B}$ is the acceleration of the spacecraft body frame in the linear DoFs, $\vec{a}_{\theta,B}$ is the acceleration of the spacecraft body frame in the angular DoFs, $P$ is the total transferred momentum, $\tau$ is the impact time, $\hat{e}$ is the unit-vector in the direction of the transferred momentum, $M$ is the mass of the S/C, $\mathbf{I}$ is the S/C moment of inertia about its center of mass, and $\vec{r}$ is the location of the impact relative to the center of mass. The angular accelerations at the TM locations are the same as described in (\ref{eq:aq}) but the linear accelerations pick up an additional terms due to the offset of the test mass from the center of mass:
+\begin{equation}
+\vec{a}_{x,TM}(t) = \vec{a}_{x,B} + \left(\vec{r}_{TM}\times \vec{a}_{\theta}\right),\label{eq:axTM}
+\end{equation}
+where $\vec{a}_{x,TM}$ is the acceleration in the linear DoFs as measured in the test mass frame and $\vec{r}_{TM}$ is the location of the test mass relative to the S/C center of mass.
+
+Sensitivity to impacts is limited by two noise sources: noise in the measurement system and disturbances on the S/C.  Measurement noise for both the capacitive and interferometric systems is characterized by a white spectrum in displacement whereas the chief noise source for the S/C disturbance, the micropropulsion system itself, exhibits an approximately white spectrum in force.  The relative levels of these two components differ for each DoF, but the basic functional form for the noise power spectral density is:
+\begin{equation}
+S_{g}=S_0+S_4f^4,
+\label{eq:noise}
+\end{equation}
+where $S_0$ is the amplitude of the S/C disturbance term and $S_4$ is the amplitude of the measurement term. The most substantial difference between the noise level in the various DoFs is in the amplitude of the $S_4$ term, which is substantially lower for the DoFs sensed by the interferometric system: $x,\,\eta,$ and $\phi$.  In \cite{Thorpe:2015cxa} it was shown that SNR of a simple impulse in the presence of this noise shape can be analytically computed as $\rho =  P_i/P_c$, where $P_i$ is the amplitude of the momentum transfer in that DoF and $P_c$ is a characteristic threshold momentum given by:
+\begin{equation}
+P_c \equiv \frac{1}{\sqrt{2\pi}}\left(4 S_4 S_0^3\right)^{1/8}.\label{eq:SNRp}
+\end{equation} 
+The value of $P_c$ varies somewhat for each DoF due to the different combinations of sensing noise, micropropulsion noise, as well as differences in the spacecraft mass properties. The approximate range for linear DoFs is $0.05\,\mu\textrm{N-s}\leq P_c \leq 1\,\mu\textrm{N-s}$ and $0.3\,\mu\textrm{N-m-s}\leq P_c \leq 4\,\mu\textrm{N-m-s}$ for angular DoFs. This asymmetry in sensitivity along different DoFs means that impacts with lower overall momentum are often only detected in a fraction of DoF channels, meaning that the full set of parameters cannot be extracted. Similarly, impacts which happen to impart a large fraction of their momentum in a sensitive channel may be measured at lower thresholds than those coming from different directions.
 
 \FloatBarrier
-\subsection{Detection, Parameter Estimation, and Vetos}\label{sec:MCMC}
-Describe impact model in 3-D and frequency domain. Describe the MCMC tool and what tests we did on it. 
+\subsection{Detection and Parameter Estimation}\label{sec:MCMC}
+\red{Describe the MCMC tool and what tests we did on it. }
 
+
+\FloatBarrier
+\subsection{Post processing and vetos}\label{sec:vetos}
+\red{Describe selection of candidates, application of vetos, and post-processing to do the sky angle conversion, sky area computation, etc.}
+For each segment of data, the MCMC tool described in Section \ref{sec:MCMC} was run for in an initial search comprised of XXX steps on the TM1 data. After discarding the first XXX steps of the chain, the detection fraction was computed as the ratio of chain steps where an impact model was included to the total number of steps.  For systems with a detection fraction above XXX, the MCMC tool was re-run in a characterization step of XXX steps on both TM1 and TM2. A burn-in period of XXX steps was discarded from both chains and the detection fraction was again computed as well as the variance in the impact time parameter $\tau$.  For systems with an above-threshold detection fraction and impact time variance of less than XXX in both TMs were passed on to the next step in the vetting process, manual inspection.  For the manual inspection process, an expanded set of telemetry from the spacecraft around the candidate impact time was downloaded and inspected.  Examples of signals inspected include all force and torque signals, all position and attitude signals, selected voltage levels, and internal telemetry of the micropropulsion system. This process yielded two types of false triggers: thruster current spikes and data gaps. Candidates for which the signals appeared consistent with expectations were added to the catalog.
+
+For vetted impact candidates, an additional post-processing step was conducted to extract parameters of interest.  In order to compare with the micrometeoroid population models in Section \ref{sec:models}, it was necessary to transform the impact direction from S/C coordinates to the \red{frame name?} used by the models.  This transformation was done in two steps, first from the S/C frame to an Earth-Centered Inertial (ECI) frame using the S/C quaternion telemetry provided by the star tracker, and then from ECI to the \red{frame name} using the S/C ephemeris. Median sky location and a 90\% confidence sky area for both frames was computed using HEALPIX.\red{cite something}.
 
 \FloatBarrier
 \section{Results} \label{sec:results}
-
-Describe how many segments we looked at, how they were separated between LTP,DRS, etc. How we did cuts, how many initial candidates we had, and how many were left after vetos of different types. Summary of the catalog in Figure \ref{fig:timeline}  and Table \ref{tab:candidates}.
-
+In this paper we restrict our analysis to segments of data where no signals were deliberately injected into the LPF system. We identified a total of \nhours hours of data in three distinct configurations: the nominal LPF configuration in which the European-provided DFACS control system and cold gas micropropulsion system were operating (2957 hours), the DRS configuration in which the NASA-provided DCS control system and colloidal micropropulsion system were operating (1207 hours), and a hybrid configuration in which the DFACS was controlling the S/C using the colloidals (184 hours). Figure \ref{fig:timeline} shows a timeline of these segments along with the detected impacts plotted with their total transferred momentum along the vertical axis. The total number of detected impacts is 54: 36 in the nominal configuration, 15 in the DRS configuration, and 3 in the hybrid configuration. This corresponds to a rough event rate of 0.3 impacts/day, which is broadly consistent with the estimate made in \cite{Thorpe:2015cxa}. 
 
 \begin{figure}[ht!]
 \plotone{figures/timeline.png}
-\caption{Timeline of impact events during LPF. The yellow dots show the impact times. The vertical bars denote the times included in the search with blue representing LTP, red DRS, and purple the mixed mode. \label{fig:timeline}}
+\caption{Timeline of impact events during LPF. The yellow dots show the impact times with the total transferred momentum defining the vertical axis. The vertical bars denote the times included in the search with blue representing the nominal configuration, red the DRS configuration, and purple the hybrid configuration. See text for details. \label{fig:timeline}}
 \end{figure}
+
+In the following sections we present some example events in detail and summarize some properties of the observed population.  A full catalog of the impacts and their estimated parameters can be found in Appendix A.
 
 \FloatBarrier
 \subsection{Sample candidate events \label{sec:samples}}
+As mentioned in Section \ref{sec:sensitivity}, LPF's sensitivity depends on the parameters of the impact including both the total momentum transferred as well as the fraction of that momentum that is  projected into each DoF.  As a result, the quality of our parameter estimation varies greatly from impact to impact.  Figure \ref{fig:goodExample} shows results for an impact occurring at GPS time $t_{gps}=1154024345.4$, corresponding to 2016-07-31 18:18:48.400 UTC. With a moderately high transferred momentum of $8.5\,\mu\textrm{N-s}$ and a S/C longitude that aligns well with the sensitive x-axis, the total SNR in the two TMs are $\rho_1\approx16$ and $\rho_2\approx?$ . Figure \ref{fig:goodExample}(a) shows an overlaid corner plot representing the posterior probabilities for the impact parameters as measured by TM1 (in red, lower-left) and TM2 (in blue, upper-right).  The panels are arranged in a grid with rows and columns corresponding to the following parameters: total transferred momentum ($P_{tot}$, in $\mu$N-s), S/C latitude defined relative to the S/C x-y plane ($lat$, in deg.), S/C longitude defined relative to the +x axis ($lon$, in deg.), and x,y,z, locations of the impact with respect to the S/C center of mass ($r_x,\,r_y,\,r_z$ in $m$). \red{are the locations with respect to mechanical frame or body frame?}. The panels along the diagonal show the posterior probability density for each parameter as measured by TM1 (red) and TM2 (blue).  The panels on the off-diagonals show the correlation between pairs of parameters in the TM1 data (lower off-diagonals) and TM2 data (upper off-diagonals). The measured parameters between these two impacts are broadly consistent, although TM1 generally prefers a solution with slightly increased $P_{tot}$, larger $lat$, and positive shifts in both $r_x$ and $r_z$. The variances in the parameters for TM1 are also slightly smaller than for TM2, likely as a result of increased signal in TM1.\red{we should check, I think we have SNR data for both}.
 
-Give some examples of impacts (double corner plots, sky area in Sun coordinates, unfolded LPF impacts). Would pick one "good" example (well localized, good agreement) and one "average" example and include those figures.
-\begin{figure}
+Figure \ref{fig:goodExample}(b) shows the reconstructed sky localization in the \red{frame name} frame using the TM1 data.  The 90\% confidence interval \red{(check)} encompasses an area of 3860$\,\textrm{deg}^2$. and is centered at a latitude of -43 deg and a longitude of -91 deg, meaning that the impactor originated from the direction of LPF's orbit and from below the ecliptic. Figure \ref{fig:goodExample}(c) shows the reconstructed S/C impact location on a map of the LPF exterior that has been flattened to show the full surface. \red{we need some labels on these figures to make these easier to understand}.  The most likely location of impact is on the +y vertical panel about 2/3 of the way up towards the top deck. \red{we should check the table program because the table shows +x+y}.
+
+
+\begin{figure}[h!]
 \gridline{\fig{figures/dualCorner.png}{0.3\textwidth}{(a) Parameter corner plot for GRS1 and GRS2}
           \fig{figures/sky_sun2.png}{0.3\textwidth}{(b) Sky localization in Sun frame}
           \fig{figures/flat_LPF_log_GRS1.png}{0.3\textwidth}{(c) Spacecraft Location}}
 \caption{Sample MCMC results for a well-characterized event.\label{fig:goodExample}}
 \end{figure}
 
-
-\begin{figure}
+Figure \ref{fig:Example} shows a similar set of plots as Figure \ref{fig:goodExample} but for an impact occurring at $t_{gps} = 1149475987.7$ (2016-06-09 02:52:50.700 UTC) which had a lower total momentum ($P_{tot}\approx1.0\,\mu\textrm{N-s}$), and lower SNR ($\rho_1\approx1.5$, $\rho_2\approx?$). As a result, the constraints on parameters other than the total momentum are rather weak.  The impact location is favored towards the -x and +z faces and the preferred direction to the impactor is in the forward direction (latitudes around -90 deg) and above the ecliptic.
+\begin{figure}[h!]
 \gridline{\fig{figures/dualCorner_low.png}{0.3\textwidth}{(a) Parameter corner plot for GRS1 and GRS2}
           \fig{figures/sky_sun1_low.png}{0.3\textwidth}{(b) Sky localization in Sun frame}
           \fig{figures/flat_LPF_log_GRS1_low.png}{0.3\textwidth}{(c) Spacecraft Location}}
@@ -444,7 +489,7 @@ Give some examples of impacts (double corner plots, sky area in Sun coordinates,
 \subsection{Ensemble results}
 
 
-Make some plots showing ensemble properties. Two candidates are the momentum power-law plot and the sky-area ellipses for the best-localized events.
+Make some plots showing ensemble properties. Two candidates are the momentum power-law plot (already included) and maybe something showing rate statistics. Maybe something like time between events (although we'd have to take out the gaps when we weren't observing). 
 \begin{figure}[ht!]
 \fig{figures/momentumCDF.png}{0.5\textwidth}{Cumulative momentum distribution of observed impacts. \label{fig:CDF_P}}
 \end{figure}
@@ -453,7 +498,7 @@ Make some plots showing ensemble properties. Two candidates are the momentum pow
 \FloatBarrier
 \section{Model Inference} \label{sec:models}
 
-Describe how we did the model inference and what the results are.
+Describe how we did the model inference and what the results are. Maybe grab some of John's notes.
 \begin{figure}
 \gridline{\fig{figures/JFC_HTC.png}{0.3\textwidth}{(a) JFC-HTC subpopulation}
           \fig{figures/HTC_Uniform.png}{0.3\textwidth}{(b) HTC-Uniform subpopulation}
