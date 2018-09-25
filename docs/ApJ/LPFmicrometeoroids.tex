@@ -487,11 +487,17 @@ Figure \ref{fig:Example} shows a similar set of plots as Figure \ref{fig:goodExa
 
 \FloatBarrier
 \subsection{Ensemble results}
+Before comparing our observations with the detailed models of the dust complex described section \ref{sec:models}, it is useful to examine some basic properties of the observed ensemble. Figure \ref{fig:CDF_P} shows the cumulative momentum distribution of the observed events, with the median momentum indicated by the yellow diamond \red{marker} and the \red{XXX} confidence interval indicated by the horizontal bars.  As is generally expected from all models of the dust complex, the number of impacts falls with the total momentum. Two single-index power-law fits to the data, both inlcuding and excluding the highest-momentum impact, are plotted in the red and purple lines, and have power-law indices of -0.73 and -0.97 respectively. \red{check numbers and get error bars}. Also plotted for reference are the predicted flux averaged over the four models described in section \ref{sec:models} and a fit to them with a power law index of \red{XXX}. \red{What else do we want to say here? Do we want to try fitting various breaks, etc.  Is there a nice Bayesian way to do that?}.
 
+\begin{figure}
+\gridline{\fig{figures/momentumCDF.png}{0.5\textwidth}{a}}
+\caption{Cumulative momentum distribution of observed impacts. We should divide by the number of impacts to get this in a fractional sense. \label{fig:CDF_P}}
+\end{figure}
 
-Make some plots showing ensemble properties. Two candidates are the momentum power-law plot (already included) and maybe something showing rate statistics. Maybe something like time between events (although we'd have to take out the gaps when we weren't observing). 
-\begin{figure}[ht!]
-\fig{figures/momentumCDF.png}{0.5\textwidth}{Cumulative momentum distribution of observed impacts. \label{fig:CDF_P}}
+A second property of the observed distribution is the time of arrival statistics, which are expected to be governed by a Poisson process. Figure \ref{fig:CDF_rate} shows the cumulative probability density of the observed time between events, which was computed by excising the times not included in our data set. As is expected for a Poisson process, this distribution follows an exponential function, with a time between events of $2.94\pm0.05\,$days. 
+\begin{figure}
+\gridline{\fig{figures/rateplot.eps}{0.5\textwidth}{a}}
+\caption{Cumulative distribution of observed time interval between events, taking into account gaps in the observations. The red curve is an exponential fit with a characteristic interval between events of $2.94\pm0.05\,$days. \label{fig:CDF_rate}}
 \end{figure}
 
 
