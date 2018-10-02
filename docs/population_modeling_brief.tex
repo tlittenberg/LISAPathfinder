@@ -13,39 +13,52 @@
 \affiliation{$^4$ Joint Space-Science Institute, University of Maryland, College Park, MD 20742, USA}
 
 \begin{abstract}
-  Just some notes laying out the approach.  Just quickly assembled, based on some other notes, with minimal explanation.  Hopefully Tyson can follow...
+  Notes on the Bayesian population inference approach.
 \end{abstract}
+
 \maketitle
 \section{A Bayesian approach to population models}
 Observations of micrometeoroid impacts provide some information about the population of micrometeoroids overall.  To make consistent inferences about a population from observational data including a moderate number of events, it is appropriate to take a Bayesian approach.  It is useful begin by laying down the general problem of how population models can be constrained by event observations. What is an appropriate likelihood function for the analysis, and more broadly, what are the relevant features in appropriate expressions of Bayes theorem.  
 
 We express Bayes' theorem as
 \begin{equation}
-  p(\theta\in\Sigma|D)=\frac{p(D|\theta)p(\theta)}{p(D)}
+  p(\theta|D)=\frac{p(D|\theta)p(\theta)}{p(D)}
 \end{equation}
-where we have used $D\in\Sigma_D$ to represent the overall set of observed data.  We can go to the next level by splitting $\theta=\{\theta_P,\theta_O\}$ into ``population'' parameters and ``observation'' parameters, respectively correspongin to the parameters characterizing the micrometeoroid population, and those which we make inferences about in our observational impact analysis,
+where we have used $D$ to represent the overall set of observed data.  We can go to the next level by splitting $\theta=\{\theta_P,\theta_O\}$ into ``population'' parameters and ``observation'' parameters, respectively corresponding to the parameters characterizing the micrometeoroid population, and those which we make inferences about in our observational impact analysis,
 \begin{eqnarray*}
-  p(\theta_O,\theta_P\|D)&=&\frac{p(D|\theta_O,\theta_P)p(\theta_O,\theta_P)}{p(D)}\\
+  p(\theta_O,\theta_P|D)&=&\frac{p(D|\theta_O,\theta_P)p(\theta_O,\theta_P)}{p(D)}\\
   &=&\frac{p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)p(\theta_P)}{p(D)}.
 \end{eqnarray*}
 If we are only interested in the metaparameters $\theta_P$, then we can marginalize over $\theta_O$,
 \begin{eqnarray}
-  p(\theta_P|D)&=&\int_{\Sigma_o}p(\theta_O,\theta_P|D)
-  d{\theta_O}\\
-  &=&\int_{\Sigma_o} p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)d\theta_O\frac{ p(\theta_P)}{p(D)}.
+  p(\theta_P|D)&=&\int p(\theta_O,\theta_P|D)
+  d{\theta_O}\nonumber\\
+  &=&\frac{ p(\theta_P)}{p(D)}\int p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)d\theta_O.\label{eq:HierBayesThm}
 \end{eqnarray} 
-The integral on the right hand side is the transdimenstional integral over the full model space $\Sigma_o$.  In integral factor is, in effect, the likelihood we are looking for in the population mode inference
-\begin{equation}
-  p(D|\theta_P)=\int_{\Sigma_o} p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)d\theta_O.
-\end{equation}
+The integral on the right hand side is the transdimenstional integral over the full observation model space, including how many and what kinds of events were inferred to have occurred.  The integral factor in \eqref{eq:HierBayesThm} can be recongnized as the effective likelihood function that we need for the population model inference analysis,
+\begin{eqnarray}
+  p(D|\theta_P)&=&\int p(D|\theta_O,\theta_P)p(\theta_O|\theta_P)d\theta_O\nonumber\\
+  &=&\int p(D|\theta_O)p(\theta_O|\theta_P)d\theta_O\label{eq:metaLike}
+\end{eqnarray}
+The last line also encodes that the micrometeoriod impact observation likelihood depends only on the nature of the impacts $\theta_O$ and not also explicitly on other features of the population $\theta_P$.
 
-Consistent with our approach to micrometeoroids, we can suppose that the data is broken into many small data subsets $D=\{D_\alpha\}$ which are small enough so that multiple impacts are unlikely in each bin, but large enough that the individual responses are likely to be well-contained within a single bin.
-In each subspace, we make inferences on transdimensional observation parameters $\theta_{O,\alpha}=(n,\{\psi^{\{n\}})=(n,\{\psi_1,...\psi_n\})$ where $n$ is the number of impacts and $\psi_n$ represents all the parameters for the $n$th impact.  We also assume that there is no explicit dependence on the event detection likelihood on the population metaparameters $\theta_P$. Then,
+Consistent with our approach to micrometeoroids, we suppose that the data is broken into many small data subsets $D=\{D_\alpha\}$ which are small enough so that multiple impacts are unlikely in each bin, but large enough that the individual responses are unlikely to straddle the bin boundaries. 
+In each data subspace, we make inferences on transdimensional observation parameters $\theta_{O,\alpha}=(n,\{\psi^{\{n\}})=(n,\{\psi_1,...\psi_n\})$ where $n$ is the number of impacts and $\psi_n$ represents all the parameters for the $n$th impact.
+We thus perform an observational inference analysis, conducted with some concrete suitably generic reference assumptions about the population which we can call $\theta_{P0}$.  In practice, for the the impact analysis, we assume a reference distribution of uniform sky impact directions and log-uniform meteoriod momenta.  Bayes theorem for this inference problem then looks like
+\begin{align}
+  p(n,\psi^{\{n\}}|D_\alpha,\theta_{P0})&= p(D_\alpha|n,\psi^{\{n\}})p(n,\psi^{\{n\}}|\theta_{P0}).
+\end{align}
+In the usual mechanics of Baysian analysis then, a key result is a set of samples consistently drawn from for each data s
+
+Then,
 \begin{eqnarray}
   p(D|\theta_P)&=&\prod{\{\alpha\}} p(D_\alpha|\theta_P)\\
-  p(D_\alpha|\theta_P)&=&\sum_{k=0}^\infty\int d\psi^{\{k\}} p(D|\psi^{\{k\}},n=k)p(n=k,\psi^{\{k\}}|\theta_P).
+  p(D_\alpha|\theta_P)&=&\sum_{k=0}^\infty\int d\psi^{\{k\}} p(D|k,\psi^{\{k\}})p(k,\psi^{\{k\}}|\theta_P).
 \end{eqnarray}
-The second expression is almost the same as the likelihood used in our event inference analysis, except that we have $p(n=k,\psi^{\{k\}}|\theta_P)$ in place the population-model independent prior that we use in the existing impact analysis, which we will label $\hat p(n=k,\psi^{\{k\}})$ using a hat to indicate a distribution specifically based on the assumptions in the impact event inference analysis. In practice, we also neglect the possibility that there is more than one impact per bin, so that the sum runs only to $k=1$, which we will consistently do here as well. Thus we can write
+The second expression is almost the same as the likelihood used in our event inference analysis, except that we have $p(k,\psi^{\{k\}}|\theta_P)$ in place the population-model independent prior that we use in the existing impact analysis, which we will label $\hat p(n=k,\psi^{\{k\}})$ using a hat to indicate a distribution specifically based on the assumptions in the impact event inference analysis. In practice, we also neglect the possibility that there is more than one impact per bin, so that the sum runs only to $k=1$, which we will consistently do here as well.
+
+
+Thus we can write
 \begin{eqnarray}
   p(D_\alpha|\theta_P)&=&\sum_{k=0}^1\int d\psi^{\{k\}} p(D_\alpha|\psi^{\{k\}},n=k)\hat p(n=k,\psi^{\{k\}})\nonumber\\
   &&\times\frac{p(n=k,\psi^{\{k\}}|\theta_P)}{\hat p(n=k,\psi^{\{k\}})}\\
