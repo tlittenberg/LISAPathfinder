@@ -595,9 +595,24 @@ A second property of the observed distribution is the time of arrival statistics
 
 
 \FloatBarrier
-\section{Model Inference} \label{sec:models}
+\section{Population Model Inference} \label{sec:model_inference}
 
-Describe how we did the model inference and what the results are. Maybe grab some of John's notes.
+Using hierarchical Bayesian analysis we can piggyback on our Bayesian treatment of impacts to make interences about the populations producing those impacts. The hierarchical analysis begins by considering a broader model including both the population and impact processes, which we may jointly parameterize by $\theta=\{\theta_P,\theta_I\}$, combining ``population'' parameters and ``impact'' parameters, respectively.  For the joint model, Bayes theorem looks like
+\begin{equation}
+  p(\theta_I,\theta_P|D)=\frac{p(D|\theta_I,\theta_P)p(\theta_I|\theta_P)p(\theta_P)}{p(D)}.
+\end{equation}
+where $D=\{D_\alpha\}$ is the combined full set of LPF data segments considered here, and $\theta_I$ is abstractly encompasses impact parameters across the full data set.
+
+Here we primarily interested in $\theta_P$, describing the population models, as in Sec.~\ref{sec:models}, so we marginalize over $\theta_I$.  This provides a Baysian framework for population inference
+\begin{eqnarray}
+  p(\theta_P|D)&=&\frac{ p(D|\theta_P)p(\theta_P)}{p(D)}\label{eq:HierBayesThm}\\
+  p(D|\theta_P)&=&\int p(D|\theta_I)p(\theta_I|\theta_P)d\theta_I\label{eq:metaLike}.
+\end{eqnarray}
+The last line expresses the effective likelihood function that we need for the population model inference analysis assuming that micrometeoriod impacts likelihoods depend only on the nature of the impacts $\theta_I$ and not also \textit{explicitly} on other features of the population $\theta_P$.
+
+\textbf{MORE TO COME}
+
+
 \begin{figure}
 \gridline{\fig{figures/JFC_HTC.png}{0.3\textwidth}{(a) JFC-HTC subpopulation}
           \fig{figures/HTC_Uniform.png}{0.3\textwidth}{(b) HTC-Uniform subpopulation}
