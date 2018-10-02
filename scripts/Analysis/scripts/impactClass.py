@@ -24,7 +24,8 @@ import scipy as sp
 import scipy.stats
 from scipy import stats
 
-import os, sys
+import os
+import sys
 import glob
 from os import listdir
 from os.path import isfile, join
@@ -46,12 +47,13 @@ from scipy.optimize import curve_fit
 
 
 class impactClass:
-	def __init__(self, chainFile = None, chainDir = None, GRS_num = 1, burnIn = 0.5, outDir = 'data'): 
+	def __init__(self, chainFile = None, BASE_DIR = None, chainDir = None, GRS_num = 1, burnIn = 0.5, dataDir = '/data'): 
 		"""
 			if ChainFile is specified, reads in from pickle data
 			if chainDir os specified, writes pickle data
 		"""
 		if chainDir is not None:
+			print('ERROR, THIS FUNCTION IS UNTESTED')
 			""" THIS FUNCTION IS UNTESTED """
 			"""
 			Function to read micrometeoroite MCMC chain files. Assumes directory structure 
@@ -61,7 +63,7 @@ class impactClass:
 			   chainDir = directory corresponding to the MCMC output is found
 			   GRS_num = index of the grs for this chain (1 or 2)
 			   burnIn = fraction of chain to throw out for burn in
-			   outDir = output directory for pickle file (name will be generated automatically)
+			   dataDir = output directory for pickle file (name will be generated automatically)
 			   
 			Ira Thorpe
 			2018-05-12 
@@ -82,6 +84,7 @@ class impactClass:
 			N = np.shape(dat)[0]
 			trim = int(float(N) * burnIn);
 			dat = np.delete(dat, slice(0, trim), axis=0)
+
 			
 			# build into a dictionary
 			t0 = np.median(dat[:, 3])
@@ -120,7 +123,9 @@ class impactClass:
 			}
 
 			df_veto = self.getVetoList()
-			self.isValid = self.isValid(df_veto, checkReal = True)
+			self.isImpact = self.getisImpact(df_veto)
+			self.isGlitch = self.getisGlitch(df_veto)
+			self.isValidSearch = self.getisValidSearch()
 
 			# load log likelihood chain
 			logLfile = chainDir +'/logLchain.dat'
@@ -133,14 +138,21 @@ class impactClass:
 			self.dfrac = dfrac
 			
 			# save data in processed directory
-			pickle.dump(data, open(str(os.cwd) + '/' + 
-						outDir + '/' + str(int(gpsTime)) + '_grs' + 
+			pickle.dump(data, open(str(os.cwd) +  
+						dataDir + '/' + str(int(gpsTime)) + '_grs' + 
 						str(int(GRS_num)) + '.pickle','wb'))
 
 		else:
 			import pickle
-			"Converts Ira's dictionary into a class"
+			"""Converts Ira's dictionary into a class"""
+			import os
 
+			if BASE_DIR is None:
+				p = pathlib.PurePath(os.getcwd())
+				self.BASE_DIR = str(p.parent)
+			else:
+				self.BASE_DIR = str(BASE_DIR)
+			self.dataDir = dataDir
 
 			fid = open(chainFile,'rb')
 			data = pickle.load(fid)
@@ -148,24 +160,48 @@ class impactClass:
 			
 			# Loads dictionary into data
 			self.data = data
-			
 			self.segment = data['segment']
-			self.gps     = data['gps']
 			self.N       = data['N']
 			self.logL    = data['logL']
 			self.snr     = data['snr']
 			self.t0      = data['t0']
-			self.Ptot    = data['Ptot'] * 10 ** 6 # Micro Ns
 			self.lat     = data['lat']
 			self.lon     = data['lon']
 			self.rx      = data['rx']
 			self.ry      = data['ry']
 			self.rz      = data['rz']
 			self.face    = data['face']
+			self.dfrac   = data['dfrac']
 			self.grs     = GRS_num
 
+			self.N_1 = int(self.dfrac * self.N)
+
+
+			if self.lon is None or len(self.lon) == 0:
+				self.isEmpty = True
+			else:
+				self.isEmpty = False
+
+			try:
+				self.run = data['run']
+			except:
+				pass
+
+			# Exceptions for when we have 0 impacts
+			if data['gps'] is None:
+				self.gps     = data['segment']
+			else:
+				self.gps     = data['gps']
+
+			if data['Ptot'] is not None:
+				self.Ptot    = data['Ptot'] * 10 ** 6 # Micro Ns
+			else:
+				self.Ptot = None
+
 			df_veto = self.getVetoList()
-			self.isValid = self.isValid(df_veto, checkReal = True)
+			self.isImpact = self.getisImpact(df_veto)
+			self.isGlitch = self.getisGlitch(df_veto)
+			self.isValidSearch = self.getisValidSearch()
 			self.define_coords()
 
 	# ---------------------------------------#
@@ -207,8 +243,12 @@ class impactClass:
 			return self.face
 		elif param == 'grs':
 			return self.grs
-		elif param == 'isValid':
-			return self.isValid
+		elif param == 'isImpact':
+			return self.isImpact
+		elif param == 'isGlitch':
+			return self.isGlitch
+		elif param == 'isValidSearch':
+			return self.isValidSearch
 		else: 
 			print("Invaid Input: given,", param)
 
@@ -243,42 +283,62 @@ class impactClass:
 			return stats.mode(self.face)
 		elif param == 'grs':
 			return self.grs
-		elif param == 'isValid':
-			return self.isValid
+		elif param == 'isImpact':
+			return self.isImpact
+		elif param == 'isGlitch':
+			return self.isGlitch
+		elif param == 'isValidSearch':
+			return self.isValidSearch
 		else: 
 			print("Invaid Input: given,", param)
 
 	def getVetoList(self):
-		names = ['isImpact', 't', 'UTC', 'run', 'dt',
-				'prob',
-				'p', 'dp',
-				'c', 'dc',
-				'phi', 'dphi',
-				'x', 'dx',
-				'y', 'dy',
-				'z', 'dz']
-		df_veto = pd.read_csv('Impacts/impact_cat.csv', header = None, names = names)
-		df_veto['isImpact'] = df_veto['isImpact'].map(
-			{'TRUE': True, 'FALSE': False, 'M':True})
-
+		df_veto = pd.read_csv(self.BASE_DIR + self.dataDir + '/impact_list.txt', header = 'infer',
+				delim_whitespace = True)
 		return df_veto
 
 	
-	def isValid(self, df_veto, checkReal = True):
-		for i in range(len(df_veto['t'])):
-			diff = np.abs(self.gps - df_veto['t'][i])
-			if diff < 1:
-				# Only Counts if it's a real impact
-				return df_veto['isImpact'][i]
-		# if it's not in my list return True
-		return True
+	def getisImpact(self, df_veto):
 
-	def summaryString(self,
+		try:
+			index = df_veto.index[df_veto['segment'] == self.segment][0]
+		except IndexError:
+			# if not in the list, its not an Impact
+			return False
+		else:
+			return df_veto['isImpact'].values[index]
+
+	def getisGlitch(self, df_veto):
+		try:
+			index = df_veto.index[df_veto['segment'] == self.segment][0]
+		except IndexError:
+			# if not in the list, its not an Impact
+			return False
+		else:
+			return df_veto['isGlitch'].values[index]
+
+	def getisValidSearch(self):
+		search_times = pd.read_csv(self.BASE_DIR + self.dataDir + '/segment_list.txt',
+				header = None, names = ['segment'], delim_whitespace = True)
+		
+		# Jakes list does not cover all time, keep segments only within list
+		if self.segment > max(search_times['segment'].values):
+			return True
+		elif int(self.segment) in search_times['segment'].values:
+			return True
+		else:
+			return False
+		
+	def summaryString(self, percent_sky = 0.1,
 			keys = ['Ptot','lat','lon','rx','ry','rz'],
 			scale = [1.0, 1.0, 1.0, 100.0, 100.0, 100.0]):
 		"""
 		function to produce a string for use in a ApJ style fancy table
 		"""
+
+		if self.isEmpty:
+			return ""
+
 		p = np.zeros([np.shape(keys)[0],3])
 
 		for idx, kk in enumerate(keys) :
@@ -292,7 +352,7 @@ class impactClass:
 		else:
 			faceText = '-'
 
-		if self.skyArea < 5000:#(0.1*41253) :
+		if self.skyArea < (percent_sky * 41253) :
 			areaText = str('{0:.0f}'.format(self.skyArea))
 			SClatText = str('{0:.0f}'.format(self.lat_c))
 			SClonText = str('{0:.0f}'.format(self.lon_c))
@@ -352,16 +412,13 @@ class impactClass:
 		import os
 		import pathlib
 		
-		# get current working directory
-		p = pathlib.PurePath(os.getcwd())
-		baseDir = str(p.parent)
 		
 		# load Quaternion data
 		if doText:
-			quatFile = baseDir +'/rawData/allQuats.txt'
+			quatFile = self.BASE_DIR + '/rawData/allQuats.txt'
 			dat = np.loadtxt(quatFile)
 		else :
-			quatFile = baseDir + '/data/quats.npy'
+			quatFile = self.BASE_DIR + self.dataDir + '/quats.npy'
 			dat = np.load(quatFile)
 			
 		# separate out gps time (1st column) from quaternions (columns 2-5)
@@ -378,7 +435,12 @@ class impactClass:
 	def ECI_to_SUN(self):
 		"""
 		returns rotation quaternion from ECI to SUN coordinates
-
+		ECI = J200, SUN = HEEQ
+		
+		Sun coords
+		sun = 0,0
+		prograde = -90
+		retrograde = +90
 		"""
 		import numpy as np, quaternion
 		import os
@@ -428,6 +490,19 @@ class impactClass:
 		import numpy as np
 		import matplotlib.pyplot as plt
 
+		if self.isEmpty:
+			self.lat_c = None
+			self.lon_c = None
+			self.skyArea = None
+			self.healPix = None
+
+			self.lat_c_sun = None
+			self.lon_c_sun = None
+			self.skyArea_sun = None
+			self.healPix_sun = None
+
+			return self
+
 		# Build the HEALPIX map
 		npix = hp.nside2npix(nside)
 		mp = np.arange(npix)
@@ -441,7 +516,7 @@ class impactClass:
 		cnt_hp, bins = np.histogram(dat_hp, bin_edges)
 		
 		# Measure centroid and sky area
-		cdf = np.cumsum(cnt_hp.astype('float')) / float(self.N)        
+		cdf = np.cumsum(cnt_hp.astype('float')) / float(self.N_1)        
 		ilb = (np.abs(cdf - ((1.0 - CI) / 2.0))).argmin()
 		iub = (np.abs(cdf - (1.0 - ((1.0 - CI) / 2.0)))).argmin()
 		imed = (np.abs(cdf - 0.5)).argmin()
@@ -453,7 +528,7 @@ class impactClass:
 		self.lat_c = lat_c
 		self.lon_c = lon_c
 		self.skyArea = area
-		self.healPix = cnt_hp / float(self.N)
+		self.healPix = cnt_hp / float(self.N_1)
 		
 		# if Sun angles are present, repeat for them
 		if hasattr(self, 'lon_sun'):
@@ -464,7 +539,7 @@ class impactClass:
 			cnt_hp, bins = np.histogram(dat_hp, bin_edges)
 		
 			# Measure sky area
-			cdf = np.cumsum(cnt_hp.astype('float')) / float(self.N)        
+			cdf = np.cumsum(cnt_hp.astype('float')) / float(self.N_1)        
 			ilb = (np.abs(cdf - ((1.0 - CI) / 2.0))).argmin()
 			iub = (np.abs(cdf - (1.0 - ((1.0 - CI) / 2.0)))).argmin()
 			imed = (np.abs(cdf - 0.5)).argmin()
@@ -476,30 +551,7 @@ class impactClass:
 			self.lat_c_sun = lat_c
 			self.lon_c_sun = lon_c
 			self.skyArea_sun = area
-			self.healPix_sun = cnt_hp / float(self.N)
-
-		# if Micro angles are present, repeat for them
-		if hasattr(self, 'lon_micro'):
-			# Convert data to HEALPIX
-			dat_hp = hp.pixelfunc.ang2pix(nside, self.lon_micro, self.lat_micro, nest = False, lonlat = True)
-
-			# Make the histogram
-			cnt_hp, bins = np.histogram(dat_hp, bin_edges)
-		
-			# Measure sky area
-			cdf = np.cumsum(cnt_hp.astype('float')) / float(self.N)        
-			ilb = (np.abs(cdf - ((1.0 - CI) / 2.0))).argmin()
-			iub = (np.abs(cdf - (1.0 - ((1.0 - CI) / 2.0)))).argmin()
-			imed = (np.abs(cdf - 0.5)).argmin()
-			area = 41253.0 * float(iub - ilb) / float(npix)
-			lon_c, lat_c = hp.pixelfunc.pix2ang(nside, imed, nest = False, lonlat = True)
-			lon_c = np.mod(180 + lon_c, 360) - 180
-			
-			# put into dictionary
-			self.lat_c_micro = lat_c
-			self.lon_c_micro = lon_c
-			self.skyArea_micro = area
-			self.healPix_micro = cnt_hp / float(self.N)
+			self.healPix_sun = cnt_hp / float(self.N_1)
 
 		return self
 		
@@ -515,10 +567,14 @@ class impactClass:
 		
 		# libraries & modules
 		import numpy as np, quaternion
-		from microTools import getSCquats
 		from astropy.time import Time
 		from astropy.coordinates import get_body
-		
+
+		if self.isEmpty:
+			self.lon_sun = None
+			self.lat_sun = None
+			return self
+
 		# make quaternion array from SC latitude and longitude
 		lon_sc_rad = self.lon * np.pi / 180
 		lat_sc_rad = self.lat * np.pi / 180
@@ -529,7 +585,7 @@ class impactClass:
 		q_coord_sc = quaternion.as_quat_array(np.transpose(n))
 
 		# read SC quaternion (rotate from SC to ECI)
-		qr_ECI_SC = getSCquats(int(self.gps))
+		qr_ECI_SC = self.getSCquats()
 		
 		# perform first rotation
 		q_coord_ECI = qr_ECI_SC * q_coord_sc * quaternion.np.conjugate(qr_ECI_SC)
@@ -547,52 +603,10 @@ class impactClass:
 		lat_sun = 180 / np.pi * np.arctan2(q_coord_sun_n[:, 3],
 								np.sqrt(np.square(q_coord_sun_n[:, 1]) + np.square(q_coord_sun_n[:, 2])))
 		
-		# add to dictionary
+		# add to class
 		self.lon_sun = lon_sun
 		self.lat_sun = lat_sun
 		return self
-	
-	def SuntoMicro_OLD(self):
-		"""
-		Rotates from sun centered frame to strange micrometeoroid frame
-				
-				(sun)  (direction of motion around sun)   (earth)
-				 -90                 0                      +90
-				  o                  x                       .
-
-		"""
-		self.lon_micro = np.copy(self.lon_sun)
-		self.lat_micro = np.copy(self.lat_sun)
-
-		for i, lon in enumerate(self.lon_micro):
-			if lon - 90 < -180:
-				self.lon_micro[i] = 180 + 90 + lon
-			else:
-				self.lon_micro[i] -= 90
-		return self
-
-
-	def SuntoMicro(self):
-		"""
-		Rotates from sun centered frame to strange micrometeoroid frame
-				
-	(direction of motion around sun)                    (anti-earth around sun)
-				 -90                sun                      +90
-				  o                  x                       .
-
-		"""
-		self.lon_micro = -1 * np.copy(self.lon_sun)
-		self.lat_micro = np.copy(self.lat_sun)
-		"""
-
-		for i, lon in enumerate(self.lon_micro):
-			if lon - 90 < -180:
-				self.lon_micro[i] = 180 + 90 + lon
-			else:
-				self.lon_micro[i] -= 90
-		"""
-		return self
-
 	
 	# function to convert angles from SC frame to Sun-center frame (in degrees)
 	def SuntoSC(self):
@@ -606,9 +620,13 @@ class impactClass:
 		
 		# libraries & modules
 		import numpy as np, quaternion
-		from microTools import getSCquats
 		from astropy.time import Time
 		from astropy.coordinates import get_body
+
+		if self.isEmpty:
+			self.lon = None
+			self.lat = None
+			return self
 		
 		# get longitude and latitude in radians
 		try:
@@ -632,7 +650,7 @@ class impactClass:
 		q_coord_ECI = quaternion.np.conjugate(qr_ECIx_sun) * q_coord_sun * qr_ECIx_sun
 
 		# read SC quaternion (get rotation q from ECI to SC)
-		qr_ECI_SC = getSCquats(int(self.gps))
+		qr_ECI_SC = self.getSCquats()
 
 		# rotate from ECI to SC
 		q_coord_sc = quaternion.np.conjugate(qr_ECI_SC) * q_coord_ECI * qr_ECI_SC
@@ -718,9 +736,9 @@ class impactClass:
 					# 2D histogram and plot
 					# Handleing strange binning error, bins were too small
 					try:
-						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, [xbins, ybins], normed = True)
+						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, [xbins, ybins], density = True)
 					except:
-						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, normed = True)
+						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, density = True)
 					plt.subplot(Nkeys, Nkeys, kk)
 					plt.contourf(c_x1y1, extent = [y2e.min(), y2e.max(), x2e.min(), x2e.max()], cmap=matplotlib.cm.Reds)
 					ax = plt.gca()
@@ -729,8 +747,8 @@ class impactClass:
 				# diagonals
 				elif jj == ii:
 					# histograms
-					c_x1x1, x1e = np.histogram(x1, xe, normed = True)
-					c_x2x2, x1e = np.histogram(x2, xe, normed = True)
+					c_x1x1, x1e = np.histogram(x1, xe, density = True)
+					c_x2x2, x1e = np.histogram(x2, xe, density = True)
 
 					# plot
 					kk = kk + 1
@@ -756,9 +774,9 @@ class impactClass:
 
 					# Handleing strange binning error, bins were too small
 					try:
-						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, [xbins, ybins], normed = True)
+						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, [xbins, ybins], density = True)
 					except:	
-						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, normed = True)
+						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, density = True)
 					plt.subplot(Nkeys, Nkeys, kk)
 					plt.contourf(c_x2y2, extent = [y2e.min(), y2e.max(), x2e.min(), x2e.max()], cmap = matplotlib.cm.Blues)
 					ax = plt.gca()
@@ -793,8 +811,7 @@ class impactClass:
 		"""
 			frame: string, defines coordinates
 			None    = SC data
-			'sun'   = sun centered data 
-			'micro' = sun at -90 data
+			'sun'   = sun at 0, -90 prograde, +90 retrograde
 		"""
 
 		from astropy.coordinates import SkyCoord
@@ -811,13 +828,7 @@ class impactClass:
 
 		title = ('GRS%s Impact direction posterior for '%(self.grs) + 
 					str(int(self.gps)))
-		if frame == 'micro':
-			self = self.SCtoSun()
-			self = self.SuntoMicro()
-			self = self.findSkyAngles()
-			ax.imshow_hpx(self.healPix_micro, cmap='cylon')
-			title += " [Micrometeroid]"
-		elif frame == 'sun':
+		if frame == 'sun':
 			self = self.SCtoSun()
 			self = self.findSkyAngles()
 			ax.imshow_hpx(self.healPix_sun, cmap='cylon')
@@ -832,6 +843,181 @@ class impactClass:
 		ax.coords[1].set_ticks(exclude_overlapping = True, spacing = 30 * u.deg)
 
 		return fig
+
+	def gimme_mesh(self, N_lon, N_lat):
+		"""
+			auxiliary function for mesh generation
+		"""
+		minval_lon = -180
+		maxval_lon =  180
+
+		minval_lat = -90
+		maxval_lat =  90
+		# produce an asymmetric shape in order to catch issues with transpositions
+		return np.meshgrid(np.linspace(minval_lon, maxval_lon, N_lon),
+						   np.linspace(minval_lat, maxval_lat, N_lat))
+
+	def param_table(self, params, all_rows, ax):
+		if all_rows is None:
+			all_rows = ('JFC', 'HTC', 'AST', 'OCC')
+		all_cols = all_rows
+		rows = []
+		data = [[''  for x in range(len(all_cols))] for y in range(len(all_cols))]
+		for i, r in enumerate(all_rows):
+			for j, c in enumerate(all_cols):
+				if i == j:
+					data[i][j] = '%1.3e'%params[i]
+				else:
+					data[i][j] = '%1.3e'%(params[j] / params[i])
+			rows.append(r)
+
+		ax.axis('off')
+		
+		# Get some pastel shades for the colors
+		colors = plt.cm.BuPu(np.linspace(0, 0.5, len(rows)))
+		n_rows = len(data)
+
+		# Plot bars and create text labels for the table
+		cell_text = []
+		for row in range(n_rows):
+			cell_text.append(data[row])
+
+		# Reverse colors and text labels to display the last value at the top.
+		colors = colors[::-1]
+
+		# Add a table at the bottom of the axes
+		the_table = ax.table(cellText = cell_text,
+							rowLabels = rows,
+							colLabels = rows,
+							rowLoc = 'center',
+							rowColours = colors,
+							colColours = colors,
+							loc = 'center')
+		the_table.auto_set_column_width(0)
+		the_table.auto_set_font_size(value = True)
+		
+		table_props = the_table.properties()
+		table_cells = table_props['child_artists']
+		for cell in table_cells: cell.set_height(0.15)
+
+
+	def plot_populations(self, populations, norm = True, scale = 'lin', show_impact = True):
+		import matplotlib.gridspec as gridspec
+
+		"""
+		Creates 2 x 2 population map
+		"""
+
+		if show_impact:
+			fig, ax = plt.subplots(figsize = (13,10))
+			ax.set_visible(False)
+			lons = self.lon_sun
+			lats = self.lat_sun
+			Ptots = self.Ptot
+
+			spec = gridspec.GridSpec(ncols=2, nrows=3)
+		else:
+			fig, ax = plt.subplots(figsize = (13, 7))
+			ax.set_visible(False)
+			spec = gridspec.GridSpec(ncols=2, nrows=2)
+
+		i = 0
+		j = 0
+		for k, p in enumerate(populations):
+			if p.pop_type == 'Uniform':
+				continue
+
+			ax = fig.add_subplot(spec[j, i])
+			ax.set_aspect('equal')
+			ax.set_title(p.pop_type)
+			if i == 0:
+				ax.set_ylabel('Latitude')
+			if j == 1:
+				ax.set_xlabel('Longitude')
+			# Plot cmap for Population
+			if norm:
+				min_ = 1e-14
+				max_ = 1e-3
+			else:
+				min_ = 1e-14
+				max_ = 1e-8
+
+			if scale == 'log':
+				levels = np.logspace(np.log10(min_), np.log10(max_), 15)
+				norm_plot = LogNorm(min_, max_)
+
+			else:
+				levels = np.linspace(min_, max_, 15)
+				norm_plot = None
+
+			lon, lat = self.gimme_mesh(80, 40)
+
+
+			palette = 'viridis'
+
+			im = ax.contourf(lon, lat, p.getFlux(lon, lat, norm = norm),
+					levels = levels, norm = norm_plot,
+					cmap = palette, alpha = 0.75)
+			im.cmap.set_under('r')
+			im.cmap.set_over('b')
+			im.cmap.set_bad('g')
+
+			# Plot impact
+			if show_impact:
+				counts, lonbins, latbins = np.histogram2d(lons, lats,
+									bins = (np.linspace(-180, 180, 80),
+											np.linspace(-90, 90, 30)),
+									density = True)
+				imp = ax.contour(counts.transpose(),
+					extent=[lonbins.min(), lonbins.max(),
+							latbins.min(), latbins.max()],
+					levels = np.linspace(1e-14, 1e-3, 15), cmap = 'Reds')
+
+			if i == 0:
+				i = 1
+			else:
+				i = 0
+				j += 1
+
+		if show_impact:
+			fig.subplots_adjust(right=0.75)
+			# Add Colorbars
+			cbar_ax1 = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+		else:
+			# Add Colorbars
+			cbar_ax1 = fig.add_axes([0.8, 0.15, 0.05, 0.7])
+		fig.colorbar(im, cax = cbar_ax1)
+
+		if norm:
+			cbar_ax1.set_ylabel(ylabel = 'Norm Flux', rotation = -90, va="bottom")
+		else:
+			cbar_ax1.set_ylabel(ylabel = 'Flux', rotation=-90, va="bottom")
+
+		if show_impact:
+			cbar_ax2 = fig.add_axes([0.78, 0.15, 0.05, 0.7])
+			cbar_ax2.set_ylabel(ylabel = 'MCMC Normed Density', rotation = -90, va="bottom")
+
+			fig.colorbar(imp, cax=cbar_ax2, ticks = [0])
+			cbar_ax2.set_xticklabels([''])
+
+			rows = [] #[p.pop_type for p in populations]
+
+			sums = []
+			for i, p in enumerate(populations):
+				f_pop = p.getFlux(lons, lats, Ptots)
+				sum_pop = np.sum(f_pop) / len(f_pop)
+				sums.append(sum_pop)
+				rows.append(p.pop_type)
+				#probs[i] += np.log(sum_pop)
+				#print('Prob', p.pop_type, ' : ', sum_pop)
+				#print('\n')
+			#print(sums)
+			#print(rows)
+			ax = fig.add_subplot(spec[2, 0:2])
+			self.param_table(sums, rows, ax)
+
+		return fig
+
 
 	# ---------------------------------------#
 	#            3D LPF Functions            #
@@ -1490,7 +1676,9 @@ class impactClassList(list):
 	A Class for dealing with a list of impact Class instances
 	"""
 
-	def __init__(self, grs = 1, getValid = True, BASE_DIR = None):
+	def __init__(self, grs = 1, 
+				getValid = True, BASE_DIR = None, dataDir = '/data', directory = '/data/ONLY_IMPACTS', 
+				include_marginal = True):
 		"""
 		Assumes we are running program from Analysis/scripts
 
@@ -1501,9 +1689,9 @@ class impactClassList(list):
 			p = pathlib.PurePath(os.getcwd())
 			self.BASE_DIR = str(p.parent)
 		else:
-			self.BASE_DIR = pathlib.PurePath(BASE_DIR)
+			self.BASE_DIR = str(BASE_DIR)
 
-		self.dataPath = pathlib.Path(self.BASE_DIR + '/data')
+		self.dataPath = pathlib.Path(self.BASE_DIR + directory)
 		
 		pickles = list(self.dataPath.glob('*_grs1.pickle'))
 		print("Reading through pickle files")
@@ -1513,26 +1701,47 @@ class impactClassList(list):
 		for p in pickles:
 			# identify segment
 			segment = str(p.stem[0:10])
-			chainFile = self.BASE_DIR + '/data/' + str(segment) +'_grs%i'%grs + '.pickle'
+			chainFile = str(self.dataPath) + '/' + str(segment) +'_grs%i'%grs + '.pickle'
 
-			impact = impactClass(chainFile)
+			impact = impactClass(chainFile, BASE_DIR = BASE_DIR, dataDir = dataDir)
 			impact = impact.SCtoSun()
-			impact = impact.SuntoMicro()
 			impact = impact.findSkyAngles()
 			if getValid:
-				if impact.isValid:
-					impact_list.append(impact)
-					self.impact_list = impact_list
+				if impact.isGlitch:
+					continue
+				elif impact.isImpact:
+					if include_marginal:
+						impact_list.append(impact)
+						self.impact_list = impact_list
+					else:
+						if impact.dfrac < 0.7:
+							continue
+						else:
+							impact_list.append(impact)
+							self.impact_list = impact_list
 				else:
+					print('This is neither an impact nor a glitch, \n segment?')
 					continue
 			else:
 				impact_list.append(impact)
 
 		impact_list.sort(key=operator.attrgetter('gps'))
-
 		self.impact_list = impact_list
 
-	def summaryTable(self, keys = ['Ptot','lat','lon','rx','ry','rz']):
+		return
+
+	def getImpact(self, segments):
+		if type(segments) != list:
+			segments = [segments]
+		imp_list = []
+		for s in segments:
+			for imp in self.impact_list:
+				#print(imp.segment, imp.gps, s)
+				if imp.segment == s:
+					imp_list.append(imp)
+		return imp_list
+
+	def summaryTable(self, percent_sky = 0.1, keys = ['Ptot','lat','lon','rx','ry','rz']):
 		tableStr = r"""
 		\begingroup
 		\renewcommand\arraystretch{2}
@@ -1572,7 +1781,7 @@ class impactClassList(list):
 		\endlastfoot""" + '\n'
 				
 		for impact in self.impact_list:
-			tableStr += '\t' + impact.summaryString() + '\n'
+			tableStr += '\t' + impact.summaryString(percent_sky) + '\n'
 		
 		
 		tableStr += '\t' + r'\hline' + '\n'
@@ -1689,65 +1898,79 @@ class impactClassList(list):
 		ax.legend()
 		return fig
 
-	def plotPowerLaw(self, param = 'Ptot', credible = 0.9, weight = True, show_credible = True):
-		fit_color = "#ffd27a"#92cac6"
-		error_color = "#e86e66"
-		data_color = "#6b9bb9"
+	def plotPowerLaw(self, param = 'Ptot', credibles = [0.9], weight = True,
+					 drop_max = True):
+		"""
+		self = impactClassList instance
+		param = parameter plotted on x we fit for
+		credibles = credible intervals we want on the plot (list type)
+		weight = boolean, whether we want the plot weighted
+		drop_max = Boolean, wheteher to drop the max momentum in our impact list
+		"""
+		error_color = plt.cm.PuBu(np.linspace(.5, 1, len(credibles)))
+		fit_color = "#e86e66"
+		data_color = '#ffd27a'#'#92cac6'#"#6b9bb9"
 		import matplotlib as mpl
-		mpl.rcParams['lines.linewidth'] = 3
-
-		# Sort data
-		sortlist = sorted(self.impact_list, key=lambda x: x.getMedian(param))
-
-		xdata = np.asarray([i.getMedian(param) for i in sortlist]) #makeArray(sortlist, param, np.median))
-		ydata = np.arange(1, len(sortlist) + 1, 1.0)[::-1]
-
-		# Get Credible Intervals and stdev
-		cred_up, cred_down, stdev, median = self.getCredibleIntervals(sortlist, param, credible, getMedian = True)
-
-		#Get power Law fit
-		if weight:
-			popt, pcov = self.fitPowerlaw(sortlist, param, sigma = 1 / (cred_up - cred_down))
-		else:
-			popt, pcov = self.fitPowerlaw(sortlist, param, sigma = None)
-
-		print('Optimized: a = ', popt[0], 'b =', popt[1] )
-
-		# Get credible intervals
+		mpl.rcParams['lines.linewidth'] = 4
+		mpl.rcParams['font.size'] = 15
+		mpl.rcParams['font.family'] = 'sans-serif'
 
 		fig, ax = plt.subplots(figsize = (10,10))
 
-		y = np.exp(self.lin_func(np.log(xdata), *popt))
+		# Sort data
+		sortlist = sorted(self.impact_list, key=lambda x: x.getMedian(param))
+		# Drops the largest number
+		shift = 0
+		if drop_max:
+			imp_max = sortlist[-1]
+			sortlist = sortlist[:-1]
+			shift = 1
+			# Replot the highest point
+			ax.scatter(imp_max.getMedian('Ptot'), 1, color = data_color)
+
+		xdata = np.asarray([i.getMedian(param) for i in sortlist]) #makeArray(sortlist, param, np.median))
+		ydata = np.arange(1 + shift, len(sortlist) + 1 + shift, 1.0)[::-1]
+		
 
 		# Plot the data
-		ax.scatter(xdata, ydata, color = data_color, zorder = 10, label = 'Median Momentum')
+		ax.scatter(xdata, ydata, color = data_color, zorder = 10,
+				   label = 'Median Momentum', marker = 'o', s = 50)
+		lines = []
+		for i, credible in enumerate(credibles):
+			# Get Credible Intervals and stdev
+			cred_up, cred_down, stdev, median = self.getCredibleIntervals(sortlist, param,
+																		  credible, getMedian = True)
 
-		ax.plot(xdata, self.power_func(xdata, *popt),
-				color = fit_color,
-				linestyle = ':',
-				label = r'%1.3e$(\frac{P}{[\mu N s]})^{%1.3e}$'%(popt[0], popt[1]))
+			#Get power Law fit
+			if weight:
+				popt, pcov = self.fitPowerlaw(sortlist, param, sigma = 1 / (cred_up - cred_down))
+			else:
+				popt, pcov = self.fitPowerlaw(sortlist, param, sigma = None)
 
+			print('Optimized: a = ', popt[0], 'b =', popt[1] )
 
-		# Credible Intervals
-		if show_credible:
+			# Sets up points to plot for fit
+			plot_x = np.logspace(np.log10(min(xdata)), np.log10(max(xdata)), 1000)
+
+			if credible == .90:
+				ax.plot(plot_x, self.power_func(plot_x, *popt),
+						color = fit_color,
+						label = r'Data Fit: %1.2f$(\frac{P}{[\mu N s]})^{%1.2f}$'%(popt[0], popt[1]))
+
+			# Credible Intervals
 			ax.errorbar(xdata, ydata, xerr = [median - cred_down, cred_up - median],
-						 fmt = 'o', color = error_color, label = '%i%% Credible'%(credible * 100))
-			"""
-			ax.plot(cred_up, ydata, color = 'hotpink', zorder = 2)
-			ax.plot(cred_down, ydata, color = 'hotpink', zorder = 3)
-			ax.fill_betweenx(ydata, cred_up, cred_down,
-							 where = cred_up >= cred_down,
-							 facecolor='pink',
-							 zorder = 1,
-							 label = '%i%% Credible'%(100 * credible))
-			"""
-		else:
-			ax.errorbar(xdata, ydata, xerr = stdev,
-					fmt = '', color = error_color,  label = '1 Stdev')
+				 fmt = 'o',
+						color = 'none',
+						ecolor = error_color[i], label = '%i%% Credible'%(credible * 100),
+				 alpha = .75)
 
-
+			#else:
+			#	ax.errorbar(xdata, ydata, xerr = stdev,
+			#			fmt = '', color = error_color,  label = '1 Stdev')
 		ax.set_xscale('log')
-		ax.set_ylabel('rank')
+		ax.set_yscale('log')
+		ax.set_ylabel('Cumulative Number of Impacts')
+
 		if param == 'Ptot':
 			ax.set_xlabel('$p_{tot}\,[\mu N s]$')
 		else:
@@ -1755,8 +1978,7 @@ class impactClassList(list):
 
 
 		ax.legend()
-
-		return fig
+		return fig, ax
 
 
 
