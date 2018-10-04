@@ -37,6 +37,7 @@
 %% Additional Packages
 \usepackage{placeins}
 \usepackage{color}
+\usepackage{amsmath} 
 
 %% MACROs
 \newcommand{\nwip}[2]{\langle #1|#2\rangle} % noise weighted inner product
@@ -382,8 +383,43 @@ The remainder of the paper is organized as follows. In Section \ref{sec:models} 
 
 \FloatBarrier
 \section{Population Models}\label{sec:models}
-Description of Models that we are looking at.  How are they motivated?  What are the differences between them. Describe their basic predictions for LPF orbit (rate, momentum distribution, and Sky Position). We should draft this and then get Petr/Diego to take a look at it and modify. 
 
+In this work we utilized dynamical models of meteoroids in the Solar System to characterize the direction, velocity and mass of particles impacting the LISA Pathfinder spacecraft.
+The meteoroids considered here originate from three cometary sources: short period Jupiter Family Comets (JFCs) and long period Halley Type and Oort Cloud Comets (HTCs and OCCs, respectively). JFCs are modeled following the work  reported by~\cite{Nesvorny10,Nesvorny11a}, who estimated that these particles represent 85 $-$ 95\% of the total meteoroid budget (in terms of number of particles) in the inner solar system. The assumed JFCs initial distribution of orbital elements followed the one proposed by~\cite{LevisonDuncan97}, where the number of comets as a function of their distance from perihelion, q, is given by
+
+\begin{equation}
+dN(q)\propto q^{\gamma_\mathrm{JFC}} dq\label{nq}
+\end{equation}
+
+\noindent where $\gamma_\mathrm{JFC}$ is a free parameter ($\gamma_\mathrm{JFC} = 0$ in this work). The continuous Size Frequency Distribution (SFD) of meteoroids produced by these comets is given by a broken power-law
+
+\begin{equation}
+dN(D)\propto D^{-\alpha}dD\label{nd}
+\end{equation}
+
+\noindent where $D$ is the meteoroid diameter and $\alpha=3$ the slope index. Once released from the comets, JFC meteoroids drift towards the inner solar system under the influence of Poynting-Robertson (P-R) drag and provide a continuous input of extra terrestrial material to Earth from the direction of the H and AH apparent sporadic sources~\cite[][]{JonesBrown93,Nesvorny10}.
+
+To describe the contribution of long period HTCs we utilized the steady-state model by~\cite{Pokorny14}, who used it to explain the origin of the Toroidal meteoroid sources~\cite[][]{JonesBrown93,CampbellBrown09,Janches15}, characterized by high-ecliptic latitude radiants ($\beta\sim\pm 55^{\circ} - 60^{\circ}$), both located north and south from the apex direction. These meteoroids impact the Earth with a typical velocity of $\sim$35 km~s$^{-1}$, resulting in high-inclination pre-atmospheric orbits with respect to the ecliptic ($\sim70^{\circ}$). In addition, their semimajor axes are close to 1 AU, but with a long tail to larger values, and have a broad distribution of eccentricities with a maximum at $\sim$0.2~\cite[See Figure 13 in][]{Janches15}. 
+
+Once again, these model tracks the dynamical evolution of thousands of dust particles released from a synthetic population of HTCs for millions of years until particles reach the end of their life, either by being scattered from the solar system by giant planets (mostly Jupiter), or by encountering one of the terrestrial planets, or by evolving too close to the Sun. The model adopts the HTC orbital architecture proposed by~\cite{Levison06} based on an observed inclination distribution of HTCs, which contains preferentially prograde orbits with a median inclination value of $\sim$55$^{\circ}$ and only a small fraction of comets on retrograde orbits. The prograde portion of HTC populate mostly the Toroidal sources with a characteristic velocity distribution which peaks at $\sim$25 km~s$^{-1}$. The model shows also that the Ap source is formed in part also by HTC-released particles, with a velocity distribution which peaks at $\sim$55 km~s$^{-1}$. These are predominantly retrograde or high eccentricity orbits representing a minority ($\sim$11\%) of cases among the HTCs, yet, together with OCCs, probably dominate impact ejecta production at the Moon.
+
+For meteoroids released from OCCs, we adapted the model developed by~\cite{Nesvorny11b}, who investigated the effects of radiation pressure on particles released from the highly eccentric OCC orbits, and their dynamical evolution under gravitational perturbations from planets and P-R drag to determine if at least a fraction of the near-Earth meteoroid environment is produced by the contribution of dust released from these bodies. 
+For small perihelion distances $q$, the model follows the orbital distribution reported by~\cite{Francis05}. For larger perihelion distances, the authors assumed an increasing distribution with $q$, as oppose to the flat and/or declining distribution proposed by~\cite{Francis05}, given by
+
+\begin{equation}
+dN(q)\propto
+\begin{cases}
+(1+\sqrt q)dq & \text{if}\ q<2 \mathrm{AU}\\
+2.41(q)^{\gamma_\mathrm{OCC}} dq & \text{if}\ q> 2 \mathrm{AU}\\
+\end{cases}
+\end{equation}
+
+\noindent where 0$\leq\gamma_\mathrm{OCC}\leq$1 and $q$ is uniformly distributed between 0 AU$\leq q\leq$ 5 AU, thus assuming that particles with $q>$ 5 AU will never reach Earth. In this work, we use $\gamma_\mathrm{OCC}= 0$ since the authors found that the effect of changing this parameter was insignificant.  
+
+\cite{Nesvorny11b} found that OCC particles cannot provide a significant contribution to the overall meteoroid-budget of the inner zodiacal cloud. Most of the small particles (i.e. $D\sim$10 $\mu$m) are blown out of the solar system by radiation pressure, while millimeter sized meteoroids get scattered by planets and their orbits never decouple from Jupiter and thus the collision probability of these meteoroids with Earth is negligible. 
+The authors concluded that only meteoroids with diameters between $\sim$100--300 $\mu$m can evolve in orbits decoupled from Jupiter and effectively populate the Ap source with preferentially retrograde meteors observed impacting the Earth with speeds around $55-60$ km~s$^{-1}$.
+
+Collectively these models have been utilized to model various meteoroids related phenomena at Earth~\cite[][]{CarrilloSanchez16, Janches17}, at the Moon~\cite{Janches18} and at Mercury~\cite{Pokorny17,Pokorny18}
 
 See Figure \ref{fig:models}.
 
