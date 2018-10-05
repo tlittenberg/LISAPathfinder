@@ -52,7 +52,7 @@
 \newcommand{\data}{\tilde d}
 \newcommand{\model}{\tilde h}
 \newcommand{\residual}{\tilde r}
-\newcommand{\params}{{\bm \lambda}}
+\newcommand{\params}{{\vec \lambda}}
 \newcommand{\n}{\tilde n}
 \newcommand{\Cij}{C_{ij}}
 \newcommand{\Cii}{C_{ii}}
@@ -467,81 +467,62 @@ The value of $P_c$ varies somewhat for each DoF due to the different combination
 \subsection{Detection and Parameter Estimation}\label{sec:MCMC}
 \red{Describe the MCMC tool and what tests we did on it. }
 %Data model
-Assuming the data $\data$ is a signal $\model$ plus additive noise $\n$, and $\n$ is zero-mean Gaussian distributed, the likelihood for data $\data$ and parameters $\params$
+Assuming the frequency domain data $\data$ contains an impact signal $\model$ plus noise $\n$, and $\n$ is zero-mean Gaussian distributed, the likelihood for observing  $\data$ is
 \begin{equation}
-p(\data|\params) = \frac{1}{\det \invCij} e^{-\frac{1}{2}\sum_{ij} \residual_i \invCij \residual_j }
+p(\data|\params) = \prod_f \frac{1}{\det \Cij} e^{-\frac{1}{2}\sum_{ij} \residual_i \invCij \residual_j }
+\label{eq:likelihood}
 \end{equation}
-where the residual $\residual = \data - \model(\params)$ and $\model(\params)$ is the modeled LISA Pathfinder response to an impact with parameters $\params$ and the one-sided noise correlation matrix $\Cij \equiv \langle \n_i \n_j\rangle$. The indices $i$ and $j$ sum over different data channels, i.e. the 6 degrees of freedom $i:=(x,y,z,\theta,\eta,\phi)$ where $\theta$ is a rotation about $x$, $\eta$ is a rotation about $y$, and $\phi$ is a rotation about $z$.
+where the $\residual = \data - \model(\params)$ is the residual, $\model(\params)$ is the modeled LISA Pathfinder response to an impact with parameters $\params$, and  $\Cij \equiv \langle \n_i \n_j\rangle$ is the one-sided noise correlation matrix. The indices $i$ and $j$ sum over different data channels, i.e. the 6 degrees of freedom $i:=(x,y,z,\theta,\eta,\phi)$ where $\theta$ is a rotation about $x$, $\eta$ is a rotation about $y$, and $\phi$ is a rotation about $z$, as shown in Fig.~\ref{fig:coordinates}.
 \begin{figure}[htbp]
 \begin{center}
 \includegraphics[width=0.5\textwidth]{figures/dof.eps}
 \caption{{\small Schematic showing the naming conventions for the six kinematic degrees of freedom used in this work.}}
-\label{default}
+\label{fig:coordinates}
 \end{center}
 \end{figure}
 The $x,y,z$ triad's origin is the center of the GRS housing with $\hat{z}$ in the sunward facing direction, $\hat{x}$ in the interferometric sensing direction (towards the other GRS) and $\hat{y}$ completing the triad.
 
 %Noise model
-\subsubsection{Noise model}
-The diagonal elements of the noise correlation matrix $\Cii$...
-\red{Talk about BayesLine as adapted for LPF}.
-
-%Response model -- much of this is probably redundant
-\subsubsection{Impact Response}
-To characterize micrometeorite strikes in the data we construct a model which maps parameters $\params$ of the impact to the signal measured $\model$ at the test mass.
-The impact is modeled by six parameters: the impact time $t_0$, the magnitude of the transferred momentum $P$, the incident impact direction $\hat {\bm k}$ parameterized by a polar and azimuthal angle $\delta$ and $\alpha$, and the cartesian impact location $\rimp$ constrained to be on the surface of spacecraft (reducing the three dimensional vector to two degrees of freedom).
-
-The search is performed on a data product known as ``$g$'', which is the equivalent free-body acceleration that the spacecraft would have had in the absence of forces applied by the control system.
-To give a specific example, if the spacecraft is operating in a drag-free mode and experience an impact, the acceleration of the spacecraft caused by that impact will be compensated by applying a force to the spacecraft using the thrusters.
-The $g$ product will include that commanded force divided by the mass of the spacecraft as part of the equivalent free-body acceleration.
-
-With two test masses on LISA Pathfinder, there are two sources for $g$, named $g_1$ and $g_2$.
-To derive the LISA Pathfinder response in the $g$ data products to micrometeorite impacts we begin with the dynamics equations at the spacecraft center of mass $C$.
-
-For the linear degrees of freedom ($\lin = \{x,y,z\}$) the signal at the center of mass $\hvec^C_{\lin}$ will depend only on $t_0$, $P$, $\hat {\bm k}$, and the spacecraft mass $m$:
-\begin{equation}\label{eq:lin_com}
-\hvec^C_{\lin}(t) = \delta(t-t_0)P m^{-1} \hat{k}.
+We make the simplifying assumption that the noise correlation matrix $\Cij$ is diagonal, i.e. that the noise in each channel is independent.
+We further assume that the noise in each channel is stationary, implying that there are no  correlations between different frequencies, and the noise is completely characterized by its variance 
+\begin{equation}
+\langle \n^2(f)\rangle \equiv \frac{T}{2}S_n(f)
 \end{equation}
-The angular degrees of freedom ($\ang=\{\theta,\eta,\phi\}$) introduce dependence on the impact location, the location of the center of mass $\rcom$, and the moment of inertia tensor $\I$ of the spacecraft for rotations about the center of mass
-\begin{equation}\label{eq:ang_com}
-\hvec^C_{\ang}(t) =  \delta(t-t_0)P \I^{-1} (\rimp-\rcom) \times \hat{k}.
-\end{equation}
-The coordinate system in which the various spacecraft locations are defined is known as the ``body frame'' with origin located at the bottom center of the spacecraft.
+where $T$ is the duration of the data segment and $S_n(f)$ is the one-sided noise power spectral density.
+For flexibility to fit realistic instrument noise, we use a phenomenological model for $S_n(f)$ rather than the theoretical form in Eq.~\ref{eq:noise}.
+The model is adopted from the BayesLine algorithm~\citep{Littenberg_15} used for spectral estimation in analysis of transient sources detected by the ground-based gravitational wave detector network.
+BayesLine is a trans-dimensional (or reversible jump) Markov Chain Monte Carlo (MCMC) algorithm~\citep{Green_95}.
+The spectral noise model is built from two-components:  the broad band spectral shape is fit with a cubic spline interpolation, where the number and location of spline control points are free parameters; and a linear combination of  Lorentzians to fit narrow band spectral lines. \red{Ira/Jake, say something about lines in the Pathfinder data?}.
+The model is flexible, and proved to be well suited for fitting the LISA Pathfinder noise.
 
-Because the test masses are not at the spacecraft center of mass, the spacecraft dynamics must be transformed into the test-mass housing frame with origin at $\rgrs$. Assuming small angular accelerations, the signals from micrometeorite impacts in the linear and angular degrees of freedom for the $g$ data product are
-\begin{eqnarray}\label{eq:waveforms}
-\hvec_{\lin}(t)   &=& \hvec^C_{\lin} + (\rgrs - \rcom)\times\hvec^C_{\ang} \nonumber \\
-\hvec_{\ang}(t) &=& \hvec^C_{\ang}.
-\end{eqnarray}
+%Signal model
+The signal model was implemented as described in Sec.~\ref{sec:sensitivity}, again using a trans dimensional MCMC.
+The MCMC samples between hypothesis that the data contain only noise (i.e. that there is no impact signal in the model) or that the data contain noise and a single impact.
+The ratio of MCMC iterations spent in the two hypothesis is the Bayes factor, or marginalized likelihood ratio, between the signal and the noise model.
+We use the Bayes factor as the detection statistic, with a threshold of \red{XXX} for claiming a positive detection.
+The Markov chain's samples from iterations which included the signal hypothesis are used to characterize the posterior distribution function of the impact parameters, conditional on a signal actually being present in the data.
+Marginalized posterior distributions for the incident direction of the impact, and the momentum imparted to the spacecraft, are used to make further inferences about the micrometeorite population.
+The priors for the signal parameters are uniform distributions in time, imparted momentum, impact location, and incident direction of the impact.  
 
-\begin{figure}[htbp]
-\includegraphics[width=\textwidth]{figures/coordinates.eps}
-\caption{{\small Schematic showing the different vector quantities that enter into the derivation of the detector response to impacts and thruster noise.}}
-\label{default}
-\end{figure}
-
-%MCMC
-\subsubsection{MCMC}
-\begin{itemize}
-\item Trans-dimensional MCMC.
-\item Bayes factors for detection.
-\item Marginalized  posteriors for parameter estimation
-\item Tests with injections
-\item Consistency tests using g1 and g2
-\item Caveats
-\begin{itemize}
-\item imperfect signal model
-\item imperfect noise model
-\item will lower detection efficiency.
-\item will cause biases.
-\item shouldn't increase false alarms....
-\end{itemize}
-\end{itemize}
+%MCMC validation
+Both the noise model and signal model MCMC samplers use parallel tempering to improve the convergence time of the chains.
+The MCMC code went through a standard suite of tests to confirm that the results are accurate and robust.
+The spectral estimation code is validating by testing that the whitened data $\data(f)/\sqrt{S_n(f)}$ are consistent with being drawn from a zero mean, unit variance, Gaussian.
+We check detailed balance of the sampler by using a constant likelihood function and testing that the recovered distributions are consistent with the priors.
+Finally, the samplers are tested for accuracy by analyzing simulated and real data with artificial signals added, verifying that the true signal parameters are included in the posterior distributions.
+ 
+%Caveats
+The noise and impact models used in this analysis are not perfect and further advancements may improve the detection efficiency and/or reduce systematic errors in parameter recovery.
+A particular weakness is our assumption that the noise in each channel is independent. 
+The sensing degrees of freedom are not the same as the kinematic degrees of freedom, so noise correlations are not necessarily negligible. 
+We also found that, for large momentum impacts, a noticeable residual was left in the data, indicating that our signal model was not a perfect match to the data. 
+This modeling mismatch results in an uncharacterized systematic error, though the macroscopic conclusions drawn from the posterior--which face of the spacecraft was impacted, from what (general) region of the sky did the impactor originate, and the overall distribution of imparted momenta of the impactors--are not expected to be biased to the point of misleading the general conclusions.
+Improvements to the model, especially developing a physically motivated forward model of the instrument noise, are areas for future study.
 
 \FloatBarrier
 \subsection{Post processing and vetos}\label{sec:vetos}
 \red{Describe selection of candidates, application of vetos, and post-processing to do the sky angle conversion, sky area computation, etc.}
-For each segment of data, the MCMC tool described in Section \ref{sec:MCMC} was run for in an initial search comprised of XXX steps on the TM1 data. After discarding the first XXX steps of the chain, the detection fraction was computed as the ratio of chain steps where an impact model was included to the total number of steps.  For systems with a detection fraction above XXX, the MCMC tool was re-run in a characterization step of XXX steps on both TM1 and TM2. A burn-in period of XXX steps was discarded from both chains and the detection fraction was again computed as well as the variance in the impact time parameter $\tau$.  For systems with an above-threshold detection fraction and impact time variance of less than XXX in both TMs were passed on to the next step in the vetting process, manual inspection.  For the manual inspection process, an expanded set of telemetry from the spacecraft around the candidate impact time was downloaded and inspected.  Examples of signals inspected include all force and torque signals, all position and attitude signals, selected voltage levels, and internal telemetry of the micropropulsion system. This process yielded two types of false triggers: thruster current spikes and data gaps. Candidates for which the signals appeared consistent with expectations were added to the catalog.
+For each segment of data, the MCMC tool described in Section \ref{sec:MCMC} was run for in an initial search comprised of XXX steps on the TM1 data. After discarding the first XXX steps of the chain as ``burn in'' samples, the detection fraction was computed as the ratio of chain steps where an impact model was included to the total number of steps.  For systems with a detection fraction above XXX, the MCMC tool was re-run in a characterization step of XXX steps on both TM1 and TM2. A burn-in period of XXX steps was discarded from both chains and the detection fraction was again computed as well as the variance in the impact time parameter $\tau$.  For systems with an above-threshold detection fraction and impact time variance of less than XXX in both TMs were passed on to the next step in the vetting process, manual inspection.  For the manual inspection process, an expanded set of telemetry from the spacecraft around the candidate impact time was downloaded and inspected.  Examples of signals inspected include all force and torque signals, all position and attitude signals, selected voltage levels, and internal telemetry of the micropropulsion system. This process yielded two types of false triggers: thruster current spikes and data gaps. Candidates for which the signals appeared consistent with expectations were added to the catalog.
 
 For vetted impact candidates, an additional post-processing step was conducted to extract parameters of interest.  In order to compare with the micrometeoroid population models in Section \ref{sec:models}, it was necessary to transform the impact direction from S/C coordinates to the \red{frame name?} used by the models.  This transformation was done in two steps, first from the S/C frame to an Earth-Centered Inertial (ECI) frame using the S/C quaternion telemetry provided by the star tracker, and then from ECI to the \red{frame name} using the S/C ephemeris. Median sky location and a 90\% confidence sky area for both frames was computed using HEALPIX.\red{cite something}.
 
