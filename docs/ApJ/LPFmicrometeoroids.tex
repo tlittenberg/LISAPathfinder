@@ -625,10 +625,33 @@ Here we primarily interested in $\theta_P$, describing the population models, as
   p(\theta_P|D)&=&\frac{ p(D|\theta_P)p(\theta_P)}{p(D)}\label{eq:HierBayesThm}\\
   p(D|\theta_P)&=&\int p(D|\theta_I)p(\theta_I|\theta_P)d\theta_I\label{eq:metaLike}.
 \end{eqnarray}
-The last line expresses the effective likelihood function that we need for the population model inference analysis assuming that micrometeoriod impacts likelihoods depend only on the nature of the impacts $\theta_I$ and not also \textit{explicitly} on other features of the population $\theta_P$.
+The second line expresses the effective likelihood function that we need for the population model inference analysis.
+%assuming that micrometeoriod impacts likelihoods depend only on the nature of the impacts $\theta_I$ and not also \textit{explicitly} on other features of the population $\theta_P$.
+In practice we assume that impacts for each data segment are independent, so that
+\begin{eqnarray}
+  \ln {p(D|\theta_P)}&=&\sum_\alpha \ln\int \frac{p(D_\alpha|\theta_{I\alpha})}p(\theta_{I\alpha}|\theta_P)d\theta_{I\alpha}\\
+  &=&\sum_\alpha \ln\hat{\mathrm{E}}\left[\frac{p(\theta_{I\alpha}|\theta_P)}{\hat p(\theta_I)}\right]+\mathrm{const}\label{eq:metaLikeSegmented}.
+\end{eqnarray}
+The integral appearing in the first line expresses the expected value of the ratio of the model-informed impact prior $p(\theta_{I\alpha}|\theta_P)$ to the uninformed prior $\hat p(\theta_{I})$ assumed in our impact analysis with respect inferred posterior distribution for a specific data segment.  This assumes that model-informed prior has no support outside the region of support for $\hat p(\theta_{I})$.
+The crucial step to complete the computation of \eqref{eq:HierBayesThm} is to estimate these expected values using the usual Bayesian approach of averaging over a posterior distributed sample, which we have already constructed via MCMC.
 
-\textbf{MORE TO COME}
+Putting all this together for our transdimensional MCMC model allowing zero or one impacts per segment, we get
+\begin{eqnarray}
+  \ln p(\theta_P|D)&=& \sum_\alpha\ln\Big[ (1-\epsilon_\alpha)(1-r_\alpha(\theta_P))+r_\alpha(\theta_P)\frac{\epsilon_\alpha}{N_{\mathrm{det}\,\alpha}}\sum_{s\in S_{\alpha,k}}\hat r_\alpha(\psi_s|\theta_P)\Big]+\ln p(\theta_P)+\mathrm{const}\label{eq:HierPost}
+\end{eqnarray}
+where $\epsilon_\alpha$ is the MCMC impact probability and $S_{\alpha}$ is the set of $N_{\mathrm{det}\,\alpha}$ MCMC samples with impacts for segment $\alpha$, $r_\alpha(\theta_P)$ is the probability of an impact during this data segment for population model parameters $\theta_P$ and $\hat r_\alpha(\psi|\theta_P)$ is the informed prior probability of impact parameters $\psi$ if an impact.
 
+ We write the time-segment LPF-frame rate $r_\alpha(\psi,\theta_P)=\hat r_\alpha(\psi|\theta_P)r_\alpha(\theta_P)$ in terms of the physical micrometeoriod fluxes $F(\bar\theta,\bar\phi,\bar P,\theta_P)$ by
+\begin{align}
+  r_\alpha(\psi,\theta_P)&=T_\alpha A_{LPF}\frac{\partial(\bar\theta,\bar\phi,\bar P)}{\partial\psi}F(\bar\theta(\psi,t_\alpha),\bar\phi(\psi,t_\alpha),\bar P(\psi),\theta_P)
+\end{align}
+where $T_\alpha$ is the duration of the observation segment in time, $A_{LPF}$ is the spacecraft area, and the derivative factor is the Jacobian of the transformation from LPF parameters to the population model dimensions $\{\bar\theta,\bar\phi,\bar P\}$ at observation time $t_\alpha$.
+
+For this analysis we assume that an overall population model consisting of some linear combination of the JFC and HTC fluxes introduced in Sec.~\ref{sec:models} together with a naive model assuming uniform directional flux (\textbf{Need something about momentum?}). We normalize the flux from each of these sub-populations to a fixed overall rate, then we combine these in a general way by writing
+\begin{align}
+  F(\bar\theta,\bar\phi,\bar P,\theta_P)&=\sum_{\lambda} c_\lambda \hat F_\lambda(\bar\theta,\bar\phi,\bar P).\nonumber
+\end{align}
+in this case $\theta_P\equiv{c_\lambda}$.  If the component fluxes are already consistently weighted with the right rates, then we would expect to find $c_\lambda\approx1$ for each $\lambda$. Having constrained the overall rate, we replace $r_\alpha(\theta_P)$ in \eqref{eq:HierPost} with our \emph{a posteriori} per-segment rate estimate.
 
 \begin{figure}
 \gridline{\fig{figures/JFC_HTC.png}{0.3\textwidth}{(a) JFC-HTC subpopulation}
