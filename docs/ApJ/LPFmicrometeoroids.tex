@@ -2,7 +2,7 @@
 %% Author: I. Thorpe, NASA/GSFC
 %% Note: Compiled using AASTeX 6.1
 
-\documentclass[preprint, trackchanges]{aastex61}
+\documentclass[twocolumn, trackchanges]{aastex61}
 %% options are:
 %%  twocolumn   : two text columns, 10 point font, single spaced article.
 %%                This is the most compact and represent the final published
@@ -447,9 +447,9 @@ Collectively these models have been utilized to model various meteoroids related
 See Figure \ref{fig:models}.
 
 \begin{figure}
-\gridline{\fig{figures/HTC.png}{0.3\textwidth}{(a) Halley-Type Comets (HTCs)}
-          \fig{figures/JFC.png}{0.3\textwidth}{(b) Jupiter-Family Comets (JFCs)}
-          \fig{figures/OCC.png}{0.3\textwidth}{(c) Oort Cloud Comets (OCCs)}}
+\gridline{\fig{figures/HTC.png}{0.9\columnwidth}{(a) Halley-Type Comets (HTCs)}}
+\gridline{\fig{figures/JFC.png}{0.9\columnwidth}{(b) Jupiter-Family Comets (JFCs)}}
+\gridline{\fig{figures/OCC.png}{0.9\columnwidth}{(c) Oort Cloud Comets (OCCs)}}
 \caption{Expected flux of micrometeoroid impacts as a function of impact direction for the environment around Sun-Earth L1 for three subpopulations of micrometeoroids. In these coordinates the sun is located at (0,0) and the prograde orbit of L1 is (-90,0). \red{these need some work both in the figures and the caption.  What  are we plotting here exactly? Flux density?}
 \label{fig:models}}
 \end{figure}
@@ -463,8 +463,8 @@ The process of extracting micrometeoroid impact events from the LPF data stream 
 As mentioned in the introduction, LPF uses a sophisticated control system to maintain the positions and attitudes of the spacecraft (S/C) and the two test masses (TMs) such that a number of constraints are satisfied.  Example constraints include maintaining the positions and orientations of the TMs at constant values relative to the S/C and maintaining the S/C attitude relative to the Sun and Earth. In total, the control system takes measurements of 15 kinematic degrees of freedom (DoFs), 3 positions + 3 attitudes for both test masses and 3 attitudes for the spacecraft, and generates actuation commands for 18 DoFs, 3 forces and 3 torques for the two test masses and the spacecraft.  Positions and angles are measured using a star tracker, a capacitive sensing system, and an optical interferometric sensing system. An electrostatic actuation system applies forces and torques to each TM and a micropropulsion system applies forces and torques to the S/C. \red{we need to get some references in here}
 
 \begin{figure}
-\gridline{\fig{figures/rawImpact.eps}{0.5\textwidth}{(a) LPF Telemetry}
-          \fig{figures/reconstructedImpact.eps}{0.5\textwidth}{(b) Equivalent free-body acceleration }}
+\gridline{\fig{figures/rawImpact.eps}{1.0\columnwidth}{(a) LPF Telemetry}}
+ \gridline{\fig{figures/reconstructedImpact.eps}{1.0\columnwidth}{(b) Equivalent free-body acceleration }}
 \caption{Example of x-axis telemetry for impact candidate at GPS time XXX and the equivalent free-body acceleration estimated through the calibration procedure.\label{fig:models} \red{This is stolen from our LISA11 proceedings. We need to make a new version, maybe try the impact that we used for the first example of the MCMC results.}}
 \end{figure}
 
@@ -575,24 +575,41 @@ In the following sections we present some example events in detail and summarize
 
 \FloatBarrier
 \subsection{Sample candidate events \label{sec:samples}}
-As mentioned in Section \ref{sec:sensitivity}, LPF's sensitivity depends on the parameters of the impact including both the total momentum transferred as well as the fraction of that momentum that is  projected into each DoF.  As a result, the quality of our parameter estimation varies greatly from impact to impact.  Figure \ref{fig:goodExample} shows results for an impact occurring at GPS time $t_{gps}=1154024345.4$, corresponding to 2016-07-31 18:18:48.400 UTC. With a moderately high transferred momentum of $8.5\,\mu\textrm{N-s}$ and a S/C longitude that aligns well with the sensitive x-axis, the total SNR in the two TMs are $\rho_1\approx16$ and $\rho_2\approx?$ . Figure \ref{fig:goodExample}(a) shows an overlaid corner plot representing the posterior probabilities for the impact parameters as measured by TM1 (in red, lower-left) and TM2 (in blue, upper-right).  The panels are arranged in a grid with rows and columns corresponding to the following parameters: total transferred momentum ($P_{tot}$, in $\mu$N-s), S/C latitude defined relative to the S/C x-y plane ($lat$, in deg.), S/C longitude defined relative to the +x axis ($lon$, in deg.), and x,y,z, locations of the impact with respect to the S/C center of mass ($r_x,\,r_y,\,r_z$ in $m$). \red{I think we actually plot mechanical frame, which is same as CoM except for z, which is shifted to bottom deck. Do we correct the chains for these plots or change the text?}. The panels along the diagonal show the posterior probability density for each parameter as measured by TM1 (red) and TM2 (blue).  The panels on the off-diagonals show the correlation between pairs of parameters in the TM1 data (lower off-diagonals) and TM2 data (upper off-diagonals). The measured parameters between these two impacts are broadly consistent, although TM1 generally prefers a solution with slightly increased $P_{tot}$, larger $lat$, and positive shifts in both $r_x$ and $r_z$. The variances in the parameters for TM1 are also slightly smaller than for TM2, likely as a result of increased signal in TM1.\red{we should check, I think we have SNR data for both}.
+As mentioned in Section \ref{sec:sensitivity}, LPF's sensitivity depends on the parameters of the impact including both the total momentum transferred as well as the fraction of that momentum that is  projected into each DoF.  As a result, the quality of our parameter estimation varies greatly from impact to impact.  Figures \ref{fig:goodExampleCorner} and \ref{fig:goodExampleLocation} show tresults for an impact occurring at GPS time $t_{gps}=1154024345.4$, corresponding to 2016-07-31 18:18:48.400 UTC. With a moderately high transferred momentum of $8.5\,\mu\textrm{N-s}$ and a S/C longitude that aligns well with the sensitive x-axis, the total SNR in the two TMs are $\rho_1\approx16$ and $\rho_2\approx22$ . Figure \ref{fig:goodExampleCorner} shows an overlaid corner plot representing the posterior probabilities for the impact parameters as measured by TM1 (in red, lower-left) and TM2 (in blue, upper-right).  The panels are arranged in a grid with rows and columns corresponding to the following parameters: total transferred momentum ($P_{tot}$, in $\mu$N-s), S/C latitude defined relative to the S/C x-y plane ($lat$, in deg.), S/C longitude defined relative to the +x axis ($lon$, in deg.), and x,y,z, locations of the impact with respect to the S/C center of mass ($r_x,\,r_y,\,r_z$ in $m$).  The panels along the diagonal show the posterior probability density for each parameter as measured by TM1 (red) and TM2 (blue).  The panels on the off-diagonals show the correlation between pairs of parameters in the TM1 data (lower off-diagonals) and TM2 data (upper off-diagonals). The measured parameters between these two impacts are broadly consistent, although TM1 generally prefers a solution with slightly increased $P_{tot}$, larger $lat$, and positive shifts in both $r_x$ and $r_z$. 
 
-Figure \ref{fig:goodExample}(b) shows the reconstructed sky localization in the \red{frame name} frame using the TM1 data.  The 90\% confidence interval \red{(check)} encompasses an area of 3860$\,\textrm{deg}^2$. and is centered at a latitude of -43 deg and a longitude of -91 deg, meaning that the impactor originated from the direction of LPF's orbit and from below the ecliptic. Figure \ref{fig:goodExample}(c) shows the reconstructed S/C impact location on a map of the LPF exterior that has been flattened to show the full surface. \red{we need some labels on these figures to make these easier to understand}.  The most likely location of impact is on the +y vertical panel about 2/3 of the way up towards the top deck. \red{we should check the table program because the table shows +x+y}.
-
+Figure \ref{fig:goodExampleLocation}(a) shows the reconstructed sky localization in the \red{frame name} frame using the TM1 data.  The 90\% confidence interval \red{(check)} encompasses an area of 3860$\,\textrm{deg}^2$. and is centered at a latitude of -43 deg and a longitude of -91 deg, meaning that the impactor originated from the direction of LPF's orbit and from below the ecliptic. Figure \ref{fig:goodExample}(b) shows the reconstructed S/C impact location on a map of the LPF exterior that has been flattened to show the full surface.  The most likely location of impact is on the +y vertical panel about 2/3 of the way up towards the top deck. 
 
 \begin{figure}[h!]
-\gridline{\fig{figures/dualCorner.png}{0.3\textwidth}{(a) Parameter corner plot for GRS1 and GRS2}
-          \fig{figures/sky_sun2.png}{0.3\textwidth}{(b) Sky localization in Sun frame}
-          \fig{figures/flat_LPF_log_GRS1.png}{0.3\textwidth}{(c) Spacecraft Location}}
-\caption{Sample MCMC results for a well-characterized event.\label{fig:goodExample}}
+\gridline{
+\fig{figures/goodDualCorner.eps}{\columnwidth}{}}
+\caption{Comparison of recovered posterior distributions for impact parameters using TM1 and TM2 data for the impact candidate occurring at $t_{gps}=1154024345.4$, which is representative of a well-characterized event in our catalog. The array of plots is organized by parameter with a parameter order from left-to-right and top-to-bottom of total momentum transfer, latitude and longitude of impact direction in  spacecraft frame, and x,y,z location of impact with respect to S/C center of mass. Diagonal panels show single-parameter probability density functions with TM1 data in red and TM2 data in blue. Lower corner panels (red shades) show 2-parameter histograms for TM1 while upper corner panels (blue shades) show 2-parameter histograms for TM2. \label{fig:goodExampleCorner}}
 \end{figure}
 
-Figure \ref{fig:Example} shows a similar set of plots as Figure \ref{fig:goodExample} but for an impact occurring at $t_{gps} = 1149475987.7$ (2016-06-09 02:52:50.700 UTC) which had a lower total momentum ($P_{tot}\approx1.0\,\mu\textrm{N-s}$), and lower SNR ($\rho_1\approx1.5$, $\rho_2\approx?$). As a result, the constraints on parameters other than the total momentum are rather weak.  The impact location is favored towards the -x and +z faces and the preferred direction to the impactor is in the forward direction (latitudes around -90 deg) and above the ecliptic.
+
 \begin{figure}[h!]
-\gridline{\fig{figures/dualCorner_low.png}{0.3\textwidth}{(a) Parameter corner plot for GRS1 and GRS2}
-          \fig{figures/sky_sun1_low.png}{0.3\textwidth}{(b) Sky localization in Sun frame}
-          \fig{figures/flat_LPF_log_GRS1_low.png}{0.3\textwidth}{(c) Spacecraft Location}}
-\caption{Sample MCMC results for a typical event.\label{fig:Example}}
+\gridline{
+\fig{figures/goodSky.eps}{\columnwidth}{(a) Impact origin in \red{frame name?} frame}}
+\gridline{
+\fig{figures/goodFlat.eps}{\columnwidth}{(b) Impact location on S/C}}
+\caption{Reconstructed impact direction and location using TM1 data for impact candidate occurring at $t_{gps}=1154024345.4$. Color contours plot log-likelihood \red{we need a colorbar}.\label{fig:goodExampleLocation}}
+\end{figure}
+
+Figures \ref{fig:typExampleCorner} and \ref{fig:typExampleLocation} show a similar set of plots as Figures \ref{fig:goodExampleCorner} and \ref{fig:goodExampleLocation} but for an impact occurring at $t_{gps} = 1149475987.7$ (2016-06-09 02:52:50.700 UTC) which had a lower total momentum ($P_{tot}\approx1.0\,\mu\textrm{N-s}$), and lower SNR ($\rho_1\approx1.5$, $\rho_2\approx1.4$). As a result, the constraints on parameters other than the total momentum are rather weak.  The impact location is favored towards the -x and +z faces and the preferred direction to the impactor is in the forward direction (latitudes around -90 deg) and above the ecliptic.
+
+
+\begin{figure}[h!]
+\gridline{
+\fig{figures/badDualCorner.eps}{\columnwidth}{}}
+\caption{Comparison of recovered posterior distributions for impact parameters using TM1 and TM2 data for the impact candidate occurring at $t_{gps}=1149475987.7$, which is representative of a typically characterized event in our catalog. The plot arrangement is the same as Figure \ref{fig:goodExampleCorner}.\label{fig:typExampleCorner}}
+\end{figure}
+
+
+\begin{figure}[h!]
+\gridline{
+\fig{figures/badSky.eps}{\columnwidth}{(a) Impact origin in \red{frame name?} frame}}
+\gridline{
+\fig{figures/badFlat.eps}{\columnwidth}{(b) Impact location on S/C}}
+\caption{Reconstructed impact direction and location using TM1 data for impact candidate occurring at $t_{gps}=1149475987.7$. Color contours plot log-likelihood \red{we need a colorbar}.\label{fig:typExampleLocation}}
 \end{figure}
 
 \FloatBarrier
@@ -656,9 +673,9 @@ in this case $\theta_P\equiv{c_\lambda}$.  If the component fluxes are already c
 \red{This is pretty long and perhaps too technical and we haven't described the process and teh results. I'd suggest we add a discussion of the calculaiton we did, describe the results, and condese the introductory material, possibly moving some of it into an Appendix.  Also, out conclusions (HTC favored) seem to disagree with the "prior" from the models section which is at JFC make up most of the populaiton. Am I missing something here? If this is a robust result, is it a main conclusion of our paper?}
 
 \begin{figure}
-\gridline{\fig{figures/JFC_HTC.png}{0.3\textwidth}{(a) JFC-HTC subpopulation}
-          \fig{figures/HTC_Uniform.png}{0.3\textwidth}{(b) HTC-Uniform subpopulation}
-          \fig{figures/Uniform_JFC.png}{0.3\textwidth}{(c) Uniform-JFC subpopulation}}
+\gridline{\fig{figures/JFC_HTC.png}{0.9\columnwidth}{(a) JFC-HTC subpopulation}}
+\gridline{\fig{figures/HTC_Uniform.png}{0.9\columnwidth}{(b) HTC-Uniform subpopulation}}
+ \gridline{\fig{figures/Uniform_JFC.png}{0.9\columnwidth}{(c) Uniform-JFC subpopulation}}
 \caption{Likelihood distribution for mixed population model based on the LPF impact data set. The preferred point corresponds to an approximately equal mixture of HTC and Uniform populaitons.  JFC is disfavored at the XXX level, blah, blah...\label{fig:Example}}
 \end{figure}
 \FloatBarrier
