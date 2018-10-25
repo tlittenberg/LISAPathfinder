@@ -1,8 +1,8 @@
 %% TeX source for "Micrometeoroid events in LISA Pathfinder" 
 %% Author: I. Thorpe, NASA/GSFC
-%% Note: Compiled using AASTeX 6.1
+%% Note: Compiled using AASTeX 6.2
 
-\documentclass[twocolumn, trackchanges]{aastex61}
+\documentclass[twocolumn, trackchanges]{aastex62}
 %% options are:
 %%  twocolumn   : two text columns, 10 point font, single spaced article.
 %%                This is the most compact and represent the final published
@@ -38,6 +38,7 @@
 \usepackage{placeins}
 \usepackage{color}
 \usepackage{amsmath} 
+\usepackage{graphicx}
 
 %% MACROs
 \newcommand{\nwip}[2]{\langle #1|#2\rangle} % noise weighted inner product
@@ -566,8 +567,8 @@ For vetted impact candidates, an additional post-processing step was conducted t
 \section{Results} \label{sec:results}
 In this paper we restrict our analysis to segments of data where no signals were deliberately injected into the LPF system. We identified a total of \nhours hours of data in three distinct configurations: the nominal LPF configuration in which the European-provided DFACS control system and cold gas micropropulsion system were operating (2957 hours), the DRS configuration in which the NASA-provided DCS control system and colloidal micropropulsion system were operating (1207 hours), and a hybrid configuration in which the DFACS was controlling the S/C using the colloidals (184 hours). Figure \ref{fig:timeline} shows a timeline of these segments along with the detected impacts plotted with their total transferred momentum along the vertical axis. The total number of detected impacts is 54: 36 in the nominal configuration, 15 in the DRS configuration, and 3 in the hybrid configuration. This corresponds to a rough event rate of 0.3 impacts/day, which is broadly consistent with the estimate made in \cite{Thorpe:2015cxa}. 
 
-\begin{figure}[ht!]
-\plotone{figures/timeline.png}
+\begin{figure}[]
+\includegraphics[width=\columnwidth]{figures/timeline.png} 
 \caption{Timeline of impact events during LPF. The yellow dots show the impact times with the total transferred momentum defining the vertical axis. The vertical bars denote the times included in the search with blue representing the nominal configuration, red the DRS configuration, and purple the hybrid configuration. See text for details. \label{fig:timeline}}
 \end{figure}
 
@@ -577,9 +578,9 @@ In the following sections we present some example events in detail and summarize
 \subsection{Sample candidate events \label{sec:samples}}
 As mentioned in Section \ref{sec:sensitivity}, LPF's sensitivity depends on the parameters of the impact including both the total momentum transferred as well as the fraction of that momentum that is  projected into each DoF.  As a result, the quality of our parameter estimation varies greatly from impact to impact.  Figures \ref{fig:goodExampleCorner} and \ref{fig:goodExampleLocation} show tresults for an impact occurring at GPS time $t_{gps}=1154024345.4$, corresponding to 2016-07-31 18:18:48.400 UTC. With a moderately high transferred momentum of $8.5\,\mu\textrm{N-s}$ and a S/C longitude that aligns well with the sensitive x-axis, the total SNR in the two TMs are $\rho_1\approx16$ and $\rho_2\approx22$ . Figure \ref{fig:goodExampleCorner} shows an overlaid corner plot representing the posterior probabilities for the impact parameters as measured by TM1 (in red, lower-left) and TM2 (in blue, upper-right).  The panels are arranged in a grid with rows and columns corresponding to the following parameters: total transferred momentum ($P_{tot}$, in $\mu$N-s), S/C latitude defined relative to the S/C x-y plane ($lat$, in deg.), S/C longitude defined relative to the +x axis ($lon$, in deg.), and x,y,z, locations of the impact with respect to the S/C center of mass ($r_x,\,r_y,\,r_z$ in $m$).  The panels along the diagonal show the posterior probability density for each parameter as measured by TM1 (red) and TM2 (blue).  The panels on the off-diagonals show the correlation between pairs of parameters in the TM1 data (lower off-diagonals) and TM2 data (upper off-diagonals). The measured parameters between these two impacts are broadly consistent, although TM1 generally prefers a solution with slightly increased $P_{tot}$, larger $lat$, and positive shifts in both $r_x$ and $r_z$. 
 
-Figure \ref{fig:goodExampleLocation}(a) shows the reconstructed sky localization in the \red{frame name} frame using the TM1 data.  The 90\% confidence interval \red{(check)} encompasses an area of 3860$\,\textrm{deg}^2$. and is centered at a latitude of -43 deg and a longitude of -91 deg, meaning that the impactor originated from the direction of LPF's orbit and from below the ecliptic. Figure \ref{fig:goodExample}(b) shows the reconstructed S/C impact location on a map of the LPF exterior that has been flattened to show the full surface.  The most likely location of impact is on the +y vertical panel about 2/3 of the way up towards the top deck. 
+Figure \ref{fig:goodExampleLocation}(a) shows the reconstructed sky localization in the \red{frame name} frame using the TM1 data.  The 90\% confidence interval \red{(check)} encompasses an area of 3860$\,\textrm{deg}^2$. and is centered at a latitude of -43 deg and a longitude of -91 deg, meaning that the impactor originated from the direction of LPF's orbit and from below the ecliptic. Figure \ref{fig:goodExampleLocation}(b) shows the reconstructed S/C impact location on a map of the LPF exterior that has been flattened to show the full surface.  The most likely location of impact is on the +y vertical panel about 2/3 of the way up towards the top deck. 
 
-\begin{figure}[h!]
+\begin{figure}
 \gridline{
 \fig{figures/goodDualCorner.eps}{\columnwidth}{}}
 \caption{Comparison of recovered posterior distributions for impact parameters using TM1 and TM2 data for the impact candidate occurring at $t_{gps}=1154024345.4$, which is representative of a well-characterized event in our catalog. The array of plots is organized by parameter with a parameter order from left-to-right and top-to-bottom of total momentum transfer, latitude and longitude of impact direction in  spacecraft frame, and x,y,z location of impact with respect to S/C center of mass. Diagonal panels show single-parameter probability density functions with TM1 data in red and TM2 data in blue. Lower corner panels (red shades) show 2-parameter histograms for TM1 while upper corner panels (blue shades) show 2-parameter histograms for TM2. \label{fig:goodExampleCorner}}
