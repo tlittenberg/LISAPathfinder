@@ -469,6 +469,64 @@ class impactClass:
 		qr_ECIx_sun = qr_ECIx_sun / quaternion.np.abs(qr_ECIx_sun)
 
 		return qr_ECIx_sun
+    
+	def ECI_to_MM(self):
+		"""
+		returns rotation quaternion from ECI to Micrometeoroid coords
+		
+		MM coords
+		sun = 0,0
+		apex direction (Earth's motion) = -90
+		anti-apex direction = +90
+		"""
+		import numpy as np, quaternion
+		from datetime import datetime, timedelta
+
+		# find position in Earth's orbit relative to Spring Equinox
+		GPSfromUTC = (datetime(1980,1,6) - datetime(1970,1,1)).total_seconds()
+		curDate = datetime.utcfromtimestamp(self.gps + GPSfromUTC) 
+		secOfYear = (curDate - datetime(curDate.year,3,21)).total_seconds()
+		phi = (secOfYear/3.154E7)*2*np.pi
+        
+		# Rotation matrix from ECI to MM
+		theta = 23.5*np.pi/180 #Earth's axial tilt
+		R = np.array([[np.cos(phi), np.sin(phi)*np.cos(theta), np.sin(theta)*np.sin(theta)], 
+						[-np.sin(phi), np.cos(phi)*np.cos(theta), np.cos(phi)*np.sin(theta)], 
+						[0, -np.sin(theta),np.cos(theta)]])
+
+		# Convert to quaternion
+		tr = R[0,0] + R[1,1] + R[2,2]
+
+		if tr > 0.0 :
+			S = np.sqrt(tr+1.0) * 2
+			qw = 0.25 * S;
+			qx = (R[2,1] - R[1,2]) / S
+			qy = (R[0,2] - R[2,0]) / S
+			qz = (R[1,0] - R[0,1]) / S 
+		elif ((R[0,0] > R[1,1])& (R[0,0] > R[2,2]))  :
+			S = np.sqrt(1.0 + R[0,0] - R[1,1] - R[2,2]) * 2 
+			qw = (R[2,1] - R[1,2]) / S
+			qx = 0.25 * S
+			qy = (R[0,1] + R[1,0]) / S 
+			qz = (R[0,2] + R[2,0]) / S 
+		elif (R[1,1] > R[2,2]) : 
+			S = np.sqrt(1.0 + R[1,1] - R[0,0] - R[2,2]) * 2 
+			qw = (R[0,2] - R[2,0]) / S
+			qx = (R[0,1] + R[1,0]) / S 
+			qy = 0.25 * S
+			qz = (R[1,2] + R[2,1]) / S 
+		else  :
+			S = np.sqrt(1.0 + R[2,2] - R[0,0] - R[1,1]) * 2
+			qw = (R[1,0] - R[0,1]) / S
+			qx = (R[0,2] + R[2,0]) / S
+			qy = (R[1,2] + R[2,1]) / S
+			qz = 0.25 * S
+
+		Q = quaternion.as_quat_array([qw,qx,qy,qz])
+		Qc = quaternion.np.conjugate(Q)
+        
+		return Qc
+
 
 
 	# function to locate impact and estimate area using healpix binning.
@@ -591,7 +649,7 @@ class impactClass:
 		q_coord_ECI = qr_ECI_SC * q_coord_sc * quaternion.np.conjugate(qr_ECI_SC)
 		
 		# get rotation matrix from ECI to SUN
-		qr_ECIx_sun = self.ECI_to_SUN()
+		qr_ECIx_sun = self.ECI_to_MM()
 		
 		# perform second rotation
 		q_coord_sun = qr_ECIx_sun * q_coord_ECI * quaternion.np.conjugate(qr_ECIx_sun)
@@ -644,7 +702,7 @@ class impactClass:
 		q_coord_sun = quaternion.as_quat_array(np.transpose(n))
 
 		# get rotation quaternion
-		qr_ECIx_sun = self.ECI_to_SUN()
+		qr_ECIx_sun = self.ECI_to_MM()
 		
 		# Rotate from SUN to ECI:
 		q_coord_ECI = quaternion.np.conjugate(qr_ECIx_sun) * q_coord_sun * qr_ECIx_sun
@@ -676,7 +734,8 @@ class impactClass:
 			keys=['Ptot', 'lat', 'lon', 'rx', 'ry', 'rz'],
 			labels = ['$P_{tot}\,[\mu N]$', '$lat\,[deg]$', '$lon\,[deg]$', 
 					 '$r_x\,[cm]$', '$r_y\,[cm]$', '$r_z\,[cm]$'],
-			scale = [1.0e6, 1.0, 1.0, 100.0, 100.0, 100.0],
+			scale = [1.0, 1.0, 1.0, 100.0, 100.0, 100.0],
+			offsets = [0.0, 0.0, 0.0, 0.0, 0.0, .491],            
 			Nbins = 30):
 
 		"""
@@ -707,9 +766,9 @@ class impactClass:
 		# loop over keys for x (rows)
 		for ii in range(0, Nkeys):
 			# get x data for both GRS
-			x1 = self.getParam(keys[ii]) * scale[ii]
+			x1 = (self.getParam(keys[ii]) - offsets[ii]) * scale[ii]
 			N1 = np.shape(x1)[0]
-			x2 = data2.getParam(keys[ii]) * scale[ii]
+			x2 = (data2.getParam(keys[ii]) - offsets[ii]) * scale[ii]
 			N2 = np.shape(x2)[0]
 
 			# determine x bins
@@ -724,8 +783,8 @@ class impactClass:
 				if jj < ii:
 					kk = kk + 1
 					# get y data
-					y1 = self.getParam(keys[jj]) * scale[jj]
-					y2 = data2.getParam(keys[jj]) * scale[jj]
+					y1 = (self.getParam(keys[jj]) - offsets[jj]) * scale[jj]
+					y2 = (data2.getParam(keys[jj]) - offsets[jj]) * scale[jj]
 
 					# determine y bins
 					ytot = np.concatenate([y1, y2])
@@ -736,9 +795,9 @@ class impactClass:
 					# 2D histogram and plot
 					# Handleing strange binning error, bins were too small
 					try:
-						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, [xbins, ybins], density = True)
+						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, [xbins, ybins], normed = True)
 					except:
-						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, density = True)
+						c_x1y1, x2e, y2e = np.histogram2d(x1, y1, normed = True)
 					plt.subplot(Nkeys, Nkeys, kk)
 					plt.contourf(c_x1y1, extent = [y2e.min(), y2e.max(), x2e.min(), x2e.max()], cmap=matplotlib.cm.Reds)
 					ax = plt.gca()
@@ -765,8 +824,8 @@ class impactClass:
 					kk = kk + 1
 
 					# determine y bins
-					y1 = self.getParam(keys[jj]) * scale[jj]
-					y2 = data2.getParam(keys[jj]) * scale[jj]
+					y1 = (self.getParam(keys[jj]) - offsets[jj]) * scale[jj]
+					y2 = (data2.getParam(keys[jj]) - offsets[jj]) * scale[jj]
 					ytot = np.concatenate([y1, y2])
 					ybins = np.linspace(np.min(ytot), np.max(ytot), Nbins)
 					ye = ybins - 0.5 * (ybins[1] - ybins[0])
@@ -774,9 +833,9 @@ class impactClass:
 
 					# Handleing strange binning error, bins were too small
 					try:
-						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, [xbins, ybins], density = True)
+						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, [xbins, ybins], normed = True)
 					except:	
-						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, density = True)
+						c_x2y2, x2e, y2e = np.histogram2d(x2, y2, normed = True)
 					plt.subplot(Nkeys, Nkeys, kk)
 					plt.contourf(c_x2y2, extent = [y2e.min(), y2e.max(), x2e.min(), x2e.max()], cmap = matplotlib.cm.Blues)
 					ax = plt.gca()
@@ -837,7 +896,7 @@ class impactClass:
 			ax.imshow_hpx(self.healPix, cmap='cylon')
 			title += " [spacecraft]"
 
-		ax.set_title(title)
+		#ax.set_title(title)
 		ax.grid(linestyle = ':')
 		ax.coords[0].set_ticks(exclude_overlapping = True, spacing = 45 * u.deg)
 		ax.coords[1].set_ticks(exclude_overlapping = True, spacing = 30 * u.deg)
