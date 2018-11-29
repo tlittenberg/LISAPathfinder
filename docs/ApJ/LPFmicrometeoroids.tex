@@ -32,10 +32,8 @@
 %%
 %% these can be used in any combination, e.g.
 %%
-%% \documentclass[twocolumn,linenumbers,trackchanges]{aastex61}
 
 %% Additional Packages
-\usepackage{placeins}
 \usepackage{color}
 \usepackage{amsmath} 
 \usepackage{graphicx}
@@ -398,16 +396,16 @@ miscellaneous}
 %% to the KEY in the \bibitem in the reference list below. 
 
 \section{Introduction} \label{sec:intro}
-Our Solar System hosts a population of dust and small particles that originate as debris from asteroids, comets, and other bodies.  Understanding these particles is important both for gaining insight into the formation of our Sun and its planets as well as for the dust population around other stars. More practically, dust and micrometeoroids are a critical component of the environment in which our spacecraft operate and against whose hazards they must be designed.  The behavior of the Solar System dust complex has been addressed from both theoretical and observational perspectives. Theorists have developed models of the production of dust from comets and asteroids,  its evolution under the effects of gravity and the solar environment, and its destruction through accretion and other processes \red{maybe Petr or Diego could provide some generic references here}. Observationally, this population has been constrained through measurements of its interaction with Earth's atmosphere (photographic, visual, and radio meteors, e.g. \cite{Halliday1984, Hawkes2007, Trigo-Rodriguez2008}), observations of zodiacal light (e.g.,  \cite{Krick2012, Durmont1980}), analysis of microcraters in Apollo lunar samples (e.g.  \cite{Allison1982}), and in-situ measurements made with ionization and penetration detectors on spacecraft (e.g.,  \cite{Weiden1978, Zhang1995}).  These theoretical and observational models are broadly consistent with one another, although important questions remain. One issue is that the bulk of the observational data is from the environment near Earth, a region in which some of the more subtle differences in the models of the underlying population are masked by the influence of the planet itself. Data taken far from Earth could in principle be used to distinguish such subtleties.
+Our Solar System hosts a population of dust and small particles that originate as debris from asteroids, comets, and other bodies.  Understanding these particles is important both for gaining insight into the formation of our Sun and its planets as well as for the dust population around other stars. More practically, dust and micrometeoroids are a critical component of the environment in which our spacecraft operate and against whose hazards they must be designed.  The behavior of the Solar System dust complex has been addressed from both theoretical and observational perspectives. Theorists have developed models of the production of dust from comets and asteroids,  its evolution under the effects of gravity and the solar environment, and its destruction through accretion and other processes. Observationally, this population has been constrained through measurements of its interaction with Earth's atmosphere (photographic, visual, and radio meteors, e.g. \cite{Halliday1984, Hawkes2007, Trigo-Rodriguez2008}), observations of zodiacal light (e.g.,  \cite{Krick2012, Durmont1980}), analysis of microcraters in Apollo lunar samples (e.g.  \cite{Allison1982}), and in-situ measurements made with ionization and penetration detectors on spacecraft (e.g.,  \cite{Weiden1978, Zhang1995}).  These theoretical and observational models are broadly consistent with one another, although important questions remain. One issue is that the bulk of the observational data is from the environment near Earth, a region in which some of the more subtle differences in the models of the underlying population are masked by the influence of the planet itself. Data taken far from Earth could in principle be used to distinguish such subtleties.
 \\
 LISA Pathfinder (LPF), A European Space Agency (ESA) mission which operated near the first Sun-Earth Lagrange point (L1) from January 2016 through July of 2017, is in an ideal orbit to make such measurements. However, LPF flew no instrumentation dedicated to micrometeoroid or dust detection.  LPF's primary objective was to demonstrate technologies for a future space-based observatory of milliHertz-band gravitational waves. The key achievement of LPF was placing two gold-platinum cubes known as `test masses' into a free-fall so pure it was characterized by accelerations at the femto-g level (e.g., \cite{LPF_PRL_2016, LPF_PRL_2018}), the level required to detect the minute disturbances caused by passing gravitational waves. In order to reach this level of performance, the test masses were released into cavities inside the spacecraft and a control system was employed to keep the spacecraft centered on the test masses.  This control system was designed to counteract disturbances on the spacecraft, including those caused by impacts from micrometeoroids. Shortly before LPF's launch, it was realized that data from the control system, if properly calibrated, could be used to detect and characterize these impacts and infer information about the impacting particles (e.g., \cite{Thorpe:2015cxa}). Early results from the first few months of LPF operations suggested that such events could indeed be identified and were roughly consistent with the pre-launch predictions of their effect on the control system (e.g., \cite{Thorpe2017a}). In this paper we present results from the first systematic search for micrometeoroid impacts in the LPF data set.  Our data set consists of \nhours hours of data in both the nominal LPF configuration as well as the "Disturbance Reduction System" (DRS) configuration, in which a NASA-supplied controller and thruster system took over control of the spacecraft. Our data set corresponds to the times when LPF was operating in a `quiet' mode, without any intentional signal injections or other disturbances. During this period, we have identified \nhits impact candidates using our detection pipeline and manual vetoing. We characterized the properties of this data set and compared it to several theoretical models for the underlying dust population. 
 \\
 The remainder of the paper is organized as follows. In Section \ref{sec:models} we summarize the dust population models to which we compare our data set and their relevant properties. In Section \ref{sec:methods} we describe our detection technique, including initial calibration, search, parameter estimation, and vetoing. Section \ref{sec:results} summarizes our results, including examples of individual events and properties of the observed population. In Section \ref{sec:model_inference} we present a statistical comparisons of our observed population with the theoretical models for the dust population. Conclusions from this work and implications for future work are contained in Section \ref{sec:conclusions}. A complete list of the impact candidates is included in Appendix A. 
 
 
-\FloatBarrier
+%\FloatBarrier
 \section{Population Models}\label{sec:models}
-
+\red{there is no material on the ASTs in here at the moment}
 In this work we utilized dynamical models of meteoroids in the Solar System to characterize the direction, velocity and mass of particles impacting the LISA Pathfinder spacecraft.
 The meteoroids considered here originate from three cometary sources: short period Jupiter Family Comets (JFCs) and long period Halley Type and Oort Cloud Comets (HTCs and OCCs, respectively). JFCs are modeled following the work  reported by~\cite{Nesvorny10,Nesvorny11a}, who estimated that these particles represent 85 $-$ 95\% of the total meteoroid budget (in terms of number of particles) in the inner solar system. The assumed JFCs initial distribution of orbital elements followed the one proposed by~\cite{LevisonDuncan97}, where the number of comets as a function of their distance from perihelion, q, is given by
 
@@ -443,19 +441,28 @@ dN(q)\propto
 \cite{Nesvorny11b} found that OCC particles cannot provide a significant contribution to the overall meteoroid-budget of the inner zodiacal cloud. Most of the small particles (i.e. $D\sim$10 $\mu$m) are blown out of the solar system by radiation pressure, while millimeter sized meteoroids get scattered by planets and their orbits never decouple from Jupiter and thus the collision probability of these meteoroids with Earth is negligible. 
 The authors concluded that only meteoroids with diameters between $\sim$100--300 $\mu$m can evolve in orbits decoupled from Jupiter and effectively populate the Ap source with preferentially retrograde meteors observed impacting the Earth with speeds around $55-60$ km~s$^{-1}$.
 
-Collectively these models have been utilized to model various meteoroids related phenomena at Earth~\cite[][]{CarrilloSanchez16, Janches17}, at the Moon~\cite{Janches18} and at Mercury~\cite{Pokorny17,Pokorny18}.  \red{We need some text connecting to the figures. Maybe we also want a figure that show relative momentum distribution for each model.  Also, since we're talking about the difference between the Earth and Moon environment, we should probably comment on the validity of using these models for LPF's position at L1.}
-
-See Figure \ref{fig:models}.
-
-\begin{figure}
-\gridline{\fig{figures/HTC.png}{0.9\columnwidth}{(a) Halley-Type Comets (HTCs)}}
-\gridline{\fig{figures/JFC.png}{0.9\columnwidth}{(b) Jupiter-Family Comets (JFCs)}}
-\gridline{\fig{figures/OCC.png}{0.9\columnwidth}{(c) Oort Cloud Comets (OCCs)}}
-\caption{Expected flux of micrometeoroid impacts as a function of impact direction for the environment around Sun-Earth L1 for three subpopulations of micrometeoroids. In these coordinates the sun is located at (0,0) and the prograde orbit of L1 is (-90,0). \red{these need some work both in the figures and the caption.  What  are we plotting here exactly? Flux density?}
-\label{fig:models}}
+\begin{figure}[t!]
+\gridline{
+\fig{figures/popCDF.eps}{\columnwidth}{}}
+\caption{Expected sky-averaged flux of micrometeoroids in the vicinity of Sun-Earth L1 as a function of momentum relative to L1 and class of parent body. JFC = Jupiter Family Comets, HTC = Halley Type Comet, OCC = Oort Cloud Comet, AST = Asteroid. See Text for details. \label{fig:popCDF}}
 \end{figure}
 
-\FloatBarrier
+\begin{figure*}
+\gridline{\fig{figures/map_JFC.eps}{0.9\columnwidth}{(a) Jupiter-Family Comets (JFC)}
+\fig{figures/map_HTC.eps}{0.9\columnwidth}{(b) Halley-Type Comets (HTC)}}
+\gridline{\fig{figures/map_OCC.eps}{0.9\columnwidth}{(c) Oort Cloud Comets (OCC)}
+\fig{figures/map_AST.eps}{0.9\columnwidth}{(d) Asteroids (AST)}}
+\caption{Angular flux density for micrometeoroid impacts with momenta $\geq 1\,\mu$Ns at Sun-Earth L1 as a function of sky position in a Sun-tracking Ecliptic frame with the Sun at 0$^\circ$ longitude (point $\odot$), L1 prograde direction at $-90^\circ$ (point P), and L1 retrograde direction at $+90^\circ$ (point R). 
+\label{fig:popMaps}}
+\end{figure*}
+
+Collectively these models have been utilized to model various meteoroids related phenomena at Earth~\cite[][]{CarrilloSanchez16, Janches17}, at the Moon~\cite{Janches18} and at Mercury~\cite{Pokorny17,Pokorny18}.  In this paper we use the models to estimate the expected flux for LPF's position at Sun-Earth L1. Figure \ref{fig:popCDF} shows the sky-averaged flux of potential impactors at L1 as a function of the minimum momentum relative to L1, extending down to a momentum of 0.1$\,\,mu Ns$ which is the approximate sensitivity limit of LPF\cite{Thorpe:2015cxa}. The solid points show outputs of Monte Carlo simulations for particles with parent bodies of the following types: Jupiter Family Comets (JFC), Halley Type Comets (HTC), Oort Cloud Comets (OCC), and Asteroids (AST).  The numerical results are reasonably well fit by a simple power-law (solid lines) as is commonly-used in phenomenological models of micrometeoroid flux, e.g. \cite{Grun1985}. Based on the models in Figure \ref{fig:popCDF}, we would expect that higher-momentum LPF events should be a mixture of roughly 2/3 JFC, 1/3 HTC, and a smaller contribution from OCC and AST.  For lower momenta closer to detection threshold, the contribution of OCC events increases, eventually equalling that of the JFCs for a minimum momentum of $0.1\,\mu$Ns.  
+
+A distinguishing feature of these four populations of micrometeoroids is their sky distribution.  Figure \ref{fig:popMaps} shows maps of angular flux density for micrometeoroid impacts with momenta $\geq 1\,\mu$Ns as a function of sky position in a Sun-tracking Ecliptic Frame centered on L1.  The Sun is located at 0$^\circ$ longitude (point $\odot$), the prograde direction at $-90^\circ$ (point P), and the retrograde direction at $+90^\circ$ (point R).  JFC particles are concentrated into two clumps near the ecliptic plane, one from a roughly Sunward direction and one from a roughly anti-Sun direction. The longitudes of both clumps are shifted slightly towards the prograde direction due to the orbital motion of L1. HTC particles are centered in the prograde direction and distributed in two symmetric sets of clumps above and below the ecliptic plane with median latitudes of roughly $\pm 20^\circ$ and $\pm 65^\circ$.  OCC have a similar distribution to HTCs, although the lower-latitude clumps are more pronounced and slightly closer to the ecliptic. ASTs are concentrated mostly at high latitudes and in the prograde direction. 
+
+Overall, these models predict a detectable impact rate on the order of $10^2$ events per year for the LPF spacecraft.  A strong bias towards lower momenta is expected, which predicts that the number of events that are measured well enough to infer sky positions (see discussion in section \ref{sec:sensitivity}) should be considerably smaller. 
+
+%\FloatBarrier
 \section{Methods} \label{sec:methods}
 The process of extracting micrometeoroid impact events from the LPF data stream can be divided into three distinct steps: calibration to equivalent free-body acceleration, detection and parameter estimation, and post-processing.  The following three subsections describe these three steps in more detail, the end result of which is a catalog of impact candidates.
 
@@ -482,7 +489,7 @@ The end result of this calibration step was a set of twelve timeseries correspon
 %\end{center}
 %\end{figure}
 
-\FloatBarrier
+%\FloatBarrier
 
 \subsection{Impact Model and Sensitivity}
 \label{sec:sensitivity}
@@ -508,7 +515,7 @@ P_c \equiv \frac{1}{\sqrt{2\pi}}\left(4 S_4 S_0^3\right)^{1/8}.\label{eq:SNRp}
 \end{equation} 
 The value of $P_c$ varies somewhat for each DoF due to the different combinations of sensing noise, micropropulsion noise, as well as differences in the spacecraft mass properties. The approximate range for linear DoFs is $0.05\,\mu\textrm{N-s}\leq P_c \leq 1\,\mu\textrm{N-s}$ and $0.3\,\mu\textrm{N-m-s}\leq P_c \leq 4\,\mu\textrm{N-m-s}$ for angular DoFs. This asymmetry in sensitivity along different DoFs means that impacts with lower overall momentum are often only detected in a fraction of DoF channels, meaning that the full set of parameters cannot be extracted. Similarly, impacts which happen to impart a large fraction of their momentum in a sensitive channel may be measured at lower thresholds than those coming from different directions.
 
-\FloatBarrier
+%\FloatBarrier
 \subsection{Detection and Parameter Estimation}\label{sec:MCMC}
 The second step in our micrometeoroid pipeline involves the identification and characterization of candidate events in our data stream.  This is performed using the maximum-likelihood formalism that is commonly applied in gravitational wave data analysis. 
 %Data model
@@ -556,80 +563,96 @@ We also found that, for large momentum impacts, a noticeable residual was left i
 This modeling mismatch results in an uncharacterized systematic error, though the macroscopic conclusions drawn from the posterior--which face of the spacecraft was impacted, from what (general) region of the sky did the impactor originate, and the overall distribution of imparted momenta of the impactors--are not expected to be biased to the point of misleading the general conclusions.
 Improvements to the model, especially developing a physically motivated forward model of the instrument noise, are areas for future study.
 
-\FloatBarrier
+%\FloatBarrier
+\begin{figure*}[t]
+\includegraphics[width=\textwidth]{figures/timeline.png} 
+\caption{Timeline of impact events during LPF. The yellow dots show the impact times with the total transferred momentum defining the vertical axis. The vertical bars denote the times included in the search with blue representing the nominal configuration, red the DRS configuration, and purple the hybrid configuration. See text for details. \label{fig:timeline}}
+\end{figure*}
+
 \subsection{Post processing and vetos}\label{sec:vetos}
 \red{Describe selection of candidates, application of vetos, and post-processing to do the sky angle conversion, sky area computation, etc.}
 For each segment of data, the MCMC tool described in Section \ref{sec:MCMC} was run for in an initial search comprised of XXX steps on the TM1 data. After discarding the first XXX steps of the chain as ``burn in'' samples, the detection fraction was computed as the ratio of chain steps where an impact model was included to the total number of steps.  For systems with a detection fraction above XXX, the MCMC tool was re-run in a characterization step of XXX steps on both TM1 and TM2. A burn-in period of XXX steps was discarded from both chains and the detection fraction was again computed as well as the variance in the impact time parameter $\tau$.  For systems with an above-threshold detection fraction and impact time variance of less than XXX in both TMs were passed on to the next step in the vetting process, manual inspection.  For the manual inspection process, an expanded set of telemetry from the spacecraft around the candidate impact time was downloaded and inspected.  Examples of signals inspected include all force and torque signals, all position and attitude signals, selected voltage levels, and internal telemetry of the micropropulsion system. This process yielded two types of false triggers: thruster current spikes and data gaps. Candidates for which the signals appeared consistent with expectations were added to the catalog.
 
+
+
 For vetted impact candidates, an additional post-processing step was conducted to extract parameters of interest.  In order to compare with the micrometeoroid population models in Section \ref{sec:models}, it was necessary to transform the impact direction from S/C coordinates to the \red{frame name?} used by the models.  This transformation was done in two steps, first from the S/C frame to an Earth-Centered Inertial (ECI) frame using the S/C quaternion telemetry provided by the star tracker, and then from ECI to the \red{frame name} using the S/C ephemeris. Median sky location and a 90\% confidence sky area for both frames was computed using HEALPIX.\red{cite something}.
 
-\FloatBarrier
-\section{Results} \label{sec:results}
-In this paper we restrict our analysis to segments of data where no signals were deliberately injected into the LPF system. We identified a total of \nhours hours of data in three distinct configurations: the nominal LPF configuration in which the European-provided DFACS control system and cold gas micropropulsion system were operating (2957 hours), the DRS configuration in which the NASA-provided DCS control system and colloidal micropropulsion system were operating (1207 hours), and a hybrid configuration in which the DFACS was controlling the S/C using the colloidals (184 hours). Figure \ref{fig:timeline} shows a timeline of these segments along with the detected impacts plotted with their total transferred momentum along the vertical axis. The total number of detected impacts is 54: 36 in the nominal configuration, 15 in the DRS configuration, and 3 in the hybrid configuration. This corresponds to a rough event rate of 0.3 impacts/day, which is broadly consistent with the estimate made in \cite{Thorpe:2015cxa}. 
 
-\begin{figure}[]
-\includegraphics[width=\columnwidth]{figures/timeline.png} 
-\caption{Timeline of impact events during LPF. The yellow dots show the impact times with the total transferred momentum defining the vertical axis. The vertical bars denote the times included in the search with blue representing the nominal configuration, red the DRS configuration, and purple the hybrid configuration. See text for details. \label{fig:timeline}}
-\end{figure}
+
+\section{Results} \label{sec:results}
+In this paper we restrict our analysis to segments of data where no signals were deliberately injected into the LPF system. We identified a total of \nhours hours of data in three distinct configurations: the nominal LPF configuration in which the European-provided DFACS control system and cold gas micropropulsion system were operating (2957 hours), the DRS configuration in which the NASA-provided DCS control system and colloidal micropropulsion system were operating (1207 hours), and a hybrid configuration in which the DFACS was controlling the S/C using the colloidals (184 hours). Figure \ref{fig:timeline} shows a timeline of these segments along with the detected impacts plotted with their total transferred momentum along the vertical axis. The total number of detected impacts is 54: 36 in the nominal configuration, 15 in the DRS configuration, and 3 in the hybrid configuration. This corresponds to a rough event rate of 120 yr$^{-1}$, which is broadly consistent with the estimate made in \cite{Thorpe:2015cxa} as well as the models in Section \ref{sec:models}. 
 
 In the following sections we present some example events in detail and summarize some properties of the observed population.  A full catalog of the impacts and their estimated parameters can be found in Appendix A.
 
-\FloatBarrier
+
+
 \subsection{Sample candidate events \label{sec:samples}}
-As mentioned in Section \ref{sec:sensitivity}, LPF's sensitivity depends on the parameters of the impact including both the total momentum transferred as well as the fraction of that momentum that is  projected into each DoF.  As a result, the quality of our parameter estimation varies greatly from impact to impact.  Figures \ref{fig:goodExampleCorner} and \ref{fig:goodExampleLocation} show tresults for an impact occurring at GPS time $t_{gps}=1154024345.4$, corresponding to 2016-07-31 18:18:48.400 UTC. With a moderately high transferred momentum of $8.5\,\mu\textrm{N-s}$ and a S/C longitude that aligns well with the sensitive x-axis, the total SNR in the two TMs are $\rho_1\approx16$ and $\rho_2\approx22$ . Figure \ref{fig:goodExampleCorner} shows an overlaid corner plot representing the posterior probabilities for the impact parameters as measured by TM1 (in red, lower-left) and TM2 (in blue, upper-right).  The panels are arranged in a grid with rows and columns corresponding to the following parameters: total transferred momentum ($P_{tot}$, in $\mu$N-s), S/C latitude defined relative to the S/C x-y plane ($lat$, in deg.), S/C longitude defined relative to the +x axis ($lon$, in deg.), and x,y,z, locations of the impact with respect to the S/C center of mass ($r_x,\,r_y,\,r_z$ in $m$).  The panels along the diagonal show the posterior probability density for each parameter as measured by TM1 (red) and TM2 (blue).  The panels on the off-diagonals show the correlation between pairs of parameters in the TM1 data (lower off-diagonals) and TM2 data (upper off-diagonals). The measured parameters between these two impacts are broadly consistent, although TM1 generally prefers a solution with slightly increased $P_{tot}$, larger $lat$, and positive shifts in both $r_x$ and $r_z$. 
+As mentioned in Section \ref{sec:sensitivity}, LPF's sensitivity depends on the parameters of the impact including both the total momentum transferred as well as the fraction of that momentum that is  projected into each DoF.  As a result, the quality of our parameter estimation varies greatly from impact to impact.  Figures \ref{fig:goodExampleCorner} and \ref{fig:goodExampleLocation} show results for an impact occurring at GPS time $t_{gps}=1154024345.4$, corresponding to 2016-07-31 18:18:48.400 UTC. 
 
-Figure \ref{fig:goodExampleLocation}(a) shows the reconstructed sky localization in the \red{frame name} frame using the TM1 data.  The 90\% confidence interval \red{(check)} encompasses an area of 3860$\,\textrm{deg}^2$. and is centered at a latitude of -43 deg and a longitude of -91 deg, meaning that the impactor originated from the direction of LPF's orbit and from below the ecliptic. Figure \ref{fig:goodExampleLocation}(b) shows the reconstructed S/C impact location on a map of the LPF exterior that has been flattened to show the full surface.  The most likely location of impact is on the +y vertical panel about 2/3 of the way up towards the top deck. 
-
-\begin{figure}
+\begin{figure*}[ht!]
 \gridline{
-\fig{figures/goodDualCorner.eps}{\columnwidth}{}}
-\caption{Comparison of recovered posterior distributions for impact parameters using TM1 and TM2 data for the impact candidate occurring at $t_{gps}=1154024345.4$, which is representative of a well-characterized event in our catalog. The array of plots is organized by parameter with a parameter order from left-to-right and top-to-bottom of total momentum transfer, latitude and longitude of impact direction in  spacecraft frame, and x,y,z location of impact with respect to S/C center of mass. Diagonal panels show single-parameter probability density functions with TM1 data in red and TM2 data in blue. Lower corner panels (red shades) show 2-parameter histograms for TM1 while upper corner panels (blue shades) show 2-parameter histograms for TM2. \label{fig:goodExampleCorner}}
-\end{figure}
-
-
-\begin{figure}[h!]
-\gridline{
-\fig{figures/goodSky.eps}{\columnwidth}{(a) Impact origin in \red{frame name?} frame}}
-\gridline{
-\fig{figures/goodFlat.eps}{\columnwidth}{(b) Impact location on S/C}}
-\caption{Reconstructed impact direction and location using TM1 data for impact candidate occurring at $t_{gps}=1154024345.4$. Color contours plot log-likelihood \red{we need a colorbar}.\label{fig:goodExampleLocation}}
-\end{figure}
-
-Figures \ref{fig:typExampleCorner} and \ref{fig:typExampleLocation} show a similar set of plots as Figures \ref{fig:goodExampleCorner} and \ref{fig:goodExampleLocation} but for an impact occurring at $t_{gps} = 1149475987.7$ (2016-06-09 02:52:50.700 UTC) which had a lower total momentum ($P_{tot}\approx1.0\,\mu\textrm{N-s}$), and lower SNR ($\rho_1\approx1.5$, $\rho_2\approx1.4$). As a result, the constraints on parameters other than the total momentum are rather weak.  The impact location is favored towards the -x and +z faces and the preferred direction to the impactor is in the forward direction (latitudes around -90 deg) and above the ecliptic.
-
-
-\begin{figure}[h!]
-\gridline{
-\fig{figures/badDualCorner.eps}{\columnwidth}{}}
+\fig{figures/badDualCorner.eps}{\textwidth}{}}
+\vspace*{-20mm}
 \caption{Comparison of recovered posterior distributions for impact parameters using TM1 and TM2 data for the impact candidate occurring at $t_{gps}=1149475987.7$, which is representative of a typically characterized event in our catalog. The plot arrangement is the same as Figure \ref{fig:goodExampleCorner}.\label{fig:typExampleCorner}}
-\end{figure}
+\end{figure*}
 
+\begin{figure*}[ht!]
+\gridline{
+\fig{figures/goodDualCorner.eps}{\textwidth}{}}
+\vspace*{-20mm}
+\caption{Comparison of recovered posterior distributions for impact parameters using TM1 and TM2 data for the impact candidate occurring at $t_{gps}=1154024345.4$, which is representative of a well-characterized event in our catalog. The array of plots is organized by parameter with a parameter order from left-to-right and top-to-bottom of total momentum transfer, latitude and longitude of impact direction in  spacecraft frame, and x,y,z location of impact with respect to S/C center of mass. Diagonal panels show single-parameter probability density functions with TM1 data in red and TM2 data in blue. Lower corner panels (red shades) show 2-parameter histograms for TM1 while upper corner panels (blue shades) show 2-parameter histograms for TM2. \label{fig:goodExampleCorner}}
+\end{figure*}
 
-\begin{figure}[h!]
+\begin{figure*}[h!]
 \gridline{
-\fig{figures/badSky.eps}{\columnwidth}{(a) Impact origin in \red{frame name?} frame}}
+\fig{figures/goodSky.eps}{0.5\textwidth}{(a) Impact origin in Sun-tracking Ecliptic Frame}
+\fig{figures/goodFlat.eps}{0.5\textwidth}{(b) Impact location on S/C}}
+\caption{Reconstructed impact direction and location using TM1 data for impact candidate occurring at $t_{gps}=1154024345.4$. Color contours plot log-likelihood \red{we need a colorbar}.\label{fig:goodExampleLocation}}
+\end{figure*}
+
+\begin{figure*}[h!]
 \gridline{
+\fig{figures/badSky.eps}{\columnwidth}{(a) Impact origin in Sun-tracking Ecliptic Frame }
 \fig{figures/badFlat.eps}{\columnwidth}{(b) Impact location on S/C}}
 \caption{Reconstructed impact direction and location using TM1 data for impact candidate occurring at $t_{gps}=1149475987.7$. Color contours plot log-likelihood \red{we need a colorbar}.\label{fig:typExampleLocation}}
-\end{figure}
+\end{figure*}
 
-\FloatBarrier
+\pagebreak
+
+With a moderately high transferred momentum of $8.5\,\mu\textrm{N-s}$ and a S/C longitude that aligns well with the sensitive x-axis, the total SNR in the two TMs are $\rho_1\approx16$ and $\rho_2\approx22$ . Figure \ref{fig:goodExampleCorner} shows an overlaid corner plot representing the posterior probabilities for the impact parameters as measured by TM1 (in red, lower-left) and TM2 (in blue, upper-right).  The panels are arranged in a grid with rows and columns corresponding to the following parameters: total transferred momentum ($P_{tot}$, in $\mu$N-s), S/C latitude defined relative to the S/C x-y plane ($lat$, in deg.), S/C longitude defined relative to the +x axis ($lon$, in deg.), and x,y,z, locations of the impact with respect to the S/C center of mass ($r_x,\,r_y,\,r_z$ in $m$).  The panels along the diagonal show the posterior probability density for each parameter as measured by TM1 (red) and TM2 (blue).  The panels on the off-diagonals show the correlation between pairs of parameters in the TM1 data (lower off-diagonals) and TM2 data (upper off-diagonals). The measured parameters between these two impacts are broadly consistent, although TM1 generally prefers a solution with slightly increased $P_{tot}$, larger $lat$, and positive shifts in both $r_x$ and $r_z$. 
+
+Figure \ref{fig:goodExampleLocation}(a) shows the reconstructed sky localization in the \red{frame name} frame using the TM1 data.  The 68\% confidence interval encompasses an area of 3860$\,\textrm{deg}^2$. and is centered at a latitude of -7 deg and a longitude of 158 deg, meaning that the impactor originated from the anti-Sun direction and slightly below the ecliptic. Figure \ref{fig:goodExampleLocation}(b) shows the reconstructed S/C impact location on a map of the LPF exterior that has been flattened to show the full surface.  The most likely location of impact is on the +y vertical panel about 2/3 of the way up towards the top deck. This is consistent with the orientation of the spacecraft at the impact time, when the +y vertical panel was oriented towards the south ecliptic pole. A comparison of this impact geometry with the flux maps for population models in Figure \ref{fig:models} suggests that the impactor associated with this event was most likely of the Jupiter Family Comet (JFC) type. 
+
+Figures \ref{fig:typExampleCorner} and \ref{fig:typExampleLocation} show a similar set of plots as Figures \ref{fig:goodExampleCorner} and \ref{fig:goodExampleLocation} but for an impact occurring at $t_{gps} = 1149475987.7$ (2016-06-09 02:52:50.700 UTC) which had a lower total momentum ($P_{tot}\approx1.0\,\mu\textrm{N-s}$), and lower SNR ($\rho_1\approx1.5$, $\rho_2\approx1.4$). As a result, the constraints on parameters other than the total momentum are rather weak.  The impact location is favored towards the -x and +z faces and the preferred direction to the impactor is in the direction from the Sun (latitudes around 0 deg) and above the ecliptic. These parameters are also suggestive of a JFC-type impactor, although the less-common Asteroidal type would be consistent with the observed geometry.
+
+%\FloatBarrier
 \subsection{Ensemble results}
-Before comparing our observations with the detailed models of the dust complex described section \ref{sec:models}, it is useful to examine some basic properties of the observed ensemble. Figure \ref{fig:CDF_P} shows the cumulative momentum distribution of the observed events, with the median momentum indicated by the yellow diamond \red{marker} and the \red{XXX} confidence interval indicated by the horizontal bars.  As is generally expected from all models of the dust complex, the number of impacts falls with the total momentum. Two single-index power-law fits to the data, both inlcuding and excluding the highest-momentum impact, are plotted in the red and purple lines, and have power-law indices of -0.73 and -0.97 respectively. \red{check numbers and get error bars}. Also plotted for reference are the predicted flux averaged over the four models described in section \ref{sec:models} and a fit to them with a power law index of \red{XXX}. \red{What else do we want to say here? Do we want to try fitting various breaks, etc.  Is there a nice Bayesian way to do that?}.
+In this section, we describe some of the properties of our observed ensemble of events and make some comparisons to the model populations described in Section \ref{sec:models}. Micrometeoroid impacts are expected to be governed by a Poisson process characterized by a single rate parameter.  Figure \ref{fig:CDF_rate} shows the cumulative probability density of the observed time between events, which was computed from mission elapsed time by excising the times not included in our search. As is expected for a Poisson process, this distribution follows an exponential function, with a time between events of $2.94\pm0.05\,$days or a rate of $(124\pm2)\,yr^{-1}$.  This is consistent with the predictions in Section \ref{sec:models}.
 
-\begin{figure}
-\gridline{\fig{figures/momentumCDF.png}{0.5\textwidth}{a}}
-\caption{Cumulative momentum distribution of observed impacts. We should divide by the number of impacts to get this in a fractional sense. \label{fig:CDF_P}}
-\end{figure}
-
-A second property of the observed distribution is the time of arrival statistics, which are expected to be governed by a Poisson process. Figure \ref{fig:CDF_rate} shows the cumulative probability density of the observed time between events, which was computed by excising the times not included in our data set. As is expected for a Poisson process, this distribution follows an exponential function, with a time between events of $2.94\pm0.05\,$days. 
-\begin{figure}
-\gridline{\fig{figures/rateplot.eps}{0.5\textwidth}{a}}
+\begin{figure}[h!]
+\gridline{\fig{figures/rateplot.eps}{0.5\textwidth}{}}
+\vspace*{-8mm}
 \caption{Cumulative distribution of observed time interval between events, taking into account gaps in the observations. The red curve is an exponential fit with a characteristic interval between events of $2.94\pm0.05\,$days. \label{fig:CDF_rate}}
 \end{figure}
 
+\red{CDF Figure and discussion to be replaced by Tyson's version}.
+Figure \ref{fig:CDF_P} shows the cumulative momentum distribution of the observed events, with the median momentum indicated by the yellow diamond \red{marker} and the \red{XXX} confidence interval indicated by the horizontal bars.  As is generally expected from all models of the dust complex, the number of impacts falls with the total momentum. Two single-index power-law fits to the data, both inlcuding and excluding the highest-momentum impact, are plotted in the red and purple lines, and have power-law indices of -0.73 and -0.97 respectively. \red{check numbers and get error bars}. Also plotted for reference are the predicted flux averaged over the four models described in section \ref{sec:models} and a fit to them with a power law index of \red{XXX}. 
+\begin{figure}[h!]
+\gridline{\fig{figures/momentumCDF.png}{0.5\textwidth}{}}
+\vspace*{-8mm}
+\caption{Cumulative momentum distribution of observed impacts. \red{to be replaced by Tyson's plot(s)}. \label{fig:CDF_P}}
+\end{figure}
 
-\FloatBarrier
+A second way to distinguish against potential populations is to compare the distribution of events on the sky.  As mentioned in Section \ref{sec:sensitivity}, LPF's ability to localize events on the sky depends on detecting and measuring momentum transfer in multiple degrees of freedom. This is more likely to occur as the overall transferred momenta increases. Indeed, we find a correlation between total momentum and area of the 68\% confidence sky position of \red{XXX. Could also include plot although I think we have too many already}. The main panel of figure \ref{fig:mapCompare} shows the measured sky position with 68\% error bars for the subset of 18 events for which the area of the 68\% confidence region on the sky is less than 4125$\,deg^2$ or 10\% of the sky. 
+
+
+\begin{figure}[h!]
+\gridline{\fig{figures/mapCompare.eps}{0.5\textwidth}{}}
+\vspace*{-8mm}
+\caption{Comparison of sky distribution of localized events with population models. Main panel shows sky locations for the subset of (18) events which were localized to an area within 10\% of the sky including error bars spanning a 68\% confidence level. Top panel shows in gray a histogram of the events in 15$^\circ$ bins of latitude as well as the modeled flux distribution for impacts with momentum $\geq 1\,\mu$Ns for the JFC (blue), HTC (orange), OCC (green), and AST (red) populations. Right panel is similar to the top panel but for latitude in 30$^\circ$ bins. See text for details. \label{fig:mapCompare}}
+\end{figure}
+
+%\FloatBarrier
 \section{Population Model Inference} \label{sec:model_inference}
 
 Using hierarchical Bayesian analysis we can piggyback on our Bayesian treatment of impacts to make interences about the populations producing those impacts. The hierarchical analysis begins by considering a broader model including both the population and impact processes, which we may jointly parameterize by $\theta=\{\theta_P,\theta_I\}$, combining ``population'' parameters and ``impact'' parameters, respectively.  For the joint model, Bayes theorem looks like
@@ -671,15 +694,15 @@ For this analysis we assume that an overall population model consisting of some 
 \end{align}
 in this case $\theta_P\equiv{c_\lambda}$.  If the component fluxes are already consistently weighted with the right rates, then we would expect to find $c_\lambda\approx1$ for each $\lambda$. Having constrained the overall rate, we replace $r_\alpha(\theta_P)$ in \eqref{eq:HierPost} with our \emph{a posteriori} per-segment rate estimate.
 \\
-\red{This is pretty long and perhaps too technical and we haven't described the process and teh results. I'd suggest we add a discussion of the calculaiton we did, describe the results, and condese the introductory material, possibly moving some of it into an Appendix.  Also, out conclusions (HTC favored) seem to disagree with the "prior" from the models section which is at JFC make up most of the populaiton. Am I missing something here? If this is a robust result, is it a main conclusion of our paper?}
+\red{This is pretty long and perhaps too technical and we haven't described the process and the results. I'd suggest we add a discussion of the calculation we did, describe the results, and condense the introductory material, possibly moving some of it into an Appendix.  Also, out conclusions (HTC favored) seem to disagree with the "prior" from the models section which is at JFC make up most of the populaiton. Am I missing something here? If this is a robust result, is it a main conclusion of our paper?}
 
 \begin{figure}
 \gridline{\fig{figures/JFC_HTC.png}{0.9\columnwidth}{(a) JFC-HTC subpopulation}}
 \gridline{\fig{figures/HTC_Uniform.png}{0.9\columnwidth}{(b) HTC-Uniform subpopulation}}
  \gridline{\fig{figures/Uniform_JFC.png}{0.9\columnwidth}{(c) Uniform-JFC subpopulation}}
-\caption{Likelihood distribution for mixed population model based on the LPF impact data set. The preferred point corresponds to an approximately equal mixture of HTC and Uniform populaitons.  JFC is disfavored at the XXX level, blah, blah...\label{fig:Example}}
+\caption{\red{Need to be redone}...\label{fig:bayes}}
 \end{figure}
-\FloatBarrier
+%\FloatBarrier
 \section{Conclusions} \label{sec:conclusions}
 We have presented a comprehensive analysis of micrometeoroid impacts detected by the LISA Pathfinder spacecraft using a novel technique - direct measurement of the momentum transfer from an individual microscopic impactor to a spacecraft. This data set, although limited to a handful of events, provides an interesting new source of data for the zodiacal dust complex, an important component of our Solar System.  The population observed by LPF is broadly consistent with standard models of the micrometeoroid population, suggesting that such models are appropriate for use in estimating hazards for spacecraft operating in the inner solar system.  A statistical comparison of our data set with model predictions favors Halley-Type Comets (HTC) as the dominant source of impacts based on the direction and momentum of observed impacts, which is in tension with the expectation that Jupiter Family Comets should dominate the rate near Earth. However, our statistical evidence for this claim is limited.  This same technique may be utilized by future precision-measurement missions, most notably the Laser Interferometer Space Antenna (LISA) itself, which based on this analysis will observe many more micrometeoroid impacts due to its combination of more spacecraft, larger spacecraft, and longer observing time - providing an additional science benefit beyond the compelling science case for observing the universe in the milliHertz gravitational wave band.
 
