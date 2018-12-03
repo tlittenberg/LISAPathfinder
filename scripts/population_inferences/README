@@ -1,0 +1,47 @@
+#compile mcmc, histogram, and confidence interval codes
+gcc power_law_mcmc.c -lm -lgsl -o power_law_mcmc
+gcc histograms.c -lm -lgsl -o histogram
+gcc -O3 -lm -lgsl -o pvalue_quantiles pvalue_quantiles.c
+
+#data file with mean and variance of measured impacts
+#mean_var.txt
+
+#set up directories for different models
+mkdir -p D1
+mkdir -p D2
+mkdir -p D3
+
+#run mcmc code to fit population to power law
+pushd D1
+../power_law_mcmc ../mean_var.txt 1
+popd
+
+pushd D2
+../power_law_mcmc ../mean_var.txt 2
+popd
+
+pushd D3
+../power_law_mcmc ../mean_var.txt 3
+popd
+
+#assuming single power law is the winner...
+
+#get power law index (alpha) chain
+awk '{print $2}' D1/chain.dat > alpha.dat
+
+#histogram alpha chain
+./histogram alpha.dat 1 0 1 50
+
+#run gnuplot script for alpha posteriors plot
+gnuplot alpha.gpi
+open alpha.png
+
+
+#run monte carlo code to get confidence intervals for distribution
+#consistent with the inferred posterior on alpha and for the 
+#finite number of events in the catalog
+./pvalue_quantiles
+
+#make the summary plot showing the data, confidence intervals for the population, and theoretical predictions
+gnuplot pvalue_quantiles.gpi 
+open pvalue_quantiles.png
