@@ -644,20 +644,50 @@ Figures \ref{fig:typExampleCorner} and \ref{fig:typExampleLocation} show a simil
 
 %\FloatBarrier
 \subsection{Ensemble results}
-In this section, we describe some of the properties of our observed ensemble of events and make some comparisons to the model populations described in Section \ref{sec:models}. Micrometeoroid impacts are expected to be governed by a Poisson process characterized by a single rate parameter.  Figure \ref{fig:CDF_rate} shows the cumulative probability density of the observed time between events, which was computed from mission elapsed time by excising the times not included in our search. As is expected for a Poisson process, this distribution follows an exponential function, with a time between events of $2.94\pm0.05\,$days or a rate of $(124\pm2)\,yr^{-1}$.  This is consistent with the predictions in Section \ref{sec:models}.
+In this section, we describe some of the properties of our observed ensemble of events and make some comparisons to the model populations described in Section \ref{sec:models}. 
+
+Micrometeoroid impact times are expected to be governed by a Poisson process characterized by a single rate parameter.  Figure \ref{fig:CDF_rate} shows the cumulative probability density of the observed time between events, which was computed from mission elapsed time by excising the times not included in our search. As is expected for a Poisson process, this distribution follows an exponential function, with a time between events of $2.94\pm0.05\,$days or a rate of $(124\pm2)\,yr^{-1}$.  This is consistent with the predictions in Section \ref{sec:models}.
 
 \begin{figure}[h!]
 \gridline{\fig{figures/rateplot.eps}{0.5\textwidth}{}}
 \vspace*{-8mm}
-\caption{Cumulative distribution of observed time interval between events, taking into account gaps in the observations. The red curve is an exponential fit with a characteristic interval between events of $2.94\pm0.05\,$days. \label{fig:CDF_rate}}
+\caption{Cumulative distribution of observed time interval between events, taking into account gaps in the observations. The red curve is an exponential fit with a characteristic interval between events of $2.94\pm0.05\,$days. \label{fig:PDF_rate}}
 \end{figure}
 
-\red{CDF Figure and discussion to be replaced by Tyson's version}.
-Figure \ref{fig:CDF_P} shows the cumulative momentum distribution of the observed events, with the median momentum indicated by the yellow diamond \red{marker} and the \red{XXX} confidence interval indicated by the horizontal bars.  As is generally expected from all models of the dust complex, the number of impacts falls with the total momentum. Two single-index power-law fits to the data, both inlcuding and excluding the highest-momentum impact, are plotted in the red and purple lines, and have power-law indices of -0.73 and -0.97 respectively. \red{check numbers and get error bars}. Also plotted for reference are the predicted flux averaged over the four models described in section \ref{sec:models} and a fit to them with a power law index of \red{XXX}. 
+From the observed impacts, we perform a hierarchical analysis to infer properties of the imparted momentum distribution and, assuming totally inelastic collisions, the momentum distribution of the micrometeorite population.
+We select only impacts with measured momenta $P>P_{\rm min}=1\ \mu N s$ as a threshold above which we assume 100\% detection efficiency and therefore neglect selection effects.
+The posterior distributions of the momenta from the MCMC analysis described in section \red{REF} are approximated as Gaussian distributions with mean and variance computed from the Markov chains.
+The approximate posteriors become the data $d$ in a hierarchical analysis which compares three models for the distribution of momenta: 
+A single power law 
+\begin{equation}
+p(P;\alpha) = A( P / P_{\rm min} )^{-\alpha}
+\end{equation}
+a broken power law with fixed ``knee'' momentum $P^*$
+\begin{equation}
+p(P;\alpha,\beta) =
+\begin{cases}
+ A( P / P_{\rm min} )^{-\alpha} & \text{if $P \leq P^*$}\\
+B( P / P_{\rm min} )^{-\beta} & \text{else }
+\end{cases}
+\end{equation}
+and a three parameter model $p(P;\alpha,\beta,P^*)$ with adjustable knee location, where $A$ and $B$ normalize the distributions.
+A MCMC code is used to characterize each model, and the maximum likelihood is used to compute the Bayesian Information Criterion~\cite{} to select between the models.
+
+For these data, the one-parameter model was preferred, with BIC scores of 48, 53, and 56  for $p(P;\alpha)$, $p(P;\alpha,\beta)$, and $p(P;\alpha,\beta,P^*)$, respectively. The measured spectral index is measured as
+%$\alpha = 1.86722^{2.07707}_{1.67904}$ more digits if you want them
+$\alpha = 1.87^{2.08}_{1.68}$ 
+quoted as median plus/minus the 90\% credible intervals from the posterior distribution function.
+
+Figure \ref{fig:PDF_P} shows the inferred posterior distribution as a histogram of the chain samples (light blue-green) and a Kernel Density Estimate (dark blue-green) from the single-power-law model on $\alpha$. The vertical dashed lines (orange) mark the 90\% credible intervals.  The four vertical lines (purple) are the best-fit power-law indices for the different micrometeorite progenitors as shown in Table~\ref{tab:popCDFfits}. The OCC model (dash-double-dotted line) is disfavored by these observations.
+
+
+%Figure \ref{fig:CDF_P} shows the cumulative momentum distribution of the observed events, with the median momentum indicated by the yellow diamond \red{marker} and the \red{XXX} confidence interval indicated by the horizontal bars.  As is generally expected from all models of the dust complex, the number of impacts falls with the total momentum. Two single-index power-law fits to the data, both inlcuding and excluding the highest-momentum impact, are plotted in the red and purple lines, and have power-law indices of -0.73 and -0.97 respectively. \red{check numbers and get error bars}. Also plotted for reference are the predicted flux averaged over the four models described in section \ref{sec:models} and a fit to them with a power law index of \red{XXX}. 
+
 \begin{figure}[h!]
-\gridline{\fig{figures/momentumCDF.png}{0.5\textwidth}{}}
+%\gridline{\fig{figures/momentumCDF.png}{0.5\textwidth}{}}
+\gridline{\fig{figures/power_law_posterior_compare.pdf}{0.5\textwidth}{}}
 \vspace*{-8mm}
-\caption{Cumulative momentum distribution of observed impacts. \red{to be replaced by Tyson's plot(s)}. \label{fig:CDF_P}}
+\caption{Cumulative momentum distribution of observed impacts. \red{to be replaced by Tyson's plot(s)}. \label{fig:PDF_P}}
 \end{figure}
 
 A second way to distinguish against potential populations is to compare the distribution of events on the sky.  As mentioned in Section \ref{sec:sensitivity}, LPF's ability to localize events on the sky depends on detecting and measuring momentum transfer in multiple degrees of freedom. This is more likely to occur as the overall transferred momenta increases. Indeed, we find a correlation between total momentum and area of the 68\% confidence sky position of \red{XXX. Could also include plot although I think we have too many already}. The main panel of figure \ref{fig:mapCompare} shows the measured sky position with 68\% error bars for the subset of 18 events for which the area of the 68\% confidence region on the sky is less than 4125$\,deg^2$ or 10\% of the sky. 
