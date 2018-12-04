@@ -656,8 +656,8 @@ Micrometeoroid impact times are expected to be governed by a Poisson process cha
 
 From the observed impacts, we perform a hierarchical analysis to infer properties of the imparted momentum distribution and, assuming totally inelastic collisions, the momentum distribution of the micrometeorite population.
 We select only impacts with measured momenta $P>P_{\rm min}=1\ \mu N s$ as a threshold above which we assume 100\% detection efficiency and therefore neglect selection effects.
-The posterior distributions of the momenta from the MCMC analysis described in section \red{REF} are approximated as Gaussian distributions with mean and variance computed from the Markov chains.
-The approximate posteriors become the data $d$ in a hierarchical analysis which compares three models for the distribution of momenta: 
+The marginalized posteriors of the momenta from the MCMC analysis described in section \red{REF} are approximated as Gaussian distributions with mean and variance computed from the Markov chains.
+The approximate posteriors become the data $d$ in a hierarchical analysis which compares three models for the probability density function of momenta: 
 A single power law 
 \begin{equation}
 p(P;\alpha) = A( P / P_{\rm min} )^{-\alpha}
@@ -671,12 +671,14 @@ B( P / P_{\rm min} )^{-\beta} & \text{else }
 \end{cases}
 \end{equation}
 and a three parameter model $p(P;\alpha,\beta,P^*)$ with adjustable knee location, where $A$ and $B$ normalize the distributions.
-A MCMC code is used to characterize each model, and the maximum likelihood is used to compute the Bayesian Information Criterion~\cite{} to select between the models.
+A MCMC code is used to characterize each model, and from the maximum likelihood we compute the Bayesian Information Criterion (BIC)~\citep{schwarz1978}. The model which minimizes the BIC is preferred.
 
-For these data, the one-parameter model was preferred, with BIC scores of 48, 53, and 56  for $p(P;\alpha)$, $p(P;\alpha,\beta)$, and $p(P;\alpha,\beta,P^*)$, respectively. The measured spectral index is measured as
+For these data, the one-parameter model is selected, with BIC scores of 48, 53, and 56  for $p(P;\alpha)$, $p(P;\alpha,\beta)$, and $p(P;\alpha,\beta,P^*)$, respectively. 
+As a sanity check, we also confirmed that the marginalized posteriors $p(\alpha | d)$ and $p(\beta | d)$ were largely overlapping (or, the posterior $p(\alpha-\beta|d)$ peaks near zero) as would be expected in the case where the one-parameter model adequately described the data.
+The spectral index is measured to be
 %$\alpha = 1.86722^{2.07707}_{1.67904}$ more digits if you want them
 $\alpha = 1.87^{2.08}_{1.68}$ 
-quoted as median plus/minus the 90\% credible intervals from the posterior distribution function.
+quoted as the median with upper and lower 90\% credible intervals from the posterior distribution function as super- and sub-scripts.
 
 Figure \ref{fig:PDF_P} shows the inferred posterior distribution as a histogram of the chain samples (light blue-green) and a Kernel Density Estimate (dark blue-green) from the single-power-law model on $\alpha$. The vertical dashed lines (orange) mark the 90\% credible intervals.  The four vertical lines (purple) are the best-fit power-law indices for the different micrometeorite progenitors as shown in Table~\ref{tab:popCDFfits}. The OCC model (dash-double-dotted line) is disfavored by these observations.
 
@@ -687,8 +689,16 @@ Figure \ref{fig:PDF_P} shows the inferred posterior distribution as a histogram 
 %\gridline{\fig{figures/momentumCDF.png}{0.5\textwidth}{}}
 \gridline{\fig{figures/power_law_posterior_compare.pdf}{0.5\textwidth}{}}
 \vspace*{-8mm}
-\caption{Cumulative momentum distribution of observed impacts. \red{to be replaced by Tyson's plot(s)}. \label{fig:PDF_P}}
+\caption{WRITE CAPTION. \label{fig:PDF_P}}
 \end{figure}
+
+\begin{figure}[h!]
+\gridline{\fig{figures/pvalue_quantiles_paper.pdf}{0.5\textwidth}{}}
+\vspace*{-8mm}
+\caption{Cumulative momentum distribution of observed impacts. \label{fig:CDF_P}}
+\end{figure}
+
+\red{WRITE TEXT SUPPORTING FIGURE \ref{fig:CDF_P}.}
 
 A second way to distinguish against potential populations is to compare the distribution of events on the sky.  As mentioned in Section \ref{sec:sensitivity}, LPF's ability to localize events on the sky depends on detecting and measuring momentum transfer in multiple degrees of freedom. This is more likely to occur as the overall transferred momenta increases. Indeed, we find a correlation between total momentum and area of the 68\% confidence sky position of \red{XXX. Could also include plot although I think we have too many already}. The main panel of figure \ref{fig:mapCompare} shows the measured sky position with 68\% error bars for the subset of 18 events for which the area of the 68\% confidence region on the sky is less than 4125$\,deg^2$ or 10\% of the sky. 
 
