@@ -700,19 +700,19 @@ Figure \ref{fig:PDF_P} shows the inferred posterior distribution as a histogram 
 
 \red{WRITE TEXT SUPPORTING FIGURE \ref{fig:CDF_P}.}
 
-A second way to distinguish against potential populations is to compare the distribution of events on the sky.  As mentioned in Section \ref{sec:sensitivity}, LPF's ability to localize events on the sky depends on detecting and measuring momentum transfer in multiple degrees of freedom. This is more likely to occur as the overall transferred momenta increases. Indeed, we find a correlation between total momentum and area of the 68\% confidence sky position of \red{XXX. Could also include plot although I think we have too many already}. The main panel of figure \ref{fig:mapCompare} shows the measured sky position with 68\% error bars for the subset of 18 events for which the area of the 68\% confidence region on the sky is less than 4125$\,deg^2$ or 10\% of the sky. 
+A second way to distinguish against potential populations is to compare the distribution of events on the sky.  As mentioned in Section \ref{sec:sensitivity}, LPF's ability to localize events on the sky depends on detecting and measuring momentum transfer in multiple degrees of freedom. This is more likely to occur as the overall transferred momenta increases. Indeed, we find a correlation between total momentum and area of the 68\% confidence sky position of \red{XXX. Could also include plot although I think we have too many already}. The main panel of figure \ref{fig:mapCompare} shows the measured sky position with 68\% error bars for the subset of 14 events for which the area of the 68\% confidence region on the sky is less than 4125$\,deg^2$ or 10\% of the sky. 
 
 
 \begin{figure}[h!]
 \gridline{\fig{figures/mapCompare.eps}{0.5\textwidth}{}}
 \vspace*{-8mm}
-\caption{Comparison of sky distribution of localized events with population models. Main panel shows sky locations for the subset of (18) events which were localized to an area within 10\% of the sky including error bars spanning a 68\% confidence level. Top panel shows in gray a histogram of the events in 15$^\circ$ bins of latitude as well as the modeled flux distribution for impacts with momentum $\geq 1\,\mu$Ns for the JFC (blue), HTC (orange), OCC (green), and AST (red) populations. Right panel is similar to the top panel but for latitude in 30$^\circ$ bins. See text for details. \label{fig:mapCompare}}
+\caption{Comparison of sky distribution of localized events with population models. Main panel shows sky locations for the subset of (14) events which were localized to an area within 10\% of the sky including error bars spanning a 68\% confidence level. Top panel shows in gray a histogram of the events in 15$^\circ$ bins of latitude as well as the modeled flux distribution for impacts with momentum $\geq 1\,\mu$Ns for the JFC (blue), HTC (orange), OCC (green), and AST (red) populations. Right panel is similar to the top panel but for latitude in 30$^\circ$ bins. See text for details. \label{fig:mapCompare}}
 \end{figure}
 
 %\FloatBarrier
 \section{Population Model Inference} \label{sec:model_inference}
 
-Using hierarchical Bayesian analysis we can piggyback on our Bayesian treatment of impacts to make interences about the populations producing those impacts. The hierarchical analysis begins by considering a broader model including both the population and impact processes, which we may jointly parameterize by $\theta=\{\theta_P,\theta_I\}$, combining ``population'' parameters and ``impact'' parameters, respectively.  For the joint model, Bayes theorem looks like
+Using hierarchical Bayesian analysis we can piggyback on our Bayesian treatment of impacts to make inferences about the populations producing those impacts. The hierarchical analysis begins by considering a broader model including both the population and impact processes, which we may jointly parameterize by $\theta=\{\theta_P,\theta_I\}$, combining ``population'' parameters and ``impact'' parameters, respectively.  For the joint model, Bayes theorem looks like
 \begin{equation}
   p(\theta_I,\theta_P|D)=\frac{p(D|\theta_I,\theta_P)p(\theta_I|\theta_P)p(\theta_P)}{p(D)}.
 \end{equation}
