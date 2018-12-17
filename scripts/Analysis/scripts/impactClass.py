@@ -331,7 +331,8 @@ class impactClass:
 		
 	def summaryString(self, percent_sky = 0.1,
 			keys = ['Ptot','lat','lon','rx','ry','rz'],
-			scale = [1.0, 1.0, 1.0, 100.0, 100.0, 100.0]):
+			scale = [1.0, 1.0, 1.0, 100.0, 100.0, 100.0],
+			ephem = []):
 		"""
 		function to produce a string for use in a ApJ style fancy table
 		"""
@@ -379,17 +380,34 @@ class impactClass:
 			'Sunlat' : SunlatText,
 			'Sunlon' : SunlonText}
 
-
-
-		tabStr = str((r'{0[date]:s} & ' +
-			r'{0[gps]:.0f} & ' +
-			r'${0[Pmed]:4.1f}^{{+{0[PerrU]:.1f}}}_{{{0[PerrL]:.1f}}}$ & ' +
-			r'{0[face]:s} & ' +
-			r'{0[area]:s} & ' +
-			r'{0[SClat]:s} & ' +
-			r'{0[SClon]:s} & ' +
-			r'{0[Sunlat]:s} & ' +
-			r'{0[Sunlon]:s} \\').format(printTab))
+		if len(ephem) > 0 :
+			gps = ephem[0,0,...]
+			idx = np.argmin(np.abs(self.gps-ephem[0,0,...]))
+			printTab['X'] = ephem[0,1,idx]/1e6
+			printTab['Y'] = ephem[0,2,idx]/1e6
+			printTab['Z'] = ephem[0,3,idx]/1e6
+			tabStr = str((r'{0[date]:s} & ' +
+				r'{0[gps]:.0f} & ' +
+				r'${0[Pmed]:4.1f}^{{+{0[PerrU]:.1f}}}_{{{0[PerrL]:.1f}}}$ & ' +
+				r'{0[face]:s} & ' +
+				r'{0[area]:s} & ' +
+				r'{0[SClat]:s} & ' +
+				r'{0[SClon]:s} & ' +
+				r'{0[Sunlat]:s} & ' +
+				r'{0[Sunlon]:s} & ' +
+				r'{0[X]:3.2f} & ' +
+				r'{0[Y]:3.2f} & ' +
+				r'{0[Z]:3.2f} \\').format(printTab))
+		else :            
+			tabStr = str((r'{0[date]:s} & ' +
+				r'{0[gps]:.0f} & ' +
+				r'${0[Pmed]:4.1f}^{{+{0[PerrU]:.1f}}}_{{{0[PerrL]:.1f}}}$ & ' +
+				r'{0[face]:s} & ' +
+				r'{0[area]:s} & ' +
+				r'{0[SClat]:s} & ' +
+				r'{0[SClon]:s} & ' +
+				r'{0[Sunlat]:s} & ' +
+				r'{0[Sunlon]:s} \\').format(printTab))
 
 		return tabStr
 
@@ -1800,53 +1818,109 @@ class impactClassList(list):
 					imp_list.append(imp)
 		return imp_list
 
-	def summaryTable(self, percent_sky = 0.1, keys = ['Ptot','lat','lon','rx','ry','rz']):
-		tableStr = r"""
-		\begingroup
-		\renewcommand\arraystretch{2}
-		\begin{longtable}{|c|c|c|c|c|c|c|c|c|}
+	def summaryTable(self, percent_sky = 0.1, keys = ['Ptot','lat','lon','rx','ry','rz'],ephem = []):
+		
+		if len(ephem) > 0 :
+			tableStr = r"""
+			\begingroup
+			\renewcommand\arraystretch{2}
+			\begin{longtable}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+				\multicolumn{9}{c}
+				{{\bfseries \tablename\  \thetable{}}}\\
+				\hline \multicolumn{1}{|c}{\textbf{Date}} & 
+				\multicolumn{1}{|c|}{\textbf{GPS}}  & 
+				\multicolumn{1}{|c|}{\bf{$\rho_{med}$ [$\mu Ns$]}} & 
+				\multicolumn{1}{|c|}{\textbf{Face}} &
+				\multicolumn{1}{|c|}{\textbf{Sky Area}} &
+				\multicolumn{1}{|c|}{\textbf{$Lat_{SC}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lon_{SC}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lat_{SSE}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lon_{SSE}$}} &
+				\multicolumn{1}{|c|}{\textbf{$LPF_X$}} &
+				\multicolumn{1}{|c|}{\textbf{$LPF_Y$}} &
+				\multicolumn{1}{|c|}{\textbf{$LPF_Z$}} \\
+				\hline
+			\endfirsthead
+			
 			\multicolumn{9}{c}
-			{{\bfseries \tablename\  \thetable{}}}\\
-			\hline \multicolumn{1}{|c}{\textbf{Date}} & 
-			\multicolumn{1}{|c|}{\textbf{GPS}}  & 
-			\multicolumn{1}{|c|}{\bf{$\rho_{med}$ [$\mu Ns$]}} & 
-			\multicolumn{1}{|c|}{\textbf{Face}} &
-			\multicolumn{1}{|c|}{\textbf{Sky Area}} &
-			\multicolumn{1}{|c|}{\textbf{$Lat_{SC}$}} &
-			\multicolumn{1}{|c|}{\textbf{$Lon_{SC}$}} &
-			\multicolumn{1}{|c|}{\textbf{$Lat_{sun}$}} &
-			\multicolumn{1}{|c|}{\textbf{$Lon_{sun}$}} \\
-			\hline
-		\endfirsthead
-		
-		\multicolumn{9}{c}
-			{{\bfseries \tablename\  \thetable{} -- continued from previous page}} \\
-		\hline \multicolumn{1}{|c|}{\textbf{Date}} & 
-			\multicolumn{1}{|c|}{\textbf{GPS}}  & 
-			\multicolumn{1}{|c|}{\bf{$\rho_{med}$ [$\mu Ns$]}} & 
-			\multicolumn{1}{|c|}{\textbf{Face}} &
-			\multicolumn{1}{|c|}{\textbf{Sky Area}} &
-			\multicolumn{1}{|c|}{\textbf{$Lat_{SC}$}} &
-			\multicolumn{1}{|c|}{\textbf{$Lon_{SC}$}} &
-			\multicolumn{1}{|c|}{\textbf{$Lat_{sun}$}} &
-			\multicolumn{1}{|c|}{\textbf{$Lon_{sun}$}} \\
-			\hline
-		\endhead
-		
-		\hline \multicolumn{9}{|r|}{{Continued on next page}} \\ \hline
-		\endfoot
+				{{\bfseries \tablename\  \thetable{} -- continued from previous page}} \\
+			\hline \multicolumn{1}{|c|}{\textbf{Date}} & 
+				\multicolumn{1}{|c|}{\textbf{GPS}}  & 
+				\multicolumn{1}{|c|}{\bf{$\rho_{med}$ [$\mu Ns$]}} & 
+				\multicolumn{1}{|c|}{\textbf{Face}} &
+				\multicolumn{1}{|c|}{\textbf{Sky Area}} &
+				\multicolumn{1}{|c|}{\textbf{$Lat_{SC}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lon_{SC}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lat_{SSE}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lon_{SSE}$}} &
+				\multicolumn{1}{|c|}{\textbf{$LPF_X$}} &
+				\multicolumn{1}{|c|}{\textbf{$LPF_Y$}} &
+				\multicolumn{1}{|c|}{\textbf{$LPF_Z$}} \\
+				\hline
+			\endhead
+			
+			\hline \multicolumn{9}{|r|}{{Continued on next page}} \\ \hline
+			\endfoot
 
-		\hline
-		\endlastfoot""" + '\n'
+			\hline
+			\endlastfoot""" + '\n'
 				
-		for impact in self.impact_list:
-			tableStr += '\t' + impact.summaryString(percent_sky) + '\n'
-		
-		
-		tableStr += '\t' + r'\hline' + '\n'
-		
-		tableStr += '\end{longtable} \n'
-		tableStr += '\endgroup'
+			for impact in self.impact_list:
+				tableStr += '\t' + impact.summaryString(percent_sky=percent_sky,ephem=ephem) + '\n'
+			
+			
+			tableStr += '\t' + r'\hline' + '\n'
+			
+			tableStr += '\end{longtable} \n'
+			tableStr += '\endgroup'
+		else :
+        
+			tableStr = r"""
+			\begingroup
+			\renewcommand\arraystretch{2}
+			\begin{longtable}{|c|c|c|c|c|c|c|c|c|}
+				\multicolumn{9}{c}
+				{{\bfseries \tablename\  \thetable{}}}\\
+				\hline \multicolumn{1}{|c}{\textbf{Date}} & 
+				\multicolumn{1}{|c|}{\textbf{GPS}}  & 
+				\multicolumn{1}{|c|}{\bf{$\rho_{med}$ [$\mu Ns$]}} & 
+				\multicolumn{1}{|c|}{\textbf{Face}} &
+				\multicolumn{1}{|c|}{\textbf{Sky Area}} &
+				\multicolumn{1}{|c|}{\textbf{$Lat_{SC}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lon_{SC}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lat_{sun}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lon_{sun}$}} \\
+				\hline
+			\endfirsthead
+			
+			\multicolumn{9}{c}
+				{{\bfseries \tablename\  \thetable{} -- continued from previous page}} \\
+			\hline \multicolumn{1}{|c|}{\textbf{Date}} & 
+				\multicolumn{1}{|c|}{\textbf{GPS}}  & 
+				\multicolumn{1}{|c|}{\bf{$\rho_{med}$ [$\mu Ns$]}} & 
+				\multicolumn{1}{|c|}{\textbf{Face}} &
+				\multicolumn{1}{|c|}{\textbf{Sky Area}} &
+				\multicolumn{1}{|c|}{\textbf{$Lat_{SC}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lon_{SC}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lat_{sun}$}} &
+				\multicolumn{1}{|c|}{\textbf{$Lon_{sun}$}} \\
+				\hline
+			\endhead
+			
+			\hline \multicolumn{9}{|r|}{{Continued on next page}} \\ \hline
+			\endfoot
+
+			\hline
+			\endlastfoot""" + '\n'
+				
+			for impact in self.impact_list:
+				tableStr += '\t' + impact.summaryString(percent_sky=percent_sky) + '\n'
+			
+			
+			tableStr += '\t' + r'\hline' + '\n'
+			
+			tableStr += '\end{longtable} \n'
+			tableStr += '\endgroup'
 		
 		return tableStr
 
