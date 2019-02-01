@@ -911,6 +911,7 @@ class impactClass:
 			ax.imshow_hpx(self.healPix_sun, cmap='cylon')
 			title += " [sun]"
 		else:
+			self = self.findSkyAngles()
 			ax.imshow_hpx(self.healPix, cmap='cylon')
 			title += " [spacecraft]"
 
@@ -1612,7 +1613,7 @@ class impactClass:
 				continue
 
 
-	def makePatch(self, ax, facenumber):
+	def makePatch(self, ax, facenumber, show_edge = False):
 		"""
 		gets vertices for a rectangular patch
 
@@ -1638,7 +1639,7 @@ class impactClass:
 			vertex3 = vertex2 + side_vector
 			vertex4 = vertex3 - base_vector
 			
-			verts = [vertex1, vertex2, vertex3, vertex4]
+			verts = [vertex1, vertex2, vertex3, vertex4, vertex1]
 		else:
 			if facenumber == 9:
 				y_push = self.ysc[2] - self.ysc[7] + self.H
@@ -1650,16 +1651,30 @@ class impactClass:
 			for i in range(len(self.xsc)):
 				verts.append([self.xsc[i], self.ysc[i] + y_push])
 
+			verts.append([self.xsc[0], self.ysc[0] + y_push])
+
 
 		
 		path = Path(verts)
-		patch = patches.PathPatch(path, facecolor = self.sidecolor, lw = 2, alpha = self.alpha)
+		if show_edge:
+			edgecolor = 'black'
+			alpha = 1
+		else: 
+			edgecolor = None
+			alpha = self.alpha
+		patch = patches.PathPatch(path, facecolor = self.sidecolor,
+				lw = 2, alpha = alpha, edgecolor = edgecolor)
+
 		ax.add_patch(patch)
 		return ax, patch
 
 
 
-	def makeFlatLPF(self, N = 50, scale = 'log', cmap = colormap.parula, return_ax = False, dictionary = None):
+	def makeFlatLPF(self, N = 50, scale = 'log', 
+							cmap = colormap.parula, 
+							return_ax = False, 
+							dictionary = None,
+							show_edge = False):
 		if dictionary is None:
 			dictionary = self.data
 		"""
@@ -1690,6 +1705,7 @@ class impactClass:
 		if scale == 'log':
 			from matplotlib.colors import LogNorm
 			norm = LogNorm(vmin = 1e-3, vmax = 1)
+
 		else:
 			norm = matplotlib.colors.Normalize(0, 1)
 
@@ -1703,7 +1719,6 @@ class impactClass:
 		ax.set_ylim(-2, 4)                                #ylim
 		ax.get_xaxis().set_visible(False)
 		ax.get_yaxis().set_visible(False)
-
 
 		for f in np.arange(0, 10):
 			#Gets only values on one face
@@ -1736,10 +1751,10 @@ class impactClass:
 						yedges[i] += self.ysc[2] - self.ysc[7] + self.H
 					Hist = np.flipud(Hist)
 
-			ax, patch = self.makePatch(ax, f)
+			ax, patch = self.makePatch(ax, f, show_edge = show_edge)
 			ax.pcolormesh(xedges, yedges, Hist,
 				norm = norm, cmap = my_cmap,
-				clip_path = patch, clip_on = True)
+				clip_path = patch, clip_on = True, zorder = 2)
 
 			ax.set_title("Impact Location GRS%i"%(self.grs))
 
