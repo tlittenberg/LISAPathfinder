@@ -8,6 +8,7 @@ import os
 import re
 import time
 import pandas as pd
+import sys
 
 
 p = pathlib.PurePath(os.getcwd())
@@ -27,13 +28,15 @@ def getGRSSegments(filenames, grs = 1):
         return segments
 
 
-def redefine(dataDir = '/data', saveDir = '/FLUX_IMPACTS_ALL'):
+def redefine(dataDir = '/data', saveDir = '/FLUX_IMPACTS_ALL',usePtot=True):
         """
         Creates .npy files used in the analysis
 
         """
         dataPath = pathlib.Path(BASE_DIR + dataDir)
-        usePtot = True
+        #usePtot = True
+        if not usePtot and not '_INTP' in saveDir:
+                sys.exit('Expect dir name FLUX_IMPACTS_ALL_INTP with usePtot=False')
         
         # Set up directory structure
         impact_dir = pathlib.Path(str(dataPath) + '/ALL_IMPACTS')
@@ -79,7 +82,7 @@ def redefine(dataDir = '/data', saveDir = '/FLUX_IMPACTS_ALL'):
                         impact = impact.SCtoSun()
                         impact = impact.findSkyAngles()
 
-                        if impact.lon_sun is None:
+                        if impact.lon_sun is None:   #JGB: This indicates no impacts at all in the chain.  There are 420 such examples, verified in a few examples.
                                 print( "NONE")
                                 lons = [None]
                                 lats = [None]
@@ -93,13 +96,21 @@ def redefine(dataDir = '/data', saveDir = '/FLUX_IMPACTS_ALL'):
                                         lons = np.asarray(impact.lon_sun)
                                         lats = np.asarray(impact.lat_sun)
                                         Ptots = np.asarray(impact.Ptot)
-                                        flux_JFC = populations[0].getFlux(lons, lats, Ptots, norm = False)
-                                        flux_HTC = populations[1].getFlux(lons, lats, Ptots,  norm = False)
-                                        flux_AST = populations[2].getFlux(lons, lats, Ptots, norm = False)
-                                        flux_OCC = populations[3].getFlux(lons, lats, Ptots,  norm = False)
+                                        if usePtot:
+                                                flux_JFC = populations[0].getFlux(lons, lats, Ptots, norm = False)
+                                                flux_HTC = populations[1].getFlux(lons, lats, Ptots,  norm = False)
+                                                flux_AST = populations[2].getFlux(lons, lats, Ptots, norm = False)
+                                                flux_OCC = populations[3].getFlux(lons, lats, Ptots,  norm = False)
+                                                # This number is meaningless with no norm but we dont have it for simplification reading in 
+                                                flux_Uniform = populations[4].getFlux(lons, lats, Ptots,  norm = False)
+                                        else:
+                                                flux_JFC = populations[0].getFlux(lons, lats, norm = False)
+                                                flux_HTC = populations[1].getFlux(lons, lats, norm = False)
+                                                flux_AST = populations[2].getFlux(lons, lats, norm = False)
+                                                flux_OCC = populations[3].getFlux(lons, lats, norm = False)
+                                                # This number is meaningless with no norm but we dont have it for simplification reading in 
+                                                flux_Uniform = populations[4].getFlux(lons, lats, norm = False)
 
-                                        # This number is meaningless with no norm but we dont have it for simplification reading in 
-                                        flux_Uniform = populations[4].getFlux(lons, lats, Ptots,  norm = False) 
                                 #except:
                                 except Exception as e:
                                         print("Something went wrong: ",str(e))
@@ -113,8 +124,9 @@ def redefine(dataDir = '/data', saveDir = '/FLUX_IMPACTS_ALL'):
                                         flux_AST = fluxes[:, 2]
                                         flux_OCC = fluxes[:, 3]
                                         flux_Uniform = fluxes[:, 4]
+
                         
-                        print(impact.segment,lons[0:3],lats[0:3],flux_JFC[0:3],flux_HTC[0:3])
+                        print(impact.segment,lons[0:3],lats[0:3],flux_JFC[0:3],flux_HTC[0:3],flux_Uniform[0:3])
                         N = impact.N * np.ones(len(lons))
                         segment = impact.segment * np.ones(len(lons))
 
@@ -126,11 +138,14 @@ def redefine(dataDir = '/data', saveDir = '/FLUX_IMPACTS_ALL'):
                         write_file.write('\n')
 
 class simpleImpact:
-        def __init__(self, segment, direc = '/data/FLUX_IMPACTS_ALL'):
+        def __init__(self, segment, direc = '/data/FLUX_IMPACTS_ALL',usePtot=True):
                 segment_direc = BASE_DIR + direc
+                if not usePtot:
+                        segment_direc+='_INTP'
                 data = np.load(segment_direc + '/' + str(segment) + '_grs1.npy')
-                print("reading",segment)
-                print(data.shape)
+                #print("reading",segment)
+                #print(data.shape)
+                #print(np.array(data))
                 try:
                         self.lon = data[0, :]
                         self.lat = data[1, :]
@@ -139,18 +154,27 @@ class simpleImpact:
                         self.flux = data[3:8, :]
 
                         self.N = int(data[8, 0])
+                        self.Nimpact=len(self.lon)
                         self.segment = int(data[9, 0])
 
-                except:
+                except:  #JGB:  Indicates no impacts in chain
+                        #print( "None case:",segment)
                         self.lon = [None]
                         self.lat = [None]
                         self.Ptot = [None]
                         self.flux = [None]
                         self.N = int(data[8])
+                        self.Nimpact=0
                         self.segment = int(data[9])
 
-                print('flux[:,0:3]=',self.flux[:,0:3])
-                print('flux[:,1000:1003]=',self.flux[:,1000:1003])
+                #print('lon:',self.lon)
+                #print('lat:',self.lat)
+                #print('Ptot:',self.Ptot)
+                #print('flux:',self.flux)
+                #print('N/Ni:',self.N,self.Nimpact)
+                #print('seg:',self.segment)
+                #print('flux[:,0:3]=',self.flux[:,0:3])
+                #print('flux[:,1000:1003]=',self.flux[:,1000:1003])
                 return
 
 def getVetoList():
@@ -208,8 +232,41 @@ def getIndex(populations):
         return index
 
 
+def calcPQuantiles(segments,Nquant=1000):
+        print("counting all momenta")
+        #First get len of smallest segment
+        Nmin=1e100;
+        for segment in segments:
+                Nmin=min([Nmin,segment.N])
+        #Next get total # of momenta after scaling segments to same size
+        NP=0
+        for segment in segments:
+                if segment.Ptot[0] is not None: 
+                        trimNp=int(len(segment.Ptot)*Nmin/float(segment.N)+0.5)
+                        NP+=trimNp
+        allN=len(segments)*Nmin;
+        print('allN,Nmin,NP',allN,Nmin,NP)
+        #Next make a vector of all momenta (it is way faster to do this in two steps, to avoid repeatedly resizing the array)
+        allP=np.zeros(NP)
+        i=0;
+        for segment in segments:
+                if segment.Ptot[0] is not None: 
+                        trimNp=int(len(segment.Ptot)*Nmin/float(segment.N)+0.5)
+                        trimP=np.random.choice(segment.Ptot,trimNp)
+                        allP[i:i+trimNp]=trimP
+                        i+=trimNp                        
+        Nunit=Nmin
+        xs=np.array([x for x in np.arange(0,NP,NP/float(Nquant))])
+        ixs=[int(x) for x in xs]
+        print("partitioning: Nquant,Nunit=",Nquant,Nunit)
+        Ps=np.partition(allP,ixs)[ixs]
+        print("done")
+        quantiles=np.array([xs/NP,xs/Nunit,Ps])
+        return np.array(quantiles)
+
+
 # TODO, make this function also dependent on r_bar
-def calcLogP(segments, populations, theta_p = [1, 1, 1], normalized = False):
+def calcLogP(segments, populations, theta_p = [1, 1, 1], normalized = False, set_r_bar_fac=None):
 
         # Since we changed the number of populations we are considering,
         # This changed some data structure, this accounts for that change
@@ -222,29 +279,45 @@ def calcLogP(segments, populations, theta_p = [1, 1, 1], normalized = False):
                 index = [0, 1, 2, 3]
         """
 
+        #Allow r_bar to vary in the case that there is an extra value in theta_p
+        if set_r_bar_fac is None:
+                r_bar_factor=1.0
+        else:
+                r_bar_factor=set_r_bar_fac
+        if len(theta_p) - len(populations) == 1:
+                r_bar_factor=theta_p[-1]
+                theta_p=theta_p[:-1]
+
         # TODO Check these constants
         T_alpha = 1648
+        T_yr = 31557600.0
         T_total = T_alpha * len(segments)
 
         A_LPF = 10.37738
-        jacobian = 1 / (4 * np.pi) #(From sky distribution)
-        K = T_alpha * A_LPF * jacobian
+        K = T_alpha * A_LPF / T_yr #JGB: jacobian for impact dof accounted for in sums
 
         # pmax / pmin 
         # (Since both model and data are log binned, doesn't matter
         const = 1 #2 * (np.log(1000 / 0.1))
 
-        norms = np.asarray([pop.norm for pop in populations])
+        norms = np.asarray([pop.norm for pop in populations]) #JGB: These are in units: all-sky per year
+        #JGB What we really want here is the norm over the domain where the prior has support (and is constant)
+        ### I haven't been able to determine the range of prior support by examining the MCMC code, but the
+        ### cut-off in the range of the output values, as processed here is near 0.132.  This is not far from
+        ### the minimum bin value of 0.1 in the population data, so may not be terrible to equivocate here.
+        Fnorm = np.sum(np.multiply(norms, theta_p))
         if not normalized:
                 # The total fluxes times our guess for theta_p 
-                r_bar = np.sum(np.multiply(norms, theta_p))
+                r_bar = Fnorm * K
+                theta_p_norm = np.divide( theta_p, Fnorm )
         else:
                 # detected / num_segments = # detected * Tobs / T_tot
                 r_bar = N_DETECTED * T_alpha / T_total
-                # It doesnt matter that we are normalizing theta p, 
+                # Sophie: It doesnt matter that we are normalizing theta p, 
                 # this is actually to normalize fluxes, I just want it 
                 # outside the loop
-                theta_p = np.divide(theta_p, norms)
+                theta_p_norm = np.divide(theta_p, norms)  #JGB -changed name for clarity
+        r_bar*=r_bar_factor
 
         logp = 0
         i = -1
@@ -260,30 +333,30 @@ def calcLogP(segments, populations, theta_p = [1, 1, 1], normalized = False):
 
                 # Initialize segment lengths
                 N_tot = segment.N
-                if segment.lon[0] is None:
-                        N_1 = 0
-                else:
-                        N_1 = len(segment.lon)
+                N_1 = segment.Nimpact
                 N_0 = N_tot - N_1
-
-
-                if N_1 > 1:
+                sixteenoverlog10=16/np.log(10)
+                if N_1 > 0:
                         # calc sum r_hat(psi_s)
-                        r_seg_psi_theta = K * np.matmul(theta_p, segment.flux[index, :])
-                        
-                        #r_seg_psi_theta = np.asarray([K * np.sum(np.multiply(theta_p, segment.flux[index, i])) for i in range(N_1)])
-                        
-                        # events seen / events expected
-                        r_hat = r_seg_psi_theta / r_bar
+                        r_seg_psi_theta = K * np.matmul(theta_p_norm, segment.flux[index, :])
+                        #JGB: fluxes come in units per (2 deg)**2 per year
+                        #JGB: For the momentum dimension the original prior was 1/8 dlnP, the new fluxes have units of either per x2 or per x5 even/odd
+                        ### which we approximate as dlnp/(ln(10)/2), thus we have a lnP prior volume factor of 16/ln(10)
+                        jacobian = 180**2/np.pi/np.cos(segment.lat[:]*np.pi/180.)  #JGB: provides all-sky normalizations for Ptot-integrated fluxes
+                        jacobian *= sixteenoverlog10 # = 16/np.log(10) #lnP prior factor
+                        r_hat = r_seg_psi_theta *jacobian
                 else:
                         r_hat = [0]
-                
+
+                #print(i,'jac.mean,rh.min,rh.max,rh.mean',np.mean(jacobian),np.nanmin(r_hat),np.nanmax(r_hat),np.mean(r_hat))
+
                 # ------ n == 1 ------
                 n_1_term = r_bar * (1 / float(N_tot)) * np.sum(r_hat) / const
                 n_0_term = (1 - (N_1 / float(N_tot))) * (1 - r_bar)
                 
                 if n_0_term + n_1_term <= 0:
                         print("Error! Prob is less than 0")
+                #print(i,'n0term, n1term, r_bar, sum(r_hat)',n_0_term,n_1_term,r_bar,np.sum(r_hat))
 
                 logp += np.log(n_0_term + n_1_term) # + prior + constant
 
@@ -291,6 +364,7 @@ def calcLogP(segments, populations, theta_p = [1, 1, 1], normalized = False):
         print(stop_loop - start_loop, 'seconds')
 
         print('Total probability ', logp)
+
         return logp
 
 def writeLine(theta_p, prob, open_file):
@@ -335,11 +409,12 @@ def mcmc(segments, populations, theta_p_init = [1, 1, 1, 1], N = 1000):
         return
 
 def makeGrid(N = 10, pop_num = 3):
+        #Supports pop_num in [2,3]
         #JFC, HTC, AST, OCC
 
         # Cut up JFC first 
         # Initialize Grid of mixing probs
-        Cs = np.ones((N ** 2, pop_num))
+        Cs = np.ones((N ** (pop_num-1), pop_num))
         # v = (x + y) / 1
         # u = x / (x + y)
 
@@ -348,8 +423,11 @@ def makeGrid(N = 10, pop_num = 3):
         Xs = []
         Ys = []
         Zs = []
+
+        vspace=space
+        if(pop_num<3):vspace=[1]
         for u in space:
-                for v in space:
+                for v in vspace:
                         x = u * v / 1
                         y = v - x
                         z = 1 - (x + y)
@@ -368,13 +446,11 @@ def makeGrid(N = 10, pop_num = 3):
 
         Cs[:, 0] = Xs
         Cs[:, 1] = Ys
-        Cs[:, 2] = Zs
-
-
+        if(pop_num==3):Cs[:, 2] = Zs
 
         return Cs
 
-def getSegments(run_only_impacts = True, dataPath = BASE_DIR + dataDir):
+def getSegments(run_only_impacts = True, dataPath = BASE_DIR + dataDir,usePtot=True):
 
         df_veto = getVetoList()
         segments = []
@@ -384,11 +460,13 @@ def getSegments(run_only_impacts = True, dataPath = BASE_DIR + dataDir):
                 impact_segs = df_veto['segment']
                 only_impact_segments = df_veto['segment'][df_veto['isImpact']]
                 for seg in only_impact_segments:
-                        segments.append(simpleImpact(seg))
+                        segments.append(simpleImpact(seg,usePtot=usePtot))
 
         else:
                 filenames = []
-                for root, dirs, files in os.walk(str(dataPath) + '/FLUX_IMPACTS_ALL'):
+                dirname=str(dataPath) + '/FLUX_IMPACTS_ALL'
+                if not usePtot:dirname+='_INTP'
+                for root, dirs, files in os.walk(dirname):
                         filenames = files
                 all_segments = getGRSSegments(filenames)
 
@@ -396,7 +474,7 @@ def getSegments(run_only_impacts = True, dataPath = BASE_DIR + dataDir):
                         # Checks if impact is out of range and if the time 
                         # Contains an impact glitch
                         if isValid(seg, df_veto):
-                                segments.append(simpleImpact(seg))
+                                segments.append(simpleImpact(seg,usePtot=usePtot))
                         else:
                                 continue
 
@@ -409,16 +487,16 @@ def getSegments(run_only_impacts = True, dataPath = BASE_DIR + dataDir):
 
         return segments
 
-def main(do_mcmc = False, save_filename = 'logp.txt', N = 100, normalized = True, 
-                pop_names = ['JFC', 'HTC', 'AST', 'OCC', 'Uniform'], overwrite = False, run_only_impacts = True):
+def main(do_mcmc = False, save_filename = 'logp.txt', N = 100, normalized = True, usePtot=True,
+                pop_names = ['JFC', 'HTC', 'AST', 'OCC', 'Uniform'], overwrite = False, run_only_impacts = True, set_r_bar_fac=None):
         
         # Set up directory structure
         dataPath = pathlib.Path(BASE_DIR + '/data')
         impact_dir = pathlib.Path(str(dataPath) + '/ALL_IMPACTS')
-        save_dir = pathlib.Path(str(dataPath) + '/FLUX_IMPACTS_ALL')
+        #save_dir = pathlib.Path(str(dataPath) + '/FLUX_IMPACTS_ALL')
         modelDir = pathlib.Path(str(dataPath) + '/models')
 
-        usePtot = True
+        #usePtot = True
         save_file = str(dataPath) + '/' + save_filename
         
         if overwrite:
@@ -427,11 +505,15 @@ def main(do_mcmc = False, save_filename = 'logp.txt', N = 100, normalized = True
                 write_file = open(save_file, 'a+')
 
         start_readin = time.time()
-        segments = getSegments(run_only_impacts = run_only_impacts, dataPath = BASE_DIR + dataDir)
+        segments = getSegments(run_only_impacts = run_only_impacts, dataPath = BASE_DIR + dataDir,usePtot=usePtot)
         end_readin = time.time()
         print("Time to read segments in :", (end_readin - start_readin))
         dfrac = np.asarray([len(s.lon) / s.N for s in segments])
         dfrac = np.sort(dfrac)
+
+        #generate quantiles
+        quantiles=calcPQuantiles(segments)
+        np.save('momentum_quantiles.npy', quantiles)
 
         fig, ax = plt.subplots()
 
@@ -440,7 +522,8 @@ def main(do_mcmc = False, save_filename = 'logp.txt', N = 100, normalized = True
         for i in range(len(dfrac) - 1):
                 i += 1
                 int_frac[i] = int_frac[i - 1] + dfrac[i]
-
+        
+                
         np.save('dfrac', dfrac)
 
         from copy import copy
@@ -459,6 +542,12 @@ def main(do_mcmc = False, save_filename = 'logp.txt', N = 100, normalized = True
 
         #return
 
+        #Handle request to vary r_bar
+        vary_r_bar=False
+        if 'r_bar' in pop_names:
+                pop_names.remove('r_bar')
+                vary_r_bar=True
+        
         # Read in populations
         print("Initializing Populations")
         pop_time = time.time()
@@ -466,7 +555,7 @@ def main(do_mcmc = False, save_filename = 'logp.txt', N = 100, normalized = True
         for p in pop_names:
                 populations.append(pop(modelDir, p, usePtot))
         print("Time to read in populations", time.time() - pop_time)
-
+        if vary_r_bar: pop_names+=['r_bar']
 
         print(1648 * len(segments), 'seconds observed')
         write_file = open(save_file, 'a+')
@@ -486,12 +575,15 @@ def main(do_mcmc = False, save_filename = 'logp.txt', N = 100, normalized = True
 
         else:
                 theta_p_list = makeGrid(N = N, pop_num = len(populations))
+                if vary_r_bar:
+                        plist=theta_p_list.tolist()
+                        theta_p_list=np.array([p+[r] for p in plist for r in np.arange(1,N+1)*4.0/N])
                 count = -1
                 for theta_p in theta_p_list:
                         count += 1
                         print(theta_p)
                         print(count * 100 / len(theta_p_list) , '% Complete')
-                        logp = calcLogP(segments, populations, theta_p, normalized = normalized)
+                        logp = calcLogP(segments, populations, theta_p, normalized = normalized, set_r_bar_fac=set_r_bar_fac)
                         write_file = open(save_file, 'a+')
                         writeLine(theta_p, logp, write_file)
                         write_file.close()
@@ -515,10 +607,27 @@ def main(do_mcmc = False, save_filename = 'logp.txt', N = 100, normalized = True
 #redefine(dataDir = '/data', saveDir = '/FLUX_IMPACTS_ALL')
 ###main(do_mcmc = False, N = 100, save_filename = 'population_ratios/grid_normed_20181206.txt', pop_names = ['JFC', 'HTC', 'Uniform'], normalized = True)
 ###main(do_mcmc = False, N = 20, save_filename = '/population_ratios/grid_JFC_HTC_Uniform_20181206.txt', normalized = True, pop_names = ['JFC', 'HTC', 'Uniform']) 
-main(do_mcmc = False, N = 20, save_filename = '/population_ratios/grid_JFC_HTC_Uniform_20181221.txt', overwrite=True, normalized = True, pop_names = ['JFC', 'HTC', 'Uniform']) 
+#main(run_only_impacts = False, do_mcmc = False, N = 20, save_filename = '/population_ratios/grid_JFC_HTC_Uniform_20190219.txt', overwrite=True, normalized = True, pop_names = ['JFC', 'HTC', 'Uniform']) 
+#main(run_only_impacts = False, do_mcmc = False, N = 20, save_filename = '/population_ratios/grid_JFC_HTC_Uniform_rbar2_20190219.txt', overwrite=True, normalized = True, pop_names = ['JFC', 'HTC', 'Uniform'],set_r_bar_fac=2.0) 
+#main(run_only_impacts = False, do_mcmc = False, N = 20, save_filename = '/population_ratios/grid_JFC_HTC_rbar_20190219.txt', overwrite=True, normalized = True, pop_names = ['JFC', 'HTC', 'r_bar']) 
+#main(run_only_impacts=False, do_mcmc = False, N = 20, save_filename = '/population_ratios/grid_OCC_JFC_HTC_20190219.txt', overwrite=True, normalized = True, pop_names = ['OCC', 'JFC', 'HTC']) 
 #main(do_mcmc = False, N = 20, save_filename = '/population_ratios/grid_OCC_JFC_HTC_20181221.txt', overwrite=True, normalized = True, pop_names = ['OCC', 'JFC', 'HTC']) 
 ###main(run_only_impacts = False, N = 10, save_filename = 'population_ratios/only_impacts_20181206.txt', normalized = True, pop_names = ['JFC', 'OCC', 'HTC'], overwrite = True)
-
+##
+#main(run_only_impacts=False, do_mcmc = False, N = 20, usePtot=False, save_filename = '/population_ratios/grid_intp_OCC_JFC_HTC_20190319.txt', overwrite=True, normalized = True, pop_names = ['OCC', 'JFC', 'HTC'])
+#main(run_only_impacts = False, do_mcmc = False, N = 20, usePtot=False, save_filename = '/population_ratios/grid_intp_JFC_HTC_Uniform_20190319.txt', overwrite=True, normalized = True, pop_names = ['JFC', 'HTC', 'Uniform'])
+#main(run_only_impacts = False, do_mcmc = False, N = 20, usePtot=False, save_filename = '/population_ratios/grid_intp_JFC_HTC_rbar_20190319.txt', overwrite=True, normalized = True, pop_names = ['JFC', 'HTC', 'r_bar'])
+#March2019 usePtot-False test
+#redefine(dataDir = '/data', saveDir = '/FLUX_IMPACTS_ALL_INTP',usePtot=False)
+##
+#rerun to verify code vs 190219 (start with rerun of redefine dir having saved off previous data to FLUX_IMPACTS_ALL.Dec)
+redefine(dataDir = '/data', saveDir = '/FLUX_IMPACTS_ALL')
+main(run_only_impacts = False, do_mcmc = False, N = 20, save_filename = '/population_ratios/grid_JFC_HTC_Uniform_20190327.txt', overwrite=True, normalized = True, pop_names = ['JFC', 'HTC', 'Uniform']) 
+main(run_only_impacts = False, do_mcmc = False, N = 20, save_filename = '/population_ratios/grid_JFC_HTC_Uniform_rbar2_20190327.txt', overwrite=True, normalized = True, pop_names = ['JFC', 'HTC', 'Uniform'],set_r_bar_fac=2.0) 
+main(run_only_impacts = False, do_mcmc = False, N = 20, save_filename = '/population_ratios/grid_JFC_HTC_rbar_20190327.txt', overwrite=True, normalized = True, pop_names = ['JFC', 'HTC', 'r_bar']) 
+main(run_only_impacts=False, do_mcmc = False, N = 20, save_filename = '/population_ratios/grid_OCC_JFC_HTC_20190327.txt', overwrite=True, normalized = True, pop_names = ['OCC', 'JFC', 'HTC']) 
+#
+#and also with rerun of
 """
 
 good_segments = np.loadtxt(BASE_DIR + '/data/searchTimes0726.txt', dtype= int)
