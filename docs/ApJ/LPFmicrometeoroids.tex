@@ -710,21 +710,17 @@ A second way to distinguish against potential populations is to compare the dist
 
 %\FloatBarrier
 \section{Population Model Inference} \label{sec:model_inference}
-To improve upon the qualitative nature of the model comparison in Figure \ref{fig:mapCompare} and make a more qualitative statement about the agreement between the models in section \ref{sec:models} and LPF's observations, a hierachircal Bayesian model was developed that utilized the momentum and sky distribution of each population model to assess the likelihood that any particular step in the impact search chain was associated with an impact from a specific population.  This machinery was then applied to the \emph{entire} set of cleaned LPF data, including segments for which no impact was positively identified. This is an important advantage as non-detection of an event when a model predicts likely detections can be as important to model selection as detection of such events. The hierachircal model, which is described in detail Appendix B, assumes that the underlying population of micrometeoroids is a mixture of a set of sub-populations and measures the posterior distributions of the relative contributions of these populations. 
+To improve upon the qualitative nature of the model comparison in Figure \ref{fig:mapCompare} and make a more qualitative statement about the agreement between the models in section \ref{sec:models} and LPF's observations, a hierachircal Bayesian model was developed that utilized the momentum and sky distribution of each population model to assess the likelihood that any particular step in the impact search chain was associated with an impact from a specific population.  This machinery was then applied to the \emph{entire} set of cleaned LPF data, including segments for which no impact was positively identified (but excluding the few vetoed events). This is an important advantage as non-detection of an event when a model predicts likely detections can be as important to model selection as detection of such events. The hierachircal model, which is described in detail Appendix B, assumes that the underlying population of micrometeoroids is a mixture of a set of sub-populations and measures the posterior distributions of the relative contributions of these populations.  
 
-
-
-
-\red{(NEED TO COMPLETE DESCRIPTION OF WHICH RUNS WE'VE DONE, ETC)}
-
-
-
-
+In Figure~\ref{fig:bayes} we show the resulting Bayes factors for models composed of mixtures of the JFC, HTC, OCC and a baseline Uniform sky distribution model.  The parameters of the models are the fraction of net micrometeoroid flux assumed from each sub-population (with the overall rate left fixed to the observed rate). In the left panel, we consider models composed of a mixture of the JFC, HTC, and OCC sub-populations.  The result shows that models favoring predominantly JFC micrometeoroids are stongly favored and models with a large fraction of OCC micrometeoroids are especially disfavored.  We also considered models with mixtures of JFC and HTC subpopulations together with the generic Uniform model.  Models dominated by JFC micromeoroids are again strongly favored.  These results are generally consistent with expected hierarchy of flux magnitudes JFC$>$HTC$>$OCC as seen in Figure~\ref{fig:popCDF}.
+%
 \begin{figure*}[ht!]
-\gridline{\fig{figures/JFC-HTC-OCC.png}{0.9\columnwidth}{(a) Sub-population ratio distribution with JFC, HTC and OCC components},
-\fig{figures/JFC-HTC-Uniform.png}{0.9\columnwidth}{(b) Sub-population ratio distribution with JFC, HTC and Uniform components}}
-\caption{\red{Preliminary} These figures show the Bayes factors for model comparisons with varying fractional contributions from our sub-population models.  In this case the overall-rate is assumed consistent with our detections, and fractional rate for each sub-population is assumed unknown. We neglect difference in the momentum distributions for the JFC, HTC and OCC populations, only relying on the sky position information for relative rate inferences.  Panel a) shows strong preference against the OCC model, consistent with the lower expected rate (of XXX as described in section.). The most-probable relative rate for the HTC and JFC subpopulations is near 1:1, but there is not strong tension with the expected ratio of 1:3.  Panel b) considers an alternative less-informed model leaving out the OCC sub-population, but allowing the possibility of an additional sub- population which is uniformly distributed across the sky. There is preference for a non-negligible contribution from this uniform sub-population, with a reduced share especially for the JFC share of the micrometeoroids indicating some tension of our data with the overall population model described in Section \ref{sec:models}. \label{fig:bayes}}
+\gridline{\fig{figures/grid_OCC_JFC_HTC_20190219.pdf}{\columnwidth}{(a) Sub-population ratio distribution with JFC, HTC and OCC components},
+\fig{figures/grid_JFC_HTC_Uniform_20190219.pdf}{\columnwidth}{(b) Sub-population ratio distribution with JFC, HTC and Uniform components}}
+\caption{These figures show log Bayes factors for model comparisons with varying fractional contributions from our sub-population models. Differences of more than a few begin to be significant with a difference of 20 indicating very strong evidence.
+  Panel a) shows most-probable relative rates of $\sim$80-90\% JFC with $\sim$10-20\% HTC micrometeoroids and no significant contribution from OCC.  Panel b) considers an alternative less-informed model leaving out the OCC sub-population, but allowing the possibility of an additional sub-population which is uniformly distributed across the sky. Models dominated by the JFC share of the micrometeoroids remain strongly favored. \label{fig:bayes}}
 \end{figure*}
+
 %\FloatBarrier
 \section{Conclusions} \label{sec:conclusions}
 We have presented a comprehensive analysis of micrometeoroid impacts detected by the LISA Pathfinder spacecraft using a novel technique - direct measurement of the momentum transfer from an individual microscopic impactor to a spacecraft. This data set, although limited to a handful of events, provides an interesting new source of data for the zodiacal dust complex, an important component of our Solar System.  The population observed by LPF is broadly consistent with standard models of the micrometeoroid population, suggesting that such models are appropriate for use in estimating hazards for spacecraft operating in the inner solar system.  A statistical comparison of our data set with model predictions favors a roughly equal model of particles with orbital characteristics of Jupiter Family Comets (JFC) and Halley-Type Comets (HTC) based on the direction and momentum of observed impacts, which is in tension with the expectation that JFCs should exceed HTCs by a ration of roughly 2:1 the rate near Earth. However, our statistical evidence for this claim is limited.  This same technique may be utilized by future precision-measurement missions, most notably the Laser Interferometer Space Antenna (LISA) itself, which based on this analysis will observe many more micrometeoroid impacts due to its combination of more spacecraft, larger spacecraft, and longer observing time - providing an additional science benefit beyond the compelling science case for observing the universe in the milliHertz gravitational wave band.
@@ -821,17 +817,18 @@ The second line expresses the effective likelihood function that we need for the
 
 In practice we assume that impacts for each data segment are independent, so that
 \begin{eqnarray}
-  \ln {p(D|\theta_P)}&=&\sum_\alpha \ln\int \frac{p(D_\alpha|\theta_{I\alpha})}p(\theta_{I\alpha}|\theta_P)d\theta_{I\alpha}\\
+  \ln {p(D|\theta_P)}&=&\sum_\alpha \ln\int {p(D_\alpha|\theta_{I\alpha})}p(\theta_{I\alpha}|\theta_P)d\theta_{I\alpha}\\
   &=&\sum_\alpha \ln\hat{\mathrm{E}}\left[\frac{p(\theta_{I\alpha}|\theta_P)}{\hat p(\theta_I)}\right]+\mathrm{const}\label{eq:metaLikeSegmented}.
 \end{eqnarray}
-The integral appearing in the first line expresses the expected value of the ratio of the model-informed impact prior $p(\theta_{I\alpha}|\theta_P)$ to the uninformed prior $\hat p(\theta_{I})$ assumed in our impact analysis with respect inferred posterior distribution for a specific data segment.  This assumes that model-informed prior has no support outside the region of support for $\hat p(\theta_{I})$.
+The contribution from each data segment is expressed as the expected value (with respect to the population-model-indepented impact posterior distribution) of the ratio of the model-informed impact prior $p(\theta_{I\alpha}|\theta_P)$ to the uninformed prior $\hat p(\theta_{I})$ that was assumed in our impact analysis.
+This assumes that model-informed prior has no support outside the region of support for $\hat p(\theta_{I})$.
 The crucial step to complete the computation of \eqref{eq:HierBayesThm} is to estimate these expected values using the usual Bayesian approach of averaging over a posterior distributed sample, which we have already constructed via MCMC.
 
 Putting all this together for our transdimensional MCMC model allowing zero or one impacts per segment, we get
 \begin{eqnarray}
   \ln p(\theta_P|D)&=& \sum_\alpha\ln\Big[ (1-\epsilon_\alpha)(1-r_\alpha(\theta_P))+r_\alpha(\theta_P)\frac{\epsilon_\alpha}{N_{\mathrm{det}\,\alpha}}\sum_{s\in S_{\alpha,k}}\hat r_\alpha(\psi_s|\theta_P)\Big]+\ln p(\theta_P)+\mathrm{const}\label{eq:HierPost}
 \end{eqnarray}
-where $\epsilon_\alpha$ is the MCMC impact probability and $S_{\alpha}$ is the set of $N_{\mathrm{det}\,\alpha}$ MCMC samples with impacts for segment $\alpha$, $r_\alpha(\theta_P)$ is the probability of an impact during this data segment for population model parameters $\theta_P$ and $\hat r_\alpha(\psi|\theta_P)$ is the informed prior probability of impact parameters $\psi$ if an impact.
+where $\epsilon_\alpha$ is the MCMC impact probability and $S_{\alpha}$ is the set of $N_{\mathrm{det}\,\alpha}$ MCMC samples with impacts for segment $\alpha$, $r_\alpha(\theta_P)$ is the probability of an impact during this data segment for population model parameters $\theta_P$ and $\hat r_\alpha(\psi|\theta_P)$ is the informed prior probability of impact parameters $\psi$ assuming an impact.
 
  We write the time-segment LPF-frame rate $r_\alpha(\psi,\theta_P)=\hat r_\alpha(\psi|\theta_P)r_\alpha(\theta_P)$ in terms of the physical micrometeoriod fluxes $F(\bar\theta,\bar\phi,\bar P,\theta_P)$ by
 \begin{align}
@@ -839,12 +836,13 @@ where $\epsilon_\alpha$ is the MCMC impact probability and $S_{\alpha}$ is the s
 \end{align}
 where $T_\alpha$ is the duration of the observation segment in time, $A_{LPF}$ is the spacecraft area, and the derivative factor is the Jacobian of the transformation from LPF parameters to the population model dimensions $\{\bar\theta,\bar\phi,\bar P\}$ at observation time $t_\alpha$.
 
-For this analysis we assume that an overall population model consisting of some linear combination of the JFC and HTC fluxes introduced in Sec.~\ref{sec:models} together with a naive model assuming uniform directional flux (\textbf{Need something about momentum?}). We normalize the flux from each of these sub-populations to a fixed overall rate, then we combine these in a general way by writing
+We assume that an overall population model consisting of some linear combination of the JFC, HTC and OCC fluxes introduced in Sec.~\ref{sec:models} together with a naive baseline model assuming directionally uniform flux inversely proportional to impact momentum. Having constrained the overall rate, we replace $r_\alpha(\theta_P)$ in \eqref{eq:HierPost} with our \emph{a posteriori} per-segment rate estimate. 
+We normalize the flux from each of these sub-populations to the fixed overall rate, then we combine these linearly, writing
 \begin{align}
   F(\bar\theta,\bar\phi,\bar P,\theta_P)&=\sum_{\lambda} c_\lambda \hat F_\lambda(\bar\theta,\bar\phi,\bar P).\nonumber
 \end{align}
-in this case $\theta_P\equiv{c_\lambda}$.  If the component fluxes are already consistently weighted with the right rates, then we would expect to find $c_\lambda\approx1$ for each $\lambda$. Having constrained the overall rate, we replace $r_\alpha(\theta_P)$ in \eqref{eq:HierPost} with our \emph{a posteriori} per-segment rate estimate.
-\\
+With the overall rate fixed, the remaining population model parameters fractional subpopulation weights $\theta_P\equiv{\hat c_\lambda}$ normalized by $\sum\hat c_\lambda=1$. In practice, in Fig.~\ref{fig:bayes} we consider two versions of such a master model each time incorporating the JFC and HTC subpopulations, but alternative considering the OCC or the Uniform populations as a third component. 
+
 
 %% The reference list follows the main body and any appendices.
 %% Use LaTeX's thebibliography environment to mark up your reference list.
